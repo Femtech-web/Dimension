@@ -7,6 +7,7 @@
 #![cfg(target = "evm")]
 
 use std::abi::sol
+use super::stable::check::{Check, Revert}
 use super::stable::fixed_point as fp
 use super::stable::math
 use super::stable::stable_math as sm
@@ -185,71 +186,93 @@ fn idx(_ i: u256) -> usize {
 pub contract StableMathFe {
     recv StableMathAbi {
         MulDown { a, b } -> u256 {
-            fp::mul_down(a, b)
+            with (Check = Revert {}) {
+                fp::mul_down(a, b)
+            }
         }
         MulUp { a, b } -> u256 {
-            fp::mul_up(a, b)
+            with (Check = Revert {}) {
+                fp::mul_up(a, b)
+            }
         }
         DivDown { a, b } -> u256 {
-            fp::div_down(a, b)
+            with (Check = Revert {}) {
+                fp::div_down(a, b)
+            }
         }
         DivUp { a, b } -> u256 {
-            fp::div_up(a, b)
+            with (Check = Revert {}) {
+                fp::div_up(a, b)
+            }
         }
         Complement { x } -> u256 {
             fp::complement(x)
         }
         MathDivUp { a, b } -> u256 {
-            math::div_up(a, b)
+            with (Check = Revert {}) {
+                math::div_up(a, b)
+            }
         }
 
         CalculateInvariant2 { amp, balances } -> u256 {
-            sm::calculate_invariant(amp, balances)
+            with (Check = Revert {}) {
+                sm::calculate_invariant(amp, balances)
+            }
         }
         CalculateInvariant3 { amp, balances } -> u256 {
-            sm::calculate_invariant(amp, balances)
+            with (Check = Revert {}) {
+                sm::calculate_invariant(amp, balances)
+            }
         }
 
         CalcOutGivenIn2 { amp, balances, index_in, index_out, amount_in, invariant } -> u256 {
-            sm::calc_out_given_in(
-                amp,
-                balances,
-                index_in: idx(index_in),
-                index_out: idx(index_out),
-                amount_in,
-                invariant,
-            )
+            with (Check = Revert {}) {
+                sm::calc_out_given_in(
+                    amp,
+                    balances,
+                    index_in: idx(index_in),
+                    index_out: idx(index_out),
+                    amount_in,
+                    invariant,
+                )
+            }
         }
         CalcOutGivenIn3 { amp, balances, index_in, index_out, amount_in, invariant } -> u256 {
-            sm::calc_out_given_in(
-                amp,
-                balances,
-                index_in: idx(index_in),
-                index_out: idx(index_out),
-                amount_in,
-                invariant,
-            )
+            with (Check = Revert {}) {
+                sm::calc_out_given_in(
+                    amp,
+                    balances,
+                    index_in: idx(index_in),
+                    index_out: idx(index_out),
+                    amount_in,
+                    invariant,
+                )
+            }
         }
 
         CalcInGivenOut2 { amp, balances, index_in, index_out, amount_out, invariant } -> u256 {
-            sm::calc_in_given_out(
-                amp,
-                balances,
-                index_in: idx(index_in),
-                index_out: idx(index_out),
-                amount_out,
-                invariant,
-            )
+            with (Check = Revert {}) {
+                sm::calc_in_given_out(
+                    amp,
+                    balances,
+                    index_in: idx(index_in),
+                    index_out: idx(index_out),
+                    amount_out,
+                    invariant,
+                )
+            }
         }
         CalcInGivenOut3 { amp, balances, index_in, index_out, amount_out, invariant } -> u256 {
-            sm::calc_in_given_out(
-                amp,
-                balances,
-                index_in: idx(index_in),
-                index_out: idx(index_out),
-                amount_out,
-                invariant,
-            )
+            with (Check = Revert {}) {
+                sm::calc_in_given_out(
+                    amp,
+                    balances,
+                    index_in: idx(index_in),
+                    index_out: idx(index_out),
+                    amount_out,
+                    invariant,
+                )
+            }
         }
 
         CalcBptOutGivenExactTokensIn2 {
@@ -260,14 +283,16 @@ pub contract StableMathFe {
             invariant,
             fee,
         } -> u256 {
-            sm::calc_bpt_out_given_exact_tokens_in(
-                amp,
-                balances,
-                amounts_in,
-                bpt_total_supply: supply,
-                current_invariant: invariant,
-                swap_fee: fee,
-            )
+            with (Check = Revert {}) {
+                sm::calc_bpt_out_given_exact_tokens_in(
+                    amp,
+                    balances,
+                    amounts_in,
+                    bpt_total_supply: supply,
+                    current_invariant: invariant,
+                    swap_fee: fee,
+                )
+            }
         }
         CalcBptOutGivenExactTokensIn3 {
             amp,
@@ -277,14 +302,16 @@ pub contract StableMathFe {
             invariant,
             fee,
         } -> u256 {
-            sm::calc_bpt_out_given_exact_tokens_in(
-                amp,
-                balances,
-                amounts_in,
-                bpt_total_supply: supply,
-                current_invariant: invariant,
-                swap_fee: fee,
-            )
+            with (Check = Revert {}) {
+                sm::calc_bpt_out_given_exact_tokens_in(
+                    amp,
+                    balances,
+                    amounts_in,
+                    bpt_total_supply: supply,
+                    current_invariant: invariant,
+                    swap_fee: fee,
+                )
+            }
         }
 
         CalcTokenInGivenExactBptOut2 {
@@ -296,15 +323,17 @@ pub contract StableMathFe {
             invariant,
             fee,
         } -> u256 {
-            sm::calc_token_in_given_exact_bpt_out(
-                amp,
-                balances,
-                index: idx(index),
-                bpt_amount_out: bpt_out,
-                bpt_total_supply: supply,
-                current_invariant: invariant,
-                swap_fee: fee,
-            )
+            with (Check = Revert {}) {
+                sm::calc_token_in_given_exact_bpt_out(
+                    amp,
+                    balances,
+                    index: idx(index),
+                    bpt_amount_out: bpt_out,
+                    bpt_total_supply: supply,
+                    current_invariant: invariant,
+                    swap_fee: fee,
+                )
+            }
         }
         CalcTokenInGivenExactBptOut3 {
             amp,
@@ -315,15 +344,17 @@ pub contract StableMathFe {
             invariant,
             fee,
         } -> u256 {
-            sm::calc_token_in_given_exact_bpt_out(
-                amp,
-                balances,
-                index: idx(index),
-                bpt_amount_out: bpt_out,
-                bpt_total_supply: supply,
-                current_invariant: invariant,
-                swap_fee: fee,
-            )
+            with (Check = Revert {}) {
+                sm::calc_token_in_given_exact_bpt_out(
+                    amp,
+                    balances,
+                    index: idx(index),
+                    bpt_amount_out: bpt_out,
+                    bpt_total_supply: supply,
+                    current_invariant: invariant,
+                    swap_fee: fee,
+                )
+            }
         }
 
         CalcBptInGivenExactTokensOut2 {
@@ -334,14 +365,16 @@ pub contract StableMathFe {
             invariant,
             fee,
         } -> u256 {
-            sm::calc_bpt_in_given_exact_tokens_out(
-                amp,
-                balances,
-                amounts_out,
-                bpt_total_supply: supply,
-                current_invariant: invariant,
-                swap_fee: fee,
-            )
+            with (Check = Revert {}) {
+                sm::calc_bpt_in_given_exact_tokens_out(
+                    amp,
+                    balances,
+                    amounts_out,
+                    bpt_total_supply: supply,
+                    current_invariant: invariant,
+                    swap_fee: fee,
+                )
+            }
         }
         CalcBptInGivenExactTokensOut3 {
             amp,
@@ -351,14 +384,16 @@ pub contract StableMathFe {
             invariant,
             fee,
         } -> u256 {
-            sm::calc_bpt_in_given_exact_tokens_out(
-                amp,
-                balances,
-                amounts_out,
-                bpt_total_supply: supply,
-                current_invariant: invariant,
-                swap_fee: fee,
-            )
+            with (Check = Revert {}) {
+                sm::calc_bpt_in_given_exact_tokens_out(
+                    amp,
+                    balances,
+                    amounts_out,
+                    bpt_total_supply: supply,
+                    current_invariant: invariant,
+                    swap_fee: fee,
+                )
+            }
         }
 
         CalcTokenOutGivenExactBptIn2 {
@@ -370,15 +405,17 @@ pub contract StableMathFe {
             invariant,
             fee,
         } -> u256 {
-            sm::calc_token_out_given_exact_bpt_in(
-                amp,
-                balances,
-                index: idx(index),
-                bpt_amount_in: bpt_in,
-                bpt_total_supply: supply,
-                current_invariant: invariant,
-                swap_fee: fee,
-            )
+            with (Check = Revert {}) {
+                sm::calc_token_out_given_exact_bpt_in(
+                    amp,
+                    balances,
+                    index: idx(index),
+                    bpt_amount_in: bpt_in,
+                    bpt_total_supply: supply,
+                    current_invariant: invariant,
+                    swap_fee: fee,
+                )
+            }
         }
         CalcTokenOutGivenExactBptIn3 {
             amp,
@@ -389,32 +426,38 @@ pub contract StableMathFe {
             invariant,
             fee,
         } -> u256 {
-            sm::calc_token_out_given_exact_bpt_in(
-                amp,
-                balances,
-                index: idx(index),
-                bpt_amount_in: bpt_in,
-                bpt_total_supply: supply,
-                current_invariant: invariant,
-                swap_fee: fee,
-            )
+            with (Check = Revert {}) {
+                sm::calc_token_out_given_exact_bpt_in(
+                    amp,
+                    balances,
+                    index: idx(index),
+                    bpt_amount_in: bpt_in,
+                    bpt_total_supply: supply,
+                    current_invariant: invariant,
+                    swap_fee: fee,
+                )
+            }
         }
 
         GetTokenBalance2 { amp, balances, invariant, index } -> u256 {
-            sm::get_token_balance_given_invariant_and_all_other_balances(
-                amp,
-                balances,
-                invariant,
-                index: idx(index),
-            )
+            with (Check = Revert {}) {
+                sm::get_token_balance_given_invariant_and_all_other_balances(
+                    amp,
+                    balances,
+                    invariant,
+                    index: idx(index),
+                )
+            }
         }
         GetTokenBalance3 { amp, balances, invariant, index } -> u256 {
-            sm::get_token_balance_given_invariant_and_all_other_balances(
-                amp,
-                balances,
-                invariant,
-                index: idx(index),
-            )
+            with (Check = Revert {}) {
+                sm::get_token_balance_given_invariant_and_all_other_balances(
+                    amp,
+                    balances,
+                    invariant,
+                    index: idx(index),
+                )
+            }
         }
     }
 }

@@ -1,0 +1,6 @@
+[ingot]
+name = "value_with_another_assets_price_fixed"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../../../ingots/dimension", allow_unsafe = true }

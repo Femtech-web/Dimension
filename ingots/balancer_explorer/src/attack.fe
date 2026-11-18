@@ -1,0 +1,97 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! A greedy attacker repeating the November 2025 operation: at every step it
+//! tries each GIVEN_OUT exit amount and takes the one that leaves the least
+//! value per BPT, then does it again on the resulting pool.
+//!
+//! Its gain is measured per step in units of the invariant D, the pool's own
+//! measure of value (Balancer's `getRate()` is D per BPT): the D its withdrawal
+//! removes, minus the BPT it burns at the D per BPT before the step. With no
+//! fees, every unit it gains is lost by the remaining holders.
+
+use balancer_v2::pool::Pool
+use super::scenario::{ONE, Op, Scenario, after, invariant, pool}
+
+pub struct Attack {
+    pub steps: u256,
+    pub value_start_wad: u256,
+    pub value_end_wad: u256,
+    pub withdrawn: u256,
+    pub bpt_burned: u256,
+    /// Attacker gain in units of D, scaled by 1e18.
+    pub gain_wad: i256,
+}
+
+impl Copy for Attack {}
+
+fn value_wad(_ d: u256, _ supply: u256) -> u256 {
+    d * ONE / supply
+}
+
+pub fn greedy(
+    _ s: Scenario,
+    b0: u256,
+    b1: u256,
+    supply_x2: u256,
+    steps: u256,
+    cap: u256,
+    typed: bool,
+) -> Attack {
+    var record = balancer_v2::stable::check::Record::new()
+    var p: Pool<2> = with (balancer_v2::stable::check::Check = mut record) {
+        pool(s, b0, b1, supply_x2)
+    }
+    let d_start = invariant(p).unwrap()
+    var result = Attack {
+        steps: 0,
+        value_start_wad: value_wad(d_start, p.supply),
+        value_end_wad: value_wad(d_start, p.supply),
+        withdrawn: 0,
+        bpt_burned: 0,
+        gain_wad: 0,
+    }
+    while result.steps < steps {
+        let d0 = invariant(p).unwrap()
+        var best: Option<Pool<2>> = Option::None
+        var best_amount: u256 = 0
+        var best_held: u256 = 0
+        var best_d1: u256 = 0
+        var a: u256 = 1
+        while a <= cap && a * 2 <= p.balances[0] {
+            match after(p, op: Op::ExitGivenOut { j: 0, amount: a }, typed) {
+                Option::Some(next) => {
+                    match invariant(next) {
+                        Option::Some(d1) => {
+                            // Value per BPT left behind, cross-multiplied against the start of the step.
+                            let held = d1 * p.supply * ONE / next.supply
+                            if best_amount == 0 || held < best_held {
+                                best = Option::Some(next)
+                                best_amount = a
+                                best_held = held
+                                best_d1 = d1
+                            }
+                        },
+                        Option::None => {},
+                    }
+                },
+                Option::None => {},
+            }
+            a += 1
+        }
+        let next = match best {
+            Option::Some(n) => n,
+            Option::None => {
+                break
+            },
+        }
+        let burned = p.supply - next.supply
+        let taken: i256 = ((d0 - best_d1) * ONE).downcast().unwrap()
+        let paid: i256 = (burned * d0 * ONE / p.supply).downcast().unwrap()
+        result.gain_wad += taken - paid
+        result.withdrawn += best_amount
+        result.bpt_burned += burned
+        result.steps += 1
+        p = next
+    }
+    result.value_end_wad = value_wad(invariant(p).unwrap(), p.supply)
+    result
+}

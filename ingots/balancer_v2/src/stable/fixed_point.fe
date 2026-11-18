@@ -1,34 +1,49 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Balancer V2 `FixedPoint` (pkg/solidity-utils/contracts/math/FixedPoint.sol).
 //!
-//! Arithmetic wraps, as in Solidity 0.7, except where Balancer checks, and a
-//! failed check reverts with Balancer's own `BAL#` reason. `powDown`/`powUp` are
-//! not ported: StableMath does not use them.
+//! Arithmetic wraps, as in Solidity 0.7, except where Balancer checks. A failed
+//! check goes to the `Check` effect, which on the EVM reverts with Balancer's
+//! own `BAL#` reason. `powDown`/`powUp` are not ported: StableMath does not use
+//! them.
 
 #![arithmetic(unchecked)]
 
+use super::check::{Check, Failure}
+
 pub const ONE: u256 = 1_000_000_000_000_000_000
 
-pub fn add(_ a: u256, _ b: u256) -> u256 {
+pub fn add(_ a: u256, _ b: u256) -> u256 uses (check: mut Check) {
     let c = a + b
-    assert!(c >= a, "BAL#000")
+    if c < a {
+        check.fail(Failure::AddOverflow)
+        return 0
+    }
     c
 }
 
-pub fn sub(_ a: u256, _ b: u256) -> u256 {
-    assert!(b <= a, "BAL#001")
+pub fn sub(_ a: u256, _ b: u256) -> u256 uses (check: mut Check) {
+    if b > a {
+        check.fail(Failure::SubOverflow)
+        return 0
+    }
     a - b
 }
 
-pub fn mul_down(_ a: u256, _ b: u256) -> u256 {
+pub fn mul_down(_ a: u256, _ b: u256) -> u256 uses (check: mut Check) {
     let product = a * b
-    assert!(a == 0 || product / a == b, "BAL#003")
+    if a != 0 && product / a != b {
+        check.fail(Failure::MulOverflow)
+        return 0
+    }
     product / ONE
 }
 
-pub fn mul_up(_ a: u256, _ b: u256) -> u256 {
+pub fn mul_up(_ a: u256, _ b: u256) -> u256 uses (check: mut Check) {
     let product = a * b
-    assert!(a == 0 || product / a == b, "BAL#003")
+    if a != 0 && product / a != b {
+        check.fail(Failure::MulOverflow)
+        return 0
+    }
     if product == 0 {
         0
     } else {
@@ -36,17 +51,29 @@ pub fn mul_up(_ a: u256, _ b: u256) -> u256 {
     }
 }
 
-pub fn div_down(_ a: u256, _ b: u256) -> u256 {
-    assert!(b != 0, "BAL#004")
+pub fn div_down(_ a: u256, _ b: u256) -> u256 uses (check: mut Check) {
+    if b == 0 {
+        check.fail(Failure::ZeroDivision)
+        return 0
+    }
     let inflated = a * ONE
-    assert!(a == 0 || inflated / a == ONE, "BAL#005")
+    if a != 0 && inflated / a != ONE {
+        check.fail(Failure::DivInternal)
+        return 0
+    }
     inflated / b
 }
 
-pub fn div_up(_ a: u256, _ b: u256) -> u256 {
-    assert!(b != 0, "BAL#004")
+pub fn div_up(_ a: u256, _ b: u256) -> u256 uses (check: mut Check) {
+    if b == 0 {
+        check.fail(Failure::ZeroDivision)
+        return 0
+    }
     let inflated = a * ONE
-    assert!(a == 0 || inflated / a == ONE, "BAL#005")
+    if a != 0 && inflated / a != ONE {
+        check.fail(Failure::DivInternal)
+        return 0
+    }
     if inflated == 0 {
         0
     } else {

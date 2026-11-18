@@ -1,0 +1,254 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! Pools to explore, and the faithful and typed kernels behind one interface.
+//! Token 0 is a rate-bearing token (wstETH-like), token 1 is plain (WETH-like).
+
+use dimension::{Asset, In, Out, ScalingFactor, given, scaling_factor}
+use dimension::value::testing::assume_rate
+use balancer_v2::pool::Pool
+use balancer_v2::pool::faithful
+use balancer_v2::pool::faithful::upscaled
+use balancer_v2::pool::typed
+use balancer_v2::pool::typed::Bpt
+use balancer_v2::stable::check::{Check, Record}
+use balancer_v2::stable::stable_math as sm
+
+pub struct RATED {}
+pub struct PLAIN {}
+
+impl Asset for RATED {
+    const DECIMALS: u256 = 18
+}
+impl Asset for PLAIN {
+    const DECIMALS: u256 = 18
+}
+
+pub const ONE: u256 = 1_000_000_000_000_000_000
+
+pub struct Scenario { pub rate: u256, pub amp: u256, pub fee: u256 }
+
+impl Copy for Scenario {}
+
+/// A pool holding `b0` of the rated token and `b1` of the plain one, with
+/// `supply_x2 / 2` BPT per unit of invariant.
+pub fn pool(_ s: Scenario, b0: u256, b1: u256, supply_x2: u256) -> Pool<2>
+uses (check: mut Check)
+{
+    let balances = [b0, b1]
+    let factors = [s.rate, ONE]
+    let invariant = sm::calculate_invariant(s.amp, upscaled(balances, factors))
+    Pool {
+        balances,
+        factors,
+        supply: invariant * supply_x2 / 2,
+        amp: s.amp,
+        fee: s.fee,
+        stored_invariant: invariant,
+    }
+}
+
+/// The operations a trader can perform, with the amount each names.
+pub enum Op {
+    SwapGivenIn { pub i: usize, pub amount: u256 },
+    SwapGivenOut { pub i: usize, pub amount: u256 },
+    ExitGivenIn { pub j: usize, pub bpt: u256 },
+    ExitGivenOut { pub j: usize, pub amount: u256 },
+    JoinGivenIn { pub i: usize, pub amount: u256 },
+    JoinGivenOut { pub i: usize, pub bpt: u256 },
+}
+
+impl Copy for Op {}
+
+pub fn kind(_ op: Op) -> usize {
+    match op {
+        Op::SwapGivenIn { .. } => 0,
+        Op::SwapGivenOut { .. } => 1,
+        Op::ExitGivenIn { .. } => 2,
+        Op::ExitGivenOut { .. } => 3,
+        Op::JoinGivenIn { .. } => 4,
+        Op::JoinGivenOut { .. } => 5,
+    }
+}
+
+pub const KIND_NAMES: [String<14>; 6] = [
+    "swapGivenIn",
+    "swapGivenOut",
+    "exitGivenIn",
+    "exitGivenOut",
+    "joinGivenIn",
+    "joinGivenOut",
+]
+
+pub fn apply_faithful(_ pool: mut Pool<2>, op: Op) uses (check: mut Check) {
+    match op {
+        Op::SwapGivenIn { i, amount } => {
+            let _ = faithful::swap_given_in(mut pool, i, j: 1 - i, amount_in: amount)
+        },
+        Op::SwapGivenOut { i, amount } => {
+            let _ = faithful::swap_given_out(mut pool, i, j: 1 - i, amount_out: amount)
+        },
+        Op::ExitGivenIn { j, bpt } => {
+            let _ = faithful::exit_given_in(mut pool, j, bpt_in: bpt)
+        },
+        Op::ExitGivenOut { j, amount } => {
+            let _ = faithful::exit_given_out(mut pool, j, amount_out: amount)
+        },
+        Op::JoinGivenIn { i, amount } => {
+            let _ = faithful::join_given_in(mut pool, i, amount_in: amount)
+        },
+        Op::JoinGivenOut { i, bpt } => {
+            let _ = faithful::join_given_out(mut pool, i, bpt_out: bpt)
+        },
+    }
+}
+
+fn rated_factor(_ pool: Pool<2>) -> ScalingFactor<RATED> {
+    scaling_factor<RATED>().with_rate(unsafe { assume_rate(pool.factors[0]) })
+}
+
+fn plain_factor() -> ScalingFactor<PLAIN> {
+    scaling_factor<PLAIN>()
+}
+
+pub fn apply_typed(_ pool: mut Pool<2>, op: Op) uses (check: mut Check) {
+    let r = rated_factor(pool)
+    let p = plain_factor()
+    match op {
+        Op::SwapGivenIn { i, amount } => {
+            if i == 0 {
+                let _ = typed::swap_given_in(
+                    mut pool,
+                    i: 0,
+                    j: 1,
+                    amount_in: given<RATED, In>(amount),
+                    factor_in: r,
+                    factor_out: p,
+                )
+            } else {
+                let _ = typed::swap_given_in(
+                    mut pool,
+                    i: 1,
+                    j: 0,
+                    amount_in: given<PLAIN, In>(amount),
+                    factor_in: p,
+                    factor_out: r,
+                )
+            }
+        },
+        Op::SwapGivenOut { i, amount } => {
+            if i == 0 {
+                let _ = typed::swap_given_out(
+                    mut pool,
+                    i: 0,
+                    j: 1,
+                    amount_out: given<PLAIN, Out>(amount),
+                    factor_in: r,
+                    factor_out: p,
+                )
+            } else {
+                let _ = typed::swap_given_out(
+                    mut pool,
+                    i: 1,
+                    j: 0,
+                    amount_out: given<RATED, Out>(amount),
+                    factor_in: p,
+                    factor_out: r,
+                )
+            }
+        },
+        Op::ExitGivenIn { j, bpt } => {
+            if j == 0 {
+                let _ = typed::exit_given_in(mut pool, j: 0, bpt_in: given<Bpt, In>(bpt), factor: r)
+            } else {
+                let _ = typed::exit_given_in(mut pool, j: 1, bpt_in: given<Bpt, In>(bpt), factor: p)
+            }
+        },
+        Op::ExitGivenOut { j, amount } => {
+            if j == 0 {
+                let _ = typed::exit_given_out(
+                    mut pool,
+                    j: 0,
+                    amount_out: given<RATED, Out>(amount),
+                    factor: r,
+                )
+            } else {
+                let _ = typed::exit_given_out(
+                    mut pool,
+                    j: 1,
+                    amount_out: given<PLAIN, Out>(amount),
+                    factor: p,
+                )
+            }
+        },
+        Op::JoinGivenIn { i, amount } => {
+            if i == 0 {
+                let _ = typed::join_given_in(
+                    mut pool,
+                    i: 0,
+                    amount_in: given<RATED, In>(amount),
+                    factor: r,
+                )
+            } else {
+                let _ = typed::join_given_in(
+                    mut pool,
+                    i: 1,
+                    amount_in: given<PLAIN, In>(amount),
+                    factor: p,
+                )
+            }
+        },
+        Op::JoinGivenOut { i, bpt } => {
+            if i == 0 {
+                let _ = typed::join_given_out(
+                    mut pool,
+                    i: 0,
+                    bpt_out: given<Bpt, Out>(bpt),
+                    factor: r,
+                )
+            } else {
+                let _ = typed::join_given_out(
+                    mut pool,
+                    i: 1,
+                    bpt_out: given<Bpt, Out>(bpt),
+                    factor: p,
+                )
+            }
+        },
+    }
+}
+
+/// The invariant of the balances the Vault actually holds.
+pub fn actual_invariant(_ pool: Pool<2>) -> u256 uses (check: mut Check) {
+    sm::calculate_invariant(pool.amp, upscaled(pool.balances, pool.factors))
+}
+
+/// Applies `op` to a copy of `pool` with one kernel. `None` when one of
+/// Balancer's checks failed, which on chain would have reverted the operation.
+pub fn after(_ pool: Pool<2>, op: Op, typed: bool) -> Option<Pool<2>> {
+    var p = pool
+    var record = Record::new()
+    with (Check = mut record) {
+        if typed {
+            apply_typed(mut p, op)
+        } else {
+            apply_faithful(mut p, op)
+        }
+    }
+    if record.failed {
+        Option::None
+    } else {
+        Option::Some(p)
+    }
+}
+
+/// The invariant of the actual balances, or `None` where it cannot be computed.
+pub fn invariant(_ pool: Pool<2>) -> Option<u256> {
+    var record = Record::new()
+    let d = with (Check = mut record) {
+        actual_invariant(pool)
+    }
+    if record.failed {
+        Option::None
+    } else {
+        Option::Some(d)
+    }
+}

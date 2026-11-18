@@ -1,0 +1,310 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! Exhaustive search of single operations over a grid of small pools, checking
+//! two invariants with exact integer comparisons on both kernels:
+//!
+//! - value per BPT: the invariant of the actual balances divided by the BPT
+//!   supply must not fall when a trader operates (fees are zero, so a fair
+//!   operation keeps it level and rounding should only ever raise it);
+//! - stored invariant: after a join or exit, the invariant the pool stores must
+//!   not exceed the invariant its actual balances support (the property the
+//!   Quint model of this exploit checks).
+
+use balancer_v2::pool::Pool
+use super::scenario::{Op, Scenario, after, invariant, kind, pool}
+
+pub const RATES: [u256; 3] = [
+    1_058_132_408_689_971_699,
+    1_150_000_000_000_000_000,
+    1_210_000_000_000_000_000,
+]
+pub const AMPS: [u256; 3] = [50_000, 200_000, 1_000_000]
+pub const BALANCES: [u256; 16] = [
+    2,
+    3,
+    5,
+    8,
+    13,
+    21,
+    34,
+    55,
+    89,
+    144,
+    233,
+    377,
+    610,
+    987,
+    1_597,
+    10_000,
+]
+pub const SUPPLIES_X2: [u256; 2] = [2, 3]
+pub const AMOUNT_CAP: u256 = 96
+
+/// The worst value-per-BPT loss found, in parts per billion, and where.
+pub struct Worst {
+    pub loss_ppb: u256,
+    pub rate: u256,
+    pub amp: u256,
+    pub b0: u256,
+    pub b1: u256,
+    pub supply_x2: u256,
+    pub kind: usize,
+    pub side: usize,
+    pub amount: u256,
+}
+
+impl Copy for Worst {}
+
+/// Per kernel: operations tried, how many reverted, and invariant violations
+/// by operation kind.
+pub struct Tally {
+    pub tried: [u256; 6],
+    pub reverted: [u256; 6],
+    pub value_losses: [u256; 6],
+    pub stored_violations: [u256; 6],
+    /// The worst loss per operation kind.
+    pub worst: [Worst; 6],
+}
+
+impl Copy for Tally {}
+
+pub fn empty() -> Tally {
+    Tally {
+        tried: [0; 6],
+        reverted: [0; 6],
+        value_losses: [0; 6],
+        stored_violations: [0; 6],
+        worst: [Worst {
+            loss_ppb: 0,
+            rate: 0,
+            amp: 0,
+            b0: 0,
+            b1: 0,
+            supply_x2: 0,
+            kind: 0,
+            side: 0,
+            amount: 0,
+        }; 6],
+    }
+}
+
+pub struct Report { pub states: u256, pub faithful: Tally, pub typed: Tally }
+
+/// Value-per-BPT loss from `before` to `after`, in parts per billion; 0 if the
+/// value did not fall.
+pub fn loss_ppb(_ d0: u256, _ s0: u256, _ d1: u256, _ s1: u256) -> u256 {
+    let held = d1 * s0
+    let owed = d0 * s1
+    if held >= owed {
+        0
+    } else {
+        (owed - held) * 1_000_000_000 / owed
+    }
+}
+
+fn side_of(_ op: Op) -> usize {
+    match op {
+        Op::SwapGivenIn { i, .. } => i,
+        Op::SwapGivenOut { i, .. } => i,
+        Op::ExitGivenIn { j, .. } => j,
+        Op::ExitGivenOut { j, .. } => j,
+        Op::JoinGivenIn { i, .. } => i,
+        Op::JoinGivenOut { i, .. } => i,
+    }
+}
+
+fn amount_of(_ op: Op) -> u256 {
+    match op {
+        Op::SwapGivenIn { amount, .. } => amount,
+        Op::SwapGivenOut { amount, .. } => amount,
+        Op::ExitGivenIn { bpt, .. } => bpt,
+        Op::ExitGivenOut { amount, .. } => amount,
+        Op::JoinGivenIn { amount, .. } => amount,
+        Op::JoinGivenOut { bpt, .. } => bpt,
+    }
+}
+
+fn record(
+    _ t: mut Tally,
+    before: Pool<2>,
+    d0: u256,
+    op: Op,
+    typed: bool,
+    s: Scenario,
+    supply_x2: u256,
+) {
+    let k = kind(op)
+    t.tried[k] += 1
+    let next = match after(before, op, typed) {
+        Option::Some(p) => p,
+        Option::None => {
+            t.reverted[k] += 1
+            return
+        },
+    }
+    let d1 = match invariant(next) {
+        Option::Some(d) => d,
+        Option::None => {
+            t.reverted[k] += 1
+            return
+        },
+    }
+    let loss = loss_ppb(d0, s0: before.supply, d1, s1: next.supply)
+    if loss > 0 {
+        t.value_losses[k] += 1
+        if loss > t.worst[k].loss_ppb {
+            t.worst[k] = Worst {
+                loss_ppb: loss,
+                rate: s.rate,
+                amp: s.amp,
+                b0: before.balances[0],
+                b1: before.balances[1],
+                supply_x2,
+                kind: k,
+                side: side_of(op),
+                amount: amount_of(op),
+            }
+        }
+    }
+    let changes_supply = k >= 2
+    if changes_supply && next.stored_invariant > d1 {
+        t.stored_violations[k] += 1
+    }
+}
+
+fn min(_ a: u256, _ b: u256) -> u256 {
+    if a < b { a } else { b }
+}
+
+/// Every operation on one pool state, on both kernels.
+fn explore_state(_ r: mut Report, s: Scenario, b0: u256, b1: u256, supply_x2: u256, cap: u256) {
+    let start = match pool_state(s, b0, b1, supply_x2) {
+        Option::Some(p) => p,
+        Option::None => {
+            return
+        },
+    }
+    let d0 = match invariant(start) {
+        Option::Some(d) => d,
+        Option::None => {
+            return
+        },
+    }
+    r.states += 1
+    let balances = [b0, b1]
+    let bpt_cap = min(cap, start.supply / 4)
+    var side: usize = 0
+    while side < 2 {
+        let held = balances[side]
+        let other = balances[1 - side]
+        var a: u256 = 1
+        while a <= cap {
+            var ops: [Op; 6] = [
+                Op::SwapGivenIn { i: side, amount: a },
+                Op::SwapGivenOut { i: side, amount: a },
+                Op::ExitGivenIn { j: side, bpt: a },
+                Op::ExitGivenOut { j: side, amount: a },
+                Op::JoinGivenIn { i: side, amount: a },
+                Op::JoinGivenOut { i: side, bpt: a },
+            ]
+            // Amounts each operation can name without draining the pool.
+            let fits: [bool; 6] = [
+                a <= held,
+                a * 2 <= other,
+                a <= bpt_cap,
+                a * 2 <= held,
+                a <= held,
+                a <= bpt_cap,
+            ]
+            var k: usize = 0
+            while k < 6 {
+                if fits[k] {
+                    record(
+                        mut r.faithful,
+                        before: start,
+                        d0,
+                        op: ops[k],
+                        typed: false,
+                        s,
+                        supply_x2,
+                    )
+                    record(
+                        mut r.typed,
+                        before: start,
+                        d0,
+                        op: ops[k],
+                        typed: true,
+                        s,
+                        supply_x2,
+                    )
+                }
+                k += 1
+            }
+            a += 1
+        }
+        side += 1
+    }
+}
+
+fn pool_state(_ s: Scenario, b0: u256, b1: u256, supply_x2: u256) -> Option<Pool<2>> {
+    var record = balancer_v2::stable::check::Record::new()
+    let p = with (balancer_v2::stable::check::Check = mut record) {
+        pool(s, b0, b1, supply_x2)
+    }
+    if record.failed {
+        Option::None
+    } else {
+        Option::Some(p)
+    }
+}
+
+/// Every operation on every pool in a grid of scenarios and balances.
+pub fn run_grid<const R: usize, const A: usize, const B: usize, const S: usize>(
+    rates: [u256; R],
+    amps: [u256; A],
+    balances: [u256; B],
+    supplies_x2: [u256; S],
+    cap: u256,
+) -> Report {
+    var r = Report { states: 0, faithful: empty(), typed: empty() }
+    var ri: usize = 0
+    while ri < R {
+        var ai: usize = 0
+        while ai < A {
+            let s = Scenario { rate: rates[ri], amp: amps[ai], fee: 0 }
+            var x: usize = 0
+            while x < B {
+                var y: usize = 0
+                while y < B {
+                    var si: usize = 0
+                    while si < S {
+                        explore_state(
+                            mut r,
+                            s,
+                            b0: balances[x],
+                            b1: balances[y],
+                            supply_x2: supplies_x2[si],
+                            cap,
+                        )
+                        si += 1
+                    }
+                    y += 1
+                }
+                x += 1
+            }
+            ai += 1
+        }
+        ri += 1
+    }
+    r
+}
+
+/// The full grid the report covers.
+pub fn run() -> Report {
+    run_grid(
+        rates: RATES,
+        amps: AMPS,
+        balances: BALANCES,
+        supplies_x2: SUPPLIES_X2,
+        cap: AMOUNT_CAP,
+    )
+}

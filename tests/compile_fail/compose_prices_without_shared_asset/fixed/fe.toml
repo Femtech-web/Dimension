@@ -1,0 +1,6 @@
+[ingot]
+name = "compose_prices_without_shared_asset_fixed"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../../../ingots/dimension", allow_unsafe = true }

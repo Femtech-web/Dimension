@@ -1,0 +1,2 @@
+PASS trusted_explicitly_in_the_manifest
+test result: ok. 1 passed; 0 failed

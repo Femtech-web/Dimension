@@ -1,0 +1,6 @@
+[ingot]
+name = "balancer_floor_upscale_as_admitted_fixed"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../../../ingots/dimension", allow_unsafe = true }

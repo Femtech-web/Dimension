@@ -1,0 +1,63 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! The exploration code is plain Fe, so it runs on both backends. These tests
+//! pin a small grid and one attack to exact integers and run on each backend:
+//! passing on both means the EVM and native builds computed the same results.
+
+use balancer_explorer::attack::greedy
+use balancer_explorer::scenario::Scenario
+use balancer_explorer::search::run_grid
+
+const EXIT_GIVEN_OUT: usize = 3
+
+fn scenario() -> Scenario {
+    Scenario { rate: 1_150_000_000_000_000_000, amp: 50_000, fee: 0 }
+}
+
+#[test]
+fn small_grid_matches_on_this_backend() {
+    let r = run_grid(
+        rates: [1_150_000_000_000_000_000],
+        amps: [50_000],
+        balances: [8, 34],
+        supplies_x2: [3],
+        cap: 6,
+    )
+    assert(r.states == 4)
+    assert(r.faithful.tried[EXIT_GIVEN_OUT] == 40)
+    assert(r.faithful.value_losses[EXIT_GIVEN_OUT] == 18)
+    assert(r.faithful.stored_violations[EXIT_GIVEN_OUT] == 18)
+    assert(r.faithful.worst[EXIT_GIVEN_OUT].loss_ppb == 148_606_811)
+    assert(r.typed.tried[EXIT_GIVEN_OUT] == 40)
+    assert(r.typed.value_losses[EXIT_GIVEN_OUT] == 0)
+    assert(r.typed.stored_violations[EXIT_GIVEN_OUT] == 0)
+}
+
+#[test]
+fn repeated_exits_match_on_this_backend() {
+    let f = greedy(
+        scenario(),
+        b0: 8,
+        b1: 8,
+        supply_x2: 3,
+        steps: 10,
+        cap: 6,
+        typed: false,
+    )
+    assert(f.steps == 4)
+    assert(f.bpt_burned == 12)
+    assert(f.value_end_wad == 615_384_615_384_615_384)
+    assert(f.gain_wad == 1_385_634_674_922_600_620)
+    let t = greedy(
+        scenario(),
+        b0: 8,
+        b1: 8,
+        supply_x2: 3,
+        steps: 10,
+        cap: 6,
+        typed: true,
+    )
+    assert(t.steps == 3)
+    assert(t.bpt_burned == 15)
+    assert(t.value_end_wad == 900_000_000_000_000_000)
+    assert(t.gain_wad == -2_492_955_465_587_044_534)
+}

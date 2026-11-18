@@ -1,0 +1,12 @@
+use dimension::{Amount, Collateral, Price, Value, value_of}
+use dimension::value::testing::assume_price
+use super::{ETH, USD, capacity}
+
+#[test]
+fn borrows_eighty_percent() {
+    let p: Price<ETH, USD> = unsafe {
+        assume_price(2_000_000_000_000_000_000_000)
+    }
+    let c: Value<USD, Collateral> = value_of(Amount<ETH>::new(1_000_000_000_000_000_000), p)
+    assert(capacity(c).wad() == 1_600_000_000_000_000_000_000)
+}

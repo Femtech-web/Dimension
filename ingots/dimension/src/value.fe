@@ -85,6 +85,15 @@ pub fn settle<T, F: Flow>(_ q: Quantity<T, F, Owed>, _ factor: ScalingFactor<T>)
     Quantity { v: F::Obligation::mul_div(q.v, WAD, factor.v) }
 }
 
+impl<T, F: Flow> Quantity<T, F, Settled> {
+    /// Scales a settled amount by `numerator / denominator`, keeping its
+    /// direction's rounding: a charge rounds up, a payout down. For a fee added
+    /// to a charge or taken from a payout.
+    pub fn scaled_by(self, numerator: u256, denominator: u256) -> Self {
+        Quantity { v: F::Obligation::mul_div(self.v, numerator, denominator) }
+    }
+}
+
 /// An exchange rate of `T` to the unit its pool accounts in (for example stETH
 /// per wstETH), 18 decimals. External data.
 pub struct Rate<T> { wad: u256 }

@@ -1,0 +1,6 @@
+[ingot]
+name = "moonwell_component_feed_in_usd_market_fixed"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../../../ingots/dimension" }

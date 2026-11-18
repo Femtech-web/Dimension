@@ -45,6 +45,9 @@ def run_forge(runs: int | None) -> dict:
     if runs:
         env["FOUNDRY_FUZZ_RUNS"] = str(runs)
     OUTCOMES.unlink(missing_ok=True)
+    # Foundry replays previously failing inputs first; clear them so every run
+    # executes exactly the configured vectors.
+    shutil.rmtree(REFERENCE / "cache" / "fuzz", ignore_errors=True)
     proc = subprocess.run(
         ["forge", "test", "--json"], cwd=REFERENCE, env=env, capture_output=True, text=True, timeout=3600
     )

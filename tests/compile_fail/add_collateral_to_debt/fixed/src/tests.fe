@@ -1,0 +1,14 @@
+use dimension::{Amount, Collateral, Debt, Price, Value, value_of}
+use dimension::value::testing::assume_price
+use super::{ETH, USD, solvent}
+
+#[test]
+fn compares_sides() {
+    let p: Price<ETH, USD> = unsafe {
+        assume_price(2_000_000_000_000_000_000_000)
+    }
+    let c: Value<USD, Collateral> = value_of(Amount<ETH>::new(1_000_000_000_000_000_000), p)
+    let d: Value<USD, Debt> = value_of(Amount<ETH>::new(500_000_000_000_000_000), p)
+    assert(solvent(c, d))
+    assert(!solvent(value_of(Amount<ETH>::new(1), p), d))
+}

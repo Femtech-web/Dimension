@@ -1,0 +1,13 @@
+use dimension::{Amount, Price}
+use dimension::value::testing::assume_price
+use super::{USD, USDC, value}
+
+#[test]
+fn values_usdc_with_the_usdc_price() {
+    let p: Price<USDC, USD> = unsafe {
+        assume_price(1_000_000_000_000_000_000)
+    }
+    assert(
+        value(Amount<USDC>::new(2_500_000), p).wad() == 2_500_000_000_000_000_000,
+    )
+}

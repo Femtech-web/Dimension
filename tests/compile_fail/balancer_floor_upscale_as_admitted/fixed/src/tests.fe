@@ -1,0 +1,11 @@
+use dimension::scaling_factor
+use dimension::value::testing::assume_rate
+use super::{WSTETH, upscale}
+
+#[test]
+fn seventeen_out_counts_as_eighteen() {
+    // Balancer V2 counted 17 here; the pool must count every unit that leaves.
+    let factor = scaling_factor<WSTETH>()
+        .with_rate(unsafe { assume_rate(1_058_132_408_689_971_699) })
+    assert(upscale(17, factor) == 18)
+}

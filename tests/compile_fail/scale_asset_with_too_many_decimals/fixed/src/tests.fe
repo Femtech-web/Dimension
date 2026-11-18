@@ -1,0 +1,6 @@
+use super::factor
+
+#[test]
+fn eighteen_decimals_scale() {
+    assert(factor().value() == 1_000_000_000_000_000_000)
+}

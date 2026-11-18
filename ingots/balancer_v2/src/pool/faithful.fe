@@ -1,0 +1,186 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! The pool operations as Balancer V2 implements them, including its rounding:
+//! `_upscale` rounds every given amount down, whichever way it moves.
+//! Sources: BaseGeneralPool `_swapGivenIn`/`_swapGivenOut`, ComposableStablePool
+//! `_swapWithBpt` and the join/exit-swap helpers, BasePool swap fee helpers.
+
+#![arithmetic(unchecked)]
+
+use super::Pool
+use super::super::stable::fixed_point as fp
+use super::super::stable::stable_math as sm
+use super::super::stable::check::Check
+
+const BPT_FACTOR: u256 = 1_000_000_000_000_000_000
+
+/// `_upscale`: rounds down for every amount.
+pub fn upscale(_ amount: u256, _ factor: u256) -> u256 uses (check: mut Check) {
+    fp::mul_down(amount, factor)
+}
+
+pub fn upscaled<const N: usize>(_ balances: [u256; N], _ factors: [u256; N]) -> [u256; N]
+uses (check: mut Check)
+{
+    var scaled: [u256; N] = [0; N]
+    var i: usize = 0
+    while i < N {
+        scaled[i] = fp::mul_down(balances[i], factors[i])
+        i += 1
+    }
+    scaled
+}
+
+/// A regular swap naming the amount in. Returns the amount out.
+pub fn swap_given_in<const N: usize>(
+    _ pool: mut Pool<N>,
+    i: usize,
+    j: usize,
+    amount_in: u256,
+) -> u256
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    let after_fee = fp::sub(amount_in, fp::mul_up(amount_in, pool.fee))
+    let balances = upscaled(pool.balances, pool.factors)
+    let invariant = sm::calculate_invariant(pool.amp, balances)
+    let out = sm::calc_out_given_in(
+        pool.amp,
+        balances,
+        index_in: i,
+        index_out: j,
+        amount_in: upscale(after_fee, pool.factors[i]),
+        invariant,
+    )
+    let amount_out = fp::div_down(out, pool.factors[j])
+    pool.balances[i] = fp::add(pool.balances[i], amount_in)
+    pool.balances[j] = fp::sub(pool.balances[j], amount_out)
+    amount_out
+}
+
+/// A regular swap naming the amount out. Returns the amount in.
+pub fn swap_given_out<const N: usize>(
+    _ pool: mut Pool<N>,
+    i: usize,
+    j: usize,
+    amount_out: u256,
+) -> u256
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    let balances = upscaled(pool.balances, pool.factors)
+    let invariant = sm::calculate_invariant(pool.amp, balances)
+    let scaled_in = sm::calc_in_given_out(
+        pool.amp,
+        balances,
+        index_in: i,
+        index_out: j,
+        amount_out: upscale(amount_out, pool.factors[j]),
+        invariant,
+    )
+    let amount_in = fp::div_up(
+        fp::div_up(scaled_in, pool.factors[i]),
+        fp::complement(pool.fee),
+    )
+    pool.balances[i] = fp::add(pool.balances[i], amount_in)
+    pool.balances[j] = fp::sub(pool.balances[j], amount_out)
+    amount_in
+}
+
+/// BPT in for exactly `amount_out` of token `j`: the operation the November
+/// 2025 exploit repeated. Returns the BPT burned.
+pub fn exit_given_out<const N: usize>(_ pool: mut Pool<N>, j: usize, amount_out: u256) -> u256
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    var balances = upscaled(pool.balances, pool.factors)
+    let scaled_out = upscale(amount_out, pool.factors[j])
+    let pre_invariant = sm::calculate_invariant(pool.amp, balances)
+    var amounts: [u256; N] = [0; N]
+    amounts[j] = scaled_out
+    let bpt_in = sm::calc_bpt_in_given_exact_tokens_out(
+        pool.amp,
+        balances,
+        amounts_out: amounts,
+        bpt_total_supply: pool.supply,
+        current_invariant: pre_invariant,
+        swap_fee: pool.fee,
+    )
+    balances[j] = fp::sub(balances[j], scaled_out)
+    pool.supply = fp::sub(pool.supply, bpt_in)
+    pool.stored_invariant = sm::calculate_invariant(pool.amp, balances)
+    pool.balances[j] = fp::sub(pool.balances[j], amount_out)
+    fp::div_up(bpt_in, BPT_FACTOR)
+}
+
+/// Token `j` out for exactly `bpt_in`. Returns the amount out.
+pub fn exit_given_in<const N: usize>(_ pool: mut Pool<N>, j: usize, bpt_in: u256) -> u256
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    var balances = upscaled(pool.balances, pool.factors)
+    let pre_invariant = sm::calculate_invariant(pool.amp, balances)
+    let scaled_out = sm::calc_token_out_given_exact_bpt_in(
+        pool.amp,
+        balances,
+        index: j,
+        bpt_amount_in: upscale(bpt_in, BPT_FACTOR),
+        bpt_total_supply: pool.supply,
+        current_invariant: pre_invariant,
+        swap_fee: pool.fee,
+    )
+    balances[j] = fp::sub(balances[j], scaled_out)
+    pool.supply = fp::sub(pool.supply, bpt_in)
+    pool.stored_invariant = sm::calculate_invariant(pool.amp, balances)
+    let amount_out = fp::div_down(scaled_out, pool.factors[j])
+    pool.balances[j] = fp::sub(pool.balances[j], amount_out)
+    amount_out
+}
+
+/// BPT out for exactly `amount_in` of token `i`. Returns the BPT minted.
+pub fn join_given_in<const N: usize>(_ pool: mut Pool<N>, i: usize, amount_in: u256) -> u256
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    var balances = upscaled(pool.balances, pool.factors)
+    let scaled_in = upscale(amount_in, pool.factors[i])
+    let pre_invariant = sm::calculate_invariant(pool.amp, balances)
+    var amounts: [u256; N] = [0; N]
+    amounts[i] = scaled_in
+    let bpt_out = sm::calc_bpt_out_given_exact_tokens_in(
+        pool.amp,
+        balances,
+        amounts_in: amounts,
+        bpt_total_supply: pool.supply,
+        current_invariant: pre_invariant,
+        swap_fee: pool.fee,
+    )
+    balances[i] = fp::add(balances[i], scaled_in)
+    pool.supply = fp::add(pool.supply, bpt_out)
+    pool.stored_invariant = sm::calculate_invariant(pool.amp, balances)
+    pool.balances[i] = fp::add(pool.balances[i], amount_in)
+    fp::div_down(bpt_out, BPT_FACTOR)
+}
+
+/// Token `i` in for exactly `bpt_out`. Returns the amount in.
+pub fn join_given_out<const N: usize>(_ pool: mut Pool<N>, i: usize, bpt_out: u256) -> u256
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    var balances = upscaled(pool.balances, pool.factors)
+    let pre_invariant = sm::calculate_invariant(pool.amp, balances)
+    let scaled_in = sm::calc_token_in_given_exact_bpt_out(
+        pool.amp,
+        balances,
+        index: i,
+        bpt_amount_out: upscale(bpt_out, BPT_FACTOR),
+        bpt_total_supply: pool.supply,
+        current_invariant: pre_invariant,
+        swap_fee: pool.fee,
+    )
+    balances[i] = fp::add(balances[i], scaled_in)
+    pool.supply = fp::add(pool.supply, bpt_out)
+    pool.stored_invariant = sm::calculate_invariant(pool.amp, balances)
+    let amount_in = fp::div_up(scaled_in, pool.factors[i])
+    pool.balances[i] = fp::add(pool.balances[i], amount_in)
+    amount_in
+}

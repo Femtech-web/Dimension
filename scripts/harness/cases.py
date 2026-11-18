@@ -10,6 +10,7 @@ changed golden means the compiler's behaviour or the code under test changed.
 from __future__ import annotations
 
 import argparse
+import difflib
 import hashlib
 import json
 import re
@@ -24,7 +25,7 @@ from harness.toolchain import ROOT, Fe, resolve
 SUITES = {
     "probes": [ROOT / "tests" / "probes"],
     "compile-fail": [ROOT / "tests" / "compile_fail"],
-    "unit": [ROOT / "tests" / "core", ROOT / "tests" / "oracle"],
+    "unit": [ROOT / "tests" / "core", ROOT / "tests" / "oracle", ROOT / "tests" / "explorer"],
 }
 TESTS = ROOT / "tests"
 SCHEMA = "dimension.cases/v1"
@@ -86,6 +87,38 @@ def check_compile_fail(fe: Fe, case_dir: Path, spec: dict, result: Result, updat
     if unexpected:
         result.fail(f"expected only {', '.join(sorted(allowed))}, also got {', '.join(unexpected)}")
     golden(case_dir / "expected.diagnostics", outcome.output, update, result)
+    if "twin" in spec:
+        check_twin(fe, case_dir, spec, result, update)
+
+
+def fix_diff(unsafe: Path, fixed: Path) -> list[str]:
+    """The lines the fix changes, without diff headers."""
+    lines = difflib.unified_diff(unsafe.read_text().splitlines(), fixed.read_text().splitlines(), lineterm="", n=0)
+    return [line for line in lines if line[:1] in "+-" and not line.startswith(("+++", "---"))]
+
+
+def check_twin(fe: Fe, case_dir: Path, spec: dict, result: Result, update: bool) -> None:
+    """A rejection only means something if the corrected code is accepted and
+    computes the right result; the twin is that corrected code."""
+    twin_dir = case_dir / spec["twin"]
+    mode = spec.get("twin_run", "test")
+    twin = {"mode": mode, "fix": fix_diff(case_dir / "src" / "lib.fe", twin_dir / "src" / "lib.fe")}
+    if "allow_unsafe = true" in (twin_dir / "fe.toml").read_text() and not twin["fix"]:
+        twin["fix"] = ["+fe.toml: dimension = { ..., allow_unsafe = true }"]
+    if mode == "test":
+        outcome = fe.run(["test", "--backend", "sonatina"], twin_dir)
+        output = sorted_test_output(outcome.output)
+        summary = _SUMMARY.search(output)
+        twin["passed"] = int(summary.group(1)) if summary else 0
+        if outcome.code != 0 or not summary or summary.group(2) != "0" or twin["passed"] == 0:
+            result.fail("the corrected twin does not pass its tests")
+        golden(twin_dir / "expected.sonatina.txt", output, update, result)
+    else:
+        outcome = fe.run(["check"], twin_dir)
+        if outcome.code != 0:
+            result.fail(f"the corrected twin does not compile:\n{outcome.output}")
+    twin["ok"] = result.ok
+    result.observed["twin"] = twin
 
 
 def check_compile_pass(fe: Fe, case_dir: Path, result: Result) -> None:

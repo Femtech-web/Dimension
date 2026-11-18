@@ -1,0 +1,7 @@
+use super::forged
+
+#[test]
+fn trusted_explicitly_in_the_manifest() {
+    // Compiles only because this root's fe.toml grants allow_unsafe to dimension.
+    assert(forged().wad() == 1_120_000_000_000_000_000)
+}

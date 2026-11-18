@@ -1,0 +1,6 @@
+use super::forged
+
+#[test]
+fn admitted_through_admit() {
+    assert(forged().value() == 17)
+}

@@ -1,21 +1,32 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Balancer V2 `Math` (pkg/solidity-utils/contracts/math/Math.sol): integer,
-//! not fixed-point, operations. Same wrapping and `BAL#` reasons as `fixed_point`.
+//! not fixed-point, operations. Same wrapping and failures as `fixed_point`.
 
 #![arithmetic(unchecked)]
 
-pub fn mul(_ a: u256, _ b: u256) -> u256 {
+use super::check::{Check, Failure}
+
+pub fn mul(_ a: u256, _ b: u256) -> u256 uses (check: mut Check) {
     let c = a * b
-    assert!(a == 0 || c / a == b, "BAL#003")
+    if a != 0 && c / a != b {
+        check.fail(Failure::MulOverflow)
+        return 0
+    }
     c
 }
 
-pub fn div_down(_ a: u256, _ b: u256) -> u256 {
-    assert!(b != 0, "BAL#004")
+pub fn div_down(_ a: u256, _ b: u256) -> u256 uses (check: mut Check) {
+    if b == 0 {
+        check.fail(Failure::ZeroDivision)
+        return 0
+    }
     a / b
 }
 
-pub fn div_up(_ a: u256, _ b: u256) -> u256 {
-    assert!(b != 0, "BAL#004")
+pub fn div_up(_ a: u256, _ b: u256) -> u256 uses (check: mut Check) {
+    if b == 0 {
+        check.fail(Failure::ZeroDivision)
+        return 0
+    }
     if a == 0 { 0 } else { 1 + (a - 1) / b }
 }

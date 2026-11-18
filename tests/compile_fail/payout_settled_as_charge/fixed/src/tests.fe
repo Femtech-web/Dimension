@@ -1,0 +1,10 @@
+use dimension::scaling_factor
+use dimension::value::testing::assume_rate
+use super::{WSTETH, charge}
+
+#[test]
+fn charges_are_rounded_up() {
+    let factor = scaling_factor<WSTETH>()
+        .with_rate(unsafe { assume_rate(1_058_132_408_689_971_699) })
+    assert(charge(18, factor).value() == 18)
+}

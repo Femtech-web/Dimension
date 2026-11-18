@@ -1,0 +1,2 @@
+PASS chains_through_eth
+test result: ok. 1 passed; 0 failed

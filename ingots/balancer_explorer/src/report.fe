@@ -1,0 +1,148 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! Prints exploration results as JSON on standard output.
+
+#![cfg(target = "native")]
+
+use std::io::Stdout
+use super::scenario::KIND_NAMES
+use super::attack::{Attack, greedy}
+use super::scenario::Scenario
+use super::search::{AMOUNT_CAP, Report, Tally}
+
+fn tally(_ name: String<8>, _ t: Tally, last: bool) uses (out: mut Stdout) {
+    println!("    \"", name, "\": {")
+    var k: usize = 0
+    println!("      \"by_operation\": {")
+    while k < 6 {
+        let w = t.worst[k]
+        print!(
+            "        \"",
+            KIND_NAMES[k],
+            "\": {\"tried\": ",
+            t.tried[k],
+            ", \"reverted\": ",
+            t.reverted[k],
+            ", \"value_per_bpt_losses\": ",
+            t.value_losses[k],
+            ", \"stored_invariant_violations\": ",
+            t.stored_violations[k],
+            ", \"worst_loss\": {\"ppb\": ",
+            w.loss_ppb,
+            ", \"rate\": ",
+            w.rate,
+            ", \"amp\": ",
+            w.amp,
+            ", \"b0\": ",
+            w.b0,
+            ", \"b1\": ",
+            w.b1,
+            ", \"supply_x2\": ",
+            w.supply_x2,
+            ", \"side\": ",
+            w.side,
+            ", \"amount\": ",
+            w.amount,
+            "}}",
+        )
+        println!(if k < 5 { "," } else { "" })
+        k += 1
+    }
+    println!("      }")
+    println!(if last { "    }" } else { "    }," })
+}
+
+pub fn print(_ r: Report) uses (out: mut Stdout) {
+    println!("{")
+    println!("  \"states\": ", r.states, ",")
+    println!("  \"amount_cap\": ", AMOUNT_CAP, ",")
+    println!("  \"kernels\": {")
+    tally("faithful", r.faithful, last: false)
+    tally("typed", r.typed, last: true)
+    println!("  },")
+    println!("  \"greedy_attacks\": [")
+    attack(
+        Scenario { rate: 1_058_132_408_689_971_699, amp: 50_000, fee: 0 },
+        b0: 300,
+        b1: 300,
+        supply_x2: 2,
+        last: false,
+    )
+    attack(
+        Scenario { rate: 1_150_000_000_000_000_000, amp: 50_000, fee: 0 },
+        b0: 8,
+        b1: 8,
+        supply_x2: 3,
+        last: false,
+    )
+    attack(
+        Scenario { rate: 1_210_000_000_000_000_000, amp: 200_000, fee: 0 },
+        b0: 1_000,
+        b1: 1_000,
+        supply_x2: 2,
+        last: true,
+    )
+    println!("  ]")
+    println!("}")
+}
+
+fn side(_ name: String<8>, _ a: Attack, last: bool) uses (out: mut Stdout) {
+    println!(
+        "      \"",
+        name,
+        "\": {\"steps\": ",
+        a.steps,
+        ", \"value_per_bpt_start_wad\": ",
+        a.value_start_wad,
+        ", \"value_per_bpt_end_wad\": ",
+        a.value_end_wad,
+        ", \"withdrawn\": ",
+        a.withdrawn,
+        ", \"bpt_burned\": ",
+        a.bpt_burned,
+        ", \"attacker_gain_wad\": ",
+        a.gain_wad,
+        if last { "}" } else { "}," },
+    )
+}
+
+fn attack(_ s: Scenario, b0: u256, b1: u256, supply_x2: u256, last: bool)
+uses (out: mut Stdout)
+{
+    let steps = 200
+    println!(
+        "    {\"rate\": ",
+        s.rate,
+        ", \"amp\": ",
+        s.amp,
+        ", \"b0\": ",
+        b0,
+        ", \"b1\": ",
+        b1,
+        ", \"supply_x2\": ",
+        supply_x2,
+        ", \"max_steps\": ",
+        steps,
+        ", \"amount_cap\": ",
+        AMOUNT_CAP,
+        ",",
+    )
+    side(
+        "faithful",
+        greedy(
+            s,
+            b0,
+            b1,
+            supply_x2,
+            steps,
+            cap: AMOUNT_CAP,
+            typed: false,
+        ),
+        last: false,
+    )
+    side(
+        "typed",
+        greedy(s, b0, b1, supply_x2, steps, cap: AMOUNT_CAP, typed: true),
+        last: true,
+    )
+    println!(if last { "    }" } else { "    }," })
+}

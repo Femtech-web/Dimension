@@ -1,0 +1,9 @@
+use dimension::{Asset, ScalingFactor, scaling_factor}
+pub struct WIDE {}
+impl Asset for WIDE {
+    const DECIMALS: u256 = 18
+}
+
+pub fn factor() -> ScalingFactor<WIDE> {
+    scaling_factor<WIDE>()
+}

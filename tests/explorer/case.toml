@@ -1,0 +1,4 @@
+kind = "test"
+backends = ["sonatina", "native"]
+layer = "testing"
+mechanism = "The exploration code computes identical results on the EVM and native backends: a small grid and a repeated-exit attack pinned to exact integers"

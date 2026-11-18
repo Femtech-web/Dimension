@@ -30,6 +30,14 @@ const CBETH_ETH: Feed<CBETH, ETH> = feed(
     max_wad: 2_000_000_000_000_000_000,
 )
 
+const ETH_USD: Feed<ETH, USD> = feed(
+    Address::new(0x2),
+    decimals: 8,
+    max_age: 3_600,
+    min_wad: 100_000_000_000_000_000_000,
+    max_wad: 100_000_000_000_000_000_000_000,
+)
+
 pub struct Market<T> { pub usd_feed: Feed<T, USD> }
 
 // MIP-X43 activated the cbETH/ETH exchange-rate feed for the cbETH market.

@@ -1,0 +1,6 @@
+use dimension::{Flow, In, Out}
+
+// The fix: say which way the value moves; In and Out carry the rounding.
+pub fn both_flows<F: Flow>() -> bool {
+    true
+}

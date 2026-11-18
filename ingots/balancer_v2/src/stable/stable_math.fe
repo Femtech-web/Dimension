@@ -14,13 +14,16 @@
 
 use super::fixed_point as fp
 use super::math
+use super::check::{Check, Failure}
 
 pub const MIN_AMP: u256 = 1
 pub const MAX_AMP: u256 = 5_000
 pub const AMP_PRECISION: u256 = 1_000
 
 /// The StableSwap invariant D, found by Newton-Raphson. Rounds down.
+#[inline(never)]
 pub fn calculate_invariant<const N: usize>(_ amp: u256, _ balances: [u256; N]) -> u256
+uses (check: mut Check)
 where N >= 2, N <= 5
 {
     let n = N as u256
@@ -68,7 +71,7 @@ where N >= 2, N <= 5
         }
         round += 1
     }
-    assert!(false, "BAL#321")
+    check.fail(Failure::InvariantDidNotConverge)
     0
 }
 
@@ -81,6 +84,7 @@ pub fn calc_out_given_in<const N: usize>(
     amount_in: u256,
     invariant: u256,
 ) -> u256
+uses (check: mut Check)
 where N >= 2, N <= 5
 {
     var b = balances
@@ -104,6 +108,7 @@ pub fn calc_in_given_out<const N: usize>(
     amount_out: u256,
     invariant: u256,
 ) -> u256
+uses (check: mut Check)
 where N >= 2, N <= 5
 {
     var b = balances
@@ -126,6 +131,7 @@ pub fn calc_bpt_out_given_exact_tokens_in<const N: usize>(
     current_invariant: u256,
     swap_fee: u256,
 ) -> u256
+uses (check: mut Check)
 where N >= 2, N <= 5
 {
     let sum = sum_of(balances)
@@ -173,6 +179,7 @@ pub fn calc_token_in_given_exact_bpt_out<const N: usize>(
     current_invariant: u256,
     swap_fee: u256,
 ) -> u256
+uses (check: mut Check)
 where N >= 2, N <= 5
 {
     let new_invariant = fp::mul_up(
@@ -206,6 +213,7 @@ pub fn calc_bpt_in_given_exact_tokens_out<const N: usize>(
     current_invariant: u256,
     swap_fee: u256,
 ) -> u256
+uses (check: mut Check)
 where N >= 2, N <= 5
 {
     let sum = sum_of(balances)
@@ -252,6 +260,7 @@ pub fn calc_token_out_given_exact_bpt_in<const N: usize>(
     current_invariant: u256,
     swap_fee: u256,
 ) -> u256
+uses (check: mut Check)
 where N >= 2, N <= 5
 {
     let new_invariant = fp::mul_up(
@@ -278,12 +287,14 @@ where N >= 2, N <= 5
 
 /// The balance of `index` that, with every other balance fixed, gives
 /// `invariant`. Rounds up.
+#[inline(never)]
 pub fn get_token_balance_given_invariant_and_all_other_balances<const N: usize>(
     _ amp: u256,
     _ balances: [u256; N],
     invariant: u256,
     index: usize,
 ) -> u256
+uses (check: mut Check)
 where N >= 2, N <= 5
 {
     let n = N as u256
@@ -328,11 +339,13 @@ where N >= 2, N <= 5
         }
         round += 1
     }
-    assert!(false, "BAL#322")
+    check.fail(Failure::BalanceDidNotConverge)
     0
 }
 
-fn sum_of<const N: usize>(_ balances: [u256; N]) -> u256 {
+fn sum_of<const N: usize>(_ balances: [u256; N]) -> u256
+uses (check: mut Check)
+{
     var sum: u256 = 0
     var i: usize = 0
     while i < N {

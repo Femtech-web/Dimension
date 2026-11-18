@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! Explores the faithful and typed Balancer V2 kernels for operations that
+//! lose value per BPT. The search is plain Fe and runs on both backends; the
+//! native program below runs the full grid and prints a JSON report.
+
+#[cfg(target = "native")]
+pub fn main() uses (out: mut std::io::Stdout) {
+    report::print(search::run())
+}

@@ -1,0 +1,225 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! The same pool operations with their amounts typed by Dimension. Each given
+//! amount enters through `admit` and each result leaves through `settle`, so
+//! the rounding follows the direction the value moves instead of being chosen
+//! per call. Against `faithful`, this changes exactly the two places Balancer V2
+//! rounded an outgoing amount down: `swap_given_out` and `exit_given_out`.
+//! Everything else, including the StableMath calls, is identical.
+
+#![arithmetic(unchecked)]
+
+use dimension::{
+    Asset,
+    Given,
+    In,
+    Out,
+    Quantity,
+    ScalingFactor,
+    Settled,
+    admit,
+    owed,
+    scaling_factor,
+    settle,
+}
+use super::Pool
+use super::faithful::upscaled
+use super::super::stable::fixed_point as fp
+use super::super::stable::stable_math as sm
+use super::super::stable::check::Check
+
+/// The pool's own token.
+pub struct Bpt {}
+
+impl Asset for Bpt {
+    const DECIMALS: u256 = 18
+}
+
+/// A typed amount names its token by type and the pool by index; the factor
+/// passed for it must be the one the pool holds at that index.
+fn check_factor<T, const N: usize>(_ pool: Pool<N>, index: usize, factor: ScalingFactor<T>)
+uses (check: mut Check)
+{
+    assert!(
+        factor.value() == pool.factors[index],
+        "factor does not match the token at this index",
+    )
+}
+
+pub fn swap_given_in<TIn, TOut, const N: usize>(
+    _ pool: mut Pool<N>,
+    i: usize,
+    j: usize,
+    amount_in: Quantity<TIn, In, Given>,
+    factor_in: ScalingFactor<TIn>,
+    factor_out: ScalingFactor<TOut>,
+) -> Quantity<TOut, Out, Settled>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    check_factor(pool, index: i, factor: factor_in)
+    check_factor(pool, index: j, factor: factor_out)
+    let raw_in = amount_in.value()
+    let after_fee = dimension::given<TIn, In>(fp::sub(raw_in, fp::mul_up(raw_in, pool.fee)))
+    let balances = upscaled(pool.balances, pool.factors)
+    let invariant = sm::calculate_invariant(pool.amp, balances)
+    let out = sm::calc_out_given_in(
+        pool.amp,
+        balances,
+        index_in: i,
+        index_out: j,
+        amount_in: admit(after_fee, factor_in).value(),
+        invariant,
+    )
+    let amount_out = settle(owed<TOut, Out>(out), factor_out)
+    pool.balances[i] = fp::add(pool.balances[i], raw_in)
+    pool.balances[j] = fp::sub(pool.balances[j], amount_out.value())
+    amount_out
+}
+
+pub fn swap_given_out<TIn, TOut, const N: usize>(
+    _ pool: mut Pool<N>,
+    i: usize,
+    j: usize,
+    amount_out: Quantity<TOut, Out, Given>,
+    factor_in: ScalingFactor<TIn>,
+    factor_out: ScalingFactor<TOut>,
+) -> Quantity<TIn, In, Settled>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    check_factor(pool, index: i, factor: factor_in)
+    check_factor(pool, index: j, factor: factor_out)
+    let balances = upscaled(pool.balances, pool.factors)
+    let invariant = sm::calculate_invariant(pool.amp, balances)
+    let scaled_in = sm::calc_in_given_out(
+        pool.amp,
+        balances,
+        index_in: i,
+        index_out: j,
+        amount_out: admit(amount_out, factor_out).value(),
+        invariant,
+    )
+    let amount_in = settle(owed<TIn, In>(scaled_in), factor_in)
+        .scaled_by(numerator: fp::ONE, denominator: fp::complement(pool.fee))
+    pool.balances[i] = fp::add(pool.balances[i], amount_in.value())
+    pool.balances[j] = fp::sub(pool.balances[j], amount_out.value())
+    amount_in
+}
+
+pub fn exit_given_out<T, const N: usize>(
+    _ pool: mut Pool<N>,
+    j: usize,
+    amount_out: Quantity<T, Out, Given>,
+    factor: ScalingFactor<T>,
+) -> Quantity<Bpt, In, Settled>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    check_factor(pool, index: j, factor)
+    var balances = upscaled(pool.balances, pool.factors)
+    let scaled_out = admit(amount_out, factor).value()
+    let pre_invariant = sm::calculate_invariant(pool.amp, balances)
+    var amounts: [u256; N] = [0; N]
+    amounts[j] = scaled_out
+    let bpt_in = sm::calc_bpt_in_given_exact_tokens_out(
+        pool.amp,
+        balances,
+        amounts_out: amounts,
+        bpt_total_supply: pool.supply,
+        current_invariant: pre_invariant,
+        swap_fee: pool.fee,
+    )
+    balances[j] = fp::sub(balances[j], scaled_out)
+    pool.supply = fp::sub(pool.supply, bpt_in)
+    pool.stored_invariant = sm::calculate_invariant(pool.amp, balances)
+    pool.balances[j] = fp::sub(pool.balances[j], amount_out.value())
+    settle(owed<Bpt, In>(bpt_in), scaling_factor<Bpt>())
+}
+
+pub fn exit_given_in<T, const N: usize>(
+    _ pool: mut Pool<N>,
+    j: usize,
+    bpt_in: Quantity<Bpt, In, Given>,
+    factor: ScalingFactor<T>,
+) -> Quantity<T, Out, Settled>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    check_factor(pool, index: j, factor)
+    var balances = upscaled(pool.balances, pool.factors)
+    let pre_invariant = sm::calculate_invariant(pool.amp, balances)
+    let scaled_out = sm::calc_token_out_given_exact_bpt_in(
+        pool.amp,
+        balances,
+        index: j,
+        bpt_amount_in: admit(bpt_in, scaling_factor<Bpt>()).value(),
+        bpt_total_supply: pool.supply,
+        current_invariant: pre_invariant,
+        swap_fee: pool.fee,
+    )
+    balances[j] = fp::sub(balances[j], scaled_out)
+    pool.supply = fp::sub(pool.supply, bpt_in.value())
+    pool.stored_invariant = sm::calculate_invariant(pool.amp, balances)
+    let amount_out = settle(owed<T, Out>(scaled_out), factor)
+    pool.balances[j] = fp::sub(pool.balances[j], amount_out.value())
+    amount_out
+}
+
+pub fn join_given_in<T, const N: usize>(
+    _ pool: mut Pool<N>,
+    i: usize,
+    amount_in: Quantity<T, In, Given>,
+    factor: ScalingFactor<T>,
+) -> Quantity<Bpt, Out, Settled>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    check_factor(pool, index: i, factor)
+    var balances = upscaled(pool.balances, pool.factors)
+    let scaled_in = admit(amount_in, factor).value()
+    let pre_invariant = sm::calculate_invariant(pool.amp, balances)
+    var amounts: [u256; N] = [0; N]
+    amounts[i] = scaled_in
+    let bpt_out = sm::calc_bpt_out_given_exact_tokens_in(
+        pool.amp,
+        balances,
+        amounts_in: amounts,
+        bpt_total_supply: pool.supply,
+        current_invariant: pre_invariant,
+        swap_fee: pool.fee,
+    )
+    balances[i] = fp::add(balances[i], scaled_in)
+    pool.supply = fp::add(pool.supply, bpt_out)
+    pool.stored_invariant = sm::calculate_invariant(pool.amp, balances)
+    pool.balances[i] = fp::add(pool.balances[i], amount_in.value())
+    settle(owed<Bpt, Out>(bpt_out), scaling_factor<Bpt>())
+}
+
+pub fn join_given_out<T, const N: usize>(
+    _ pool: mut Pool<N>,
+    i: usize,
+    bpt_out: Quantity<Bpt, Out, Given>,
+    factor: ScalingFactor<T>,
+) -> Quantity<T, In, Settled>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    check_factor(pool, index: i, factor)
+    var balances = upscaled(pool.balances, pool.factors)
+    let pre_invariant = sm::calculate_invariant(pool.amp, balances)
+    let scaled_in = sm::calc_token_in_given_exact_bpt_out(
+        pool.amp,
+        balances,
+        index: i,
+        bpt_amount_out: admit(bpt_out, scaling_factor<Bpt>()).value(),
+        bpt_total_supply: pool.supply,
+        current_invariant: pre_invariant,
+        swap_fee: pool.fee,
+    )
+    balances[i] = fp::add(balances[i], scaled_in)
+    pool.supply = fp::add(pool.supply, bpt_out.value())
+    pool.stored_invariant = sm::calculate_invariant(pool.amp, balances)
+    let amount_in = settle(owed<T, In>(scaled_in), factor)
+    pool.balances[i] = fp::add(pool.balances[i], amount_in.value())
+    amount_in
+}

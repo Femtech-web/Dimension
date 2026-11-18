@@ -19,7 +19,7 @@ impl Asset for WSTETH {
 impl Asset for USDC {
     const DECIMALS: u256 = 6
 }
-use dimension::{Admitted, Out, Quantity, owed}
+use dimension::{Admitted, Out, Quantity, ScalingFactor, WAD, owed}
 use core::num::mul_div
 
 fn calc_in_given_out(_ out: Quantity<WSTETH, Out, Admitted>) -> u256 {
@@ -27,8 +27,6 @@ fn calc_in_given_out(_ out: Quantity<WSTETH, Out, Admitted>) -> u256 {
 }
 
 // Balancer V2's _upscale: always mulDown, whichever way the amount moves.
-pub fn upscale_down(_ raw: u256, _ factor: u256) -> u256 {
-    calc_in_given_out(
-        owed<WSTETH, Out>(mul_div(raw, factor, 1_000_000_000_000_000_000)),
-    )
+pub fn upscale(_ raw: u256, _ factor: ScalingFactor<WSTETH>) -> u256 {
+    calc_in_given_out(owed<WSTETH, Out>(mul_div(raw, factor.value(), WAD)))
 }

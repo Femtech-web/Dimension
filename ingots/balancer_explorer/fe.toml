@@ -1,0 +1,8 @@
+[ingot]
+name = "balancer_explorer"
+version = "0.1.0"
+
+[dependencies]
+balancer_v2 = { path = "../balancer_v2" }
+# Token rates reach the typed kernel through a test constructor; see src/scenario.fe.
+dimension = { path = "../dimension", allow_unsafe = true }

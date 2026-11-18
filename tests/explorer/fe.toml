@@ -1,0 +1,8 @@
+[ingot]
+name = "explorer_tests"
+version = "0.1.0"
+
+[dependencies]
+# The explorer builds token rates through dimension's test constructors, so this root trusts both.
+balancer_explorer = { path = "../../ingots/balancer_explorer", allow_unsafe = true }
+dimension = { path = "../../ingots/dimension", allow_unsafe = true }

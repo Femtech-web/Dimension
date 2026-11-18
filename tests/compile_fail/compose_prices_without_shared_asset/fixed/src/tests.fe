@@ -1,0 +1,14 @@
+use dimension::Price
+use dimension::value::testing::assume_price
+use super::{CBETH, ETH, USD, compose}
+
+#[test]
+fn chains_through_eth() {
+    let a: Price<CBETH, ETH> = unsafe {
+        assume_price(1_120_000_000_000_000_000)
+    }
+    let b: Price<ETH, USD> = unsafe {
+        assume_price(2_000_000_000_000_000_000_000)
+    }
+    assert(compose(a, b).wad() == 2_240_000_000_000_000_000_000)
+}

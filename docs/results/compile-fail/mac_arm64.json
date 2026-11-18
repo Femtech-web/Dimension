@@ -25,7 +25,22 @@
       "observed": {
         "error_code": "8-0000",
         "message": "type mismatch",
-        "diagnostics_sha256": "3a89330ad91751cfca961486edc084ddcc453556f35ba01d839c8eeac0cd3e5e"
+        "diagnostics_sha256": "3a89330ad91751cfca961486edc084ddcc453556f35ba01d839c8eeac0cd3e5e",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::{Collateral, Debt, Value}",
+            "+use dimension::{Amount, Collateral, Debt, Price, Value, covers, value_of}",
+            "+use dimension::value::testing::assume_price",
+            "-pub fn net(_ c: Value<USD, Collateral>, _ d: Value<USD, Debt>) -> Value<USD, Collateral> {",
+            "-    c + d",
+            "+// The fix: compare the two sides instead of netting them.",
+            "+pub fn solvent(_ c: Value<USD, Collateral>, _ d: Value<USD, Debt>) -> bool {",
+            "+    covers(c, d)"
+          ],
+          "passed": 1,
+          "ok": true
+        }
       }
     },
     {
@@ -39,7 +54,21 @@
       "observed": {
         "error_code": "8-0000",
         "message": "type mismatch",
-        "diagnostics_sha256": "ce504ab2d86db4b754162d3ea6b48e9dfb0eea6eaf4fbe125434d29a4794ed23"
+        "diagnostics_sha256": "b4fda24080b70c71ce5088228a45aea1a7b9fd55918de6e313027a9e5ff06622",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::{Admitted, Out, Quantity, ScalingFactor, WAD, owed}",
+            "-use core::num::mul_div",
+            "+use dimension::{Admitted, Out, Quantity, ScalingFactor, admit, given}",
+            "-// Balancer V2's _upscale: always mulDown, whichever way the amount moves.",
+            "+// The fix: admit the amount leaving the pool; its direction picks the rounding.",
+            "-    calc_in_given_out(owed<WSTETH, Out>(mul_div(raw, factor.value(), WAD)))",
+            "+    calc_in_given_out(admit(given<WSTETH, Out>(raw), factor))"
+          ],
+          "passed": 1,
+          "ok": true
+        }
       }
     },
     {
@@ -52,7 +81,16 @@
       "observed": {
         "error_code": "8-0000",
         "message": "type mismatch",
-        "diagnostics_sha256": "8f51ffb3255639ebc8ec97f1f01e114281da6688c5de538f7e9c416239a3d1f2"
+        "diagnostics_sha256": "8f51ffb3255639ebc8ec97f1f01e114281da6688c5de538f7e9c416239a3d1f2",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-pub fn compose(_ a: Price<CBETH, ETH>, _ b: Price<USD, ETH>) -> Price<CBETH, USD> {",
+            "+pub fn compose(_ a: Price<CBETH, ETH>, _ b: Price<ETH, USD>) -> Price<CBETH, USD> {"
+          ],
+          "passed": 1,
+          "ok": true
+        }
       }
     },
     {
@@ -65,7 +103,24 @@
       "observed": {
         "error_code": "6-0003",
         "message": "trait bound is not satisfied",
-        "diagnostics_sha256": "18d3986ae4dcdbef0a1f35f565e6bb0bcbcd8a5c08aee06d9d15854d0de9fecd"
+        "diagnostics_sha256": "18d3986ae4dcdbef0a1f35f565e6bb0bcbcd8a5c08aee06d9d15854d0de9fecd",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::{Ceil, Flow}",
+            "-pub struct Sideways {}",
+            "-impl Flow for Sideways {",
+            "-    type Admission = Ceil",
+            "-    type Obligation = Ceil",
+            "+use dimension::{Flow, In, Out}",
+            "+",
+            "+// The fix: say which way the value moves; In and Out carry the rounding.",
+            "+pub fn both_flows<F: Flow>() -> bool {",
+            "+    true"
+          ],
+          "passed": 1,
+          "ok": true
+        }
       }
     },
     {
@@ -78,7 +133,25 @@
       "observed": {
         "error_code": "6-0003",
         "message": "trait bound is not satisfied",
-        "diagnostics_sha256": "a8962a65b72d8a87972c1bcf5d487a3a9dfb07c93994621a0c2cf96a75688779"
+        "diagnostics_sha256": "a8962a65b72d8a87972c1bcf5d487a3a9dfb07c93994621a0c2cf96a75688779",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::Rounding",
+            "-pub struct Nearest {}",
+            "-impl Rounding for Nearest {",
+            "-    fn mul_div(_ a: u256, _ b: u256, _ d: u256) -> u256 {",
+            "-        (a * b + d / 2) / d",
+            "-    }",
+            "+use dimension::{Ceil, Floor, Rounding}",
+            "+",
+            "+// The fix: use the two directions Dimension defines.",
+            "+pub fn halves(_ x: u256) -> (u256, u256) {",
+            "+    (Floor::mul_div(x, 1, 2), Ceil::mul_div(x, 1, 2))"
+          ],
+          "passed": 1,
+          "ok": true
+        }
       }
     },
     {
@@ -91,7 +164,18 @@
       "observed": {
         "error_code": "2-0003",
         "message": "`v` is not visible",
-        "diagnostics_sha256": "89f6d9ca3806bd0659ec9eb77f1d790a8e4f7844883173c1c2da81e62c247b51"
+        "diagnostics_sha256": "89f6d9ca3806bd0659ec9eb77f1d790a8e4f7844883173c1c2da81e62c247b51",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::{Admitted, Out, Quantity}",
+            "+use dimension::{Admitted, Out, Quantity, admit, given, scaling_factor}",
+            "-    Quantity { v: 17 }",
+            "+    admit(given<WSTETH, Out>(17), scaling_factor<WSTETH>())"
+          ],
+          "passed": 1,
+          "ok": true
+        }
       }
     },
     {
@@ -104,7 +188,22 @@
       "observed": {
         "error_code": "2-0003",
         "message": "`wad` is not visible",
-        "diagnostics_sha256": "a1ed4215c77fd2195a51c1b3cc008c7d3b800651c79a6aba8878111ce1097b0d"
+        "diagnostics_sha256": "923a428fe767505a3f0303f6d4f79be60095f803ec57c323d83224ebba3f1d89",
+        "twin": {
+          "mode": "check",
+          "fix": [
+            "+use std::evm::{Call, Ctx}",
+            "+use dimension::value::oracle::{Feed, read}",
+            "-pub fn forged() -> Price<CBETH, USD> {",
+            "-    Price { wad: 1_120_000_000_000_000_000 }",
+            "+// The fix: a price comes from a declared feed, through the verified boundary.",
+            "+pub fn verified(_ f: Feed<CBETH, USD>) -> Price<CBETH, USD>",
+            "+uses (call: mut Call, ctx: Ctx)",
+            "+{",
+            "+    read(f)"
+          ],
+          "ok": true
+        }
       }
     },
     {
@@ -117,7 +216,16 @@
       "observed": {
         "error_code": "8-0093",
         "message": "const requirement is not satisfied",
-        "diagnostics_sha256": "46ca26247ce80d03a7c6fbd1846fee5badb1957985e49f5d73f8d7eda7deac58"
+        "diagnostics_sha256": "46ca26247ce80d03a7c6fbd1846fee5badb1957985e49f5d73f8d7eda7deac58",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-    const LIQUIDATION_BONUS_BPS: u256 = 1_000",
+            "+    const LIQUIDATION_BONUS_BPS: u256 = 500"
+          ],
+          "passed": 1,
+          "ok": true
+        }
       }
     },
     {
@@ -130,7 +238,16 @@
       "observed": {
         "error_code": "8-0093",
         "message": "const requirement is not satisfied",
-        "diagnostics_sha256": "e2f552792d061a3c84adfc24a51d01d595b8dc85c82a32815d998f08e4162eed"
+        "diagnostics_sha256": "e2f552792d061a3c84adfc24a51d01d595b8dc85c82a32815d998f08e4162eed",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-    const LTV_BPS: u256 = 8_500",
+            "+    const LTV_BPS: u256 = 8_000"
+          ],
+          "passed": 1,
+          "ok": true
+        }
       }
     },
     {
@@ -144,7 +261,19 @@
       "observed": {
         "error_code": "8-0000",
         "message": "type mismatch",
-        "diagnostics_sha256": "61d8ff3a0739b12984fe601d825e5cf043a36886a8cbd6ac6a2a7c2d37516cec"
+        "diagnostics_sha256": "bec5bcf9efded37e355c63f135efaa49dcedb4a571a54618675cac809f9e6af4",
+        "twin": {
+          "mode": "check",
+          "fix": [
+            "-pub struct Market<T> { pub usd_feed: Feed<T, USD> }",
+            "+pub struct Market<T> { pub leg: Feed<T, ETH>, pub eth_usd: Feed<ETH, USD> }",
+            "-// MIP-X43 activated the cbETH/ETH exchange-rate feed for the cbETH market.",
+            "-const CBETH_MARKET: Market<CBETH> = Market { usd_feed: CBETH_ETH }",
+            "+// The fix: price cbETH in USD through both legs of the composite.",
+            "+const CBETH_MARKET: Market<CBETH> = Market { leg: CBETH_ETH, eth_usd: ETH_USD }"
+          ],
+          "ok": true
+        }
       }
     },
     {
@@ -157,7 +286,19 @@
       "observed": {
         "error_code": "8-0036",
         "message": "missing effect `Call` required by `read`",
-        "diagnostics_sha256": "b2e34593a8b43e533e7282d5fad58fcb5b6cb910b240dbe9f490146630f5f8a2"
+        "diagnostics_sha256": "b2e34593a8b43e533e7282d5fad58fcb5b6cb910b240dbe9f490146630f5f8a2",
+        "twin": {
+          "mode": "check",
+          "fix": [
+            "+use std::evm::{Call, Ctx}",
+            "-pub fn price(_ f: Feed<ETH, USD>) -> Price<ETH, USD> {",
+            "+// The fix: the signature declares the call and clock capabilities it uses.",
+            "+pub fn price(_ f: Feed<ETH, USD>) -> Price<ETH, USD>",
+            "+uses (call: mut Call, ctx: Ctx)",
+            "+{"
+          ],
+          "ok": true
+        }
       }
     },
     {
@@ -170,7 +311,16 @@
       "observed": {
         "error_code": "8-0000",
         "message": "type mismatch",
-        "diagnostics_sha256": "00cfa56f7cefa14c3e7fbd7400a069e6bb62e93bc01e9ef28e0ea3a739e27e3d"
+        "diagnostics_sha256": "00cfa56f7cefa14c3e7fbd7400a069e6bb62e93bc01e9ef28e0ea3a739e27e3d",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-    settle(owed<WSTETH, Out>(internal), factor)",
+            "+    settle(owed<WSTETH, In>(internal), factor)"
+          ],
+          "passed": 1,
+          "ok": true
+        }
       }
     },
     {
@@ -183,7 +333,16 @@
       "observed": {
         "error_code": "8-0093",
         "message": "const requirement is not satisfied",
-        "diagnostics_sha256": "90339119724d39ffa1c4c8003dfa25f700f3bea6af44d8f1f222afe32a43fb61"
+        "diagnostics_sha256": "a66b967183f1323d50907eab26816c4fbf7d2607cbc6ee919d4834c140596f9d",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-    const DECIMALS: u256 = 24",
+            "+    const DECIMALS: u256 = 18"
+          ],
+          "passed": 1,
+          "ok": true
+        }
       }
     },
     {
@@ -196,7 +355,15 @@
       "observed": {
         "error_code": "16-0015",
         "message": "call reaches unsafe code in `dimension`, which is not allowed to use it",
-        "diagnostics_sha256": "8480f17aa5bad6155c65daf46dfe8db35a73ac67b3bf2cd9f14869dd0adf9337"
+        "diagnostics_sha256": "8480f17aa5bad6155c65daf46dfe8db35a73ac67b3bf2cd9f14869dd0adf9337",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "+fe.toml: dimension = { ..., allow_unsafe = true }"
+          ],
+          "passed": 1,
+          "ok": true
+        }
       }
     },
     {
@@ -209,7 +376,16 @@
       "observed": {
         "error_code": "8-0000",
         "message": "type mismatch",
-        "diagnostics_sha256": "4c3afa7574878e29bd8a40de926d4f7614ab73369cd4c4e607a17805b352f82e"
+        "diagnostics_sha256": "4c3afa7574878e29bd8a40de926d4f7614ab73369cd4c4e607a17805b352f82e",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-pub fn value(_ a: Amount<USDC>, _ p: Price<CBETH, USD>) -> Value<USD, Collateral> {",
+            "+pub fn value(_ a: Amount<USDC>, _ p: Price<USDC, USD>) -> Value<USD, Collateral> {"
+          ],
+          "passed": 1,
+          "ok": true
+        }
       }
     }
   ]

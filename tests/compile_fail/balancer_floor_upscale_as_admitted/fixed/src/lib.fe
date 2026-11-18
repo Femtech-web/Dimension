@@ -1,0 +1,31 @@
+use dimension::Asset
+pub struct USD {}
+pub struct ETH {}
+pub struct CBETH {}
+pub struct WSTETH {}
+pub struct USDC {}
+impl Asset for USD {
+    const DECIMALS: u256 = 8
+}
+impl Asset for ETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for CBETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for WSTETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for USDC {
+    const DECIMALS: u256 = 6
+}
+use dimension::{Admitted, Out, Quantity, ScalingFactor, admit, given}
+
+fn calc_in_given_out(_ out: Quantity<WSTETH, Out, Admitted>) -> u256 {
+    out.value()
+}
+
+// The fix: admit the amount leaving the pool; its direction picks the rounding.
+pub fn upscale(_ raw: u256, _ factor: ScalingFactor<WSTETH>) -> u256 {
+    calc_in_given_out(admit(given<WSTETH, Out>(raw), factor))
+}

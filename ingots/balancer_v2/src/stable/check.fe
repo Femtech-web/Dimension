@@ -1,0 +1,60 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! How a failed Balancer check ends an operation, as an effect.
+//!
+//! The arithmetic names each check it fails; whoever provides `Check` decides
+//! what failing means. On the EVM, `Revert` reverts with Balancer's own `BAL#`
+//! reason, which is what the differential test compares. The native explorer
+//! provides `Record`, which notes the failure and lets the operation unwind, so
+//! one reverting input does not end a search over millions.
+
+pub enum Failure {
+    AddOverflow,
+    SubOverflow,
+    MulOverflow,
+    ZeroDivision,
+    DivInternal,
+    InvariantDidNotConverge,
+    BalanceDidNotConverge,
+}
+
+impl Copy for Failure {}
+
+pub trait Check {
+    /// Called once a check has failed. A caller that returns from this must
+    /// treat the operation's results as meaningless.
+    fn fail(mut self, _ failure: Failure)
+}
+
+/// Balancer V2's behaviour: revert with `Error("BAL#xyz")`.
+pub struct Revert {}
+
+impl Check for Revert {
+    // One copy of the revert path, shared by every check site.
+    #[inline(never)]
+    fn fail(mut self, _ failure: Failure) {
+        match failure {
+            Failure::AddOverflow => assert!(false, "BAL#000"),
+            Failure::SubOverflow => assert!(false, "BAL#001"),
+            Failure::MulOverflow => assert!(false, "BAL#003"),
+            Failure::ZeroDivision => assert!(false, "BAL#004"),
+            Failure::DivInternal => assert!(false, "BAL#005"),
+            Failure::InvariantDidNotConverge => assert!(false, "BAL#321"),
+            Failure::BalanceDidNotConverge => assert!(false, "BAL#322"),
+        }
+    }
+}
+
+/// Notes that a check failed, for callers that explore many inputs.
+pub struct Record { pub failed: bool }
+
+impl Record {
+    pub fn new() -> Self {
+        Record { failed: false }
+    }
+}
+
+impl Check for Record {
+    fn fail(mut self, _ failure: Failure) {
+        self.failed = true
+    }
+}
