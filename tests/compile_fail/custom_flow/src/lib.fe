@@ -1,0 +1,6 @@
+use dimension::{Ceil, Flow}
+pub struct Sideways {}
+impl Flow for Sideways {
+    type Admission = Ceil
+    type Obligation = Ceil
+}

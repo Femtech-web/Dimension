@@ -1,0 +1,11 @@
+use std::abi::sol
+use probe_core::{Price, CBETH, USD}
+msg M {
+    #[selector = sol("set(uint256)")]
+    Set { p: Price<CBETH, USD> } -> u256,
+}
+pub contract C {
+    recv M {
+        Set { p } -> u256 { p.raw() }
+    }
+}

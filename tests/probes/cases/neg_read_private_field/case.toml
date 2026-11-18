@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "2-0003"
+layer = "compile-time"
+mechanism = "Reading a trusted value's raw representation outside its defining ingot"

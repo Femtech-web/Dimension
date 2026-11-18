@@ -1,0 +1,7 @@
+[ingot]
+name = "dimension_tests"
+version = "0.1.0"
+
+[dependencies]
+# Tests build values through dimension's unsafe test constructors, so this root trusts them.
+dimension = { path = "../../ingots/dimension", allow_unsafe = true }

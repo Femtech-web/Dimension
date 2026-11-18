@@ -1,0 +1,5 @@
+kind = "compile_fail"
+expect_code = "8-0000"
+layer = "compile-time"
+mechanism = "A market whose collateral must be priced in USD is configured with the cbETH/ETH component feed"
+incident = "Moonwell MIP-X43, 2026-02-15, about 1.78M USD bad debt"

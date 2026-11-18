@@ -1,0 +1,5 @@
+use probe_core::{Price, CBETH, USD, price_unchecked}
+pub fn f() -> u256 {
+    let p: Price<CBETH, USD> = price_unchecked(5)
+    p.raw
+}

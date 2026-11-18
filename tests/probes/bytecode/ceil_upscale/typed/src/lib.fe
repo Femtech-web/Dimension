@@ -1,0 +1,9 @@
+use std::abi::sol
+use probe_core::round::{upscale, in_given_out}
+msg M {
+    #[selector = sol("quote(uint256,uint256)")]
+    Quote { out: u256, rate: u256 } -> u256,
+}
+pub contract P {
+    recv M { Quote { out, rate } -> u256 { in_given_out(upscale(out, rate)) } }
+}

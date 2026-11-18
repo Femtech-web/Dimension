@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "8-0093"
+layer = "compile-time"
+mechanism = "Scaling a 24-decimal asset into 18-decimal internal units, which cannot be done without losing value"

@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "8-0000"
+layer = "compile-time"
+mechanism = "A cbETH/ETH price passed where a cbETH/USD price is required (the Moonwell MIP-X43 shape)"

@@ -1,0 +1,216 @@
+{
+  "schema": "dimension.cases/v1",
+  "suite": "compile-fail",
+  "fe": {
+    "version": "26.6.0",
+    "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110",
+    "binary_sha256": "de045cf2ccd5a4052d92cde7745ff052747235b9c98e745a0995a8ad40a0c78e"
+  },
+  "platform": "mac_arm64",
+  "summary": {
+    "cases": 15,
+    "ok": 15,
+    "by_kind": {
+      "compile_fail": 15
+    }
+  },
+  "cases": [
+    {
+      "id": "compile_fail/add_collateral_to_debt",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Adding a debt value to a collateral value, which hides the shortfall a solvency check must see",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "3a89330ad91751cfca961486edc084ddcc453556f35ba01d839c8eeac0cd3e5e"
+      }
+    },
+    {
+      "id": "compile_fail/balancer_floor_upscale_as_admitted",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "An amount leaving the pool is scaled with floor rounding and handed to the math as if it had been admitted",
+      "incident": "Balancer V2, 2025-11-03, about 95M to 128M USD",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "ce504ab2d86db4b754162d3ea6b48e9dfb0eea6eaf4fbe125434d29a4794ed23"
+      }
+    },
+    {
+      "id": "compile_fail/compose_prices_without_shared_asset",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Multiplying cbETH/ETH by USD/ETH, which is not a cbETH/USD price",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "8f51ffb3255639ebc8ec97f1f01e114281da6688c5de538f7e9c416239a3d1f2"
+      }
+    },
+    {
+      "id": "compile_fail/custom_flow",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Defining a new flow with its own choice of admission and settlement rounding",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "6-0003",
+        "message": "trait bound is not satisfied",
+        "diagnostics_sha256": "18d3986ae4dcdbef0a1f35f565e6bb0bcbcd8a5c08aee06d9d15854d0de9fecd"
+      }
+    },
+    {
+      "id": "compile_fail/custom_rounding_direction",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Adding a third rounding direction that could round in the caller's favour",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "6-0003",
+        "message": "trait bound is not satisfied",
+        "diagnostics_sha256": "a8962a65b72d8a87972c1bcf5d487a3a9dfb07c93994621a0c2cf96a75688779"
+      }
+    },
+    {
+      "id": "compile_fail/forge_admitted_quantity",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Building an admitted quantity directly, skipping the rounding admission applies",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "2-0003",
+        "message": "`v` is not visible",
+        "diagnostics_sha256": "89f6d9ca3806bd0659ec9eb77f1d790a8e4f7844883173c1c2da81e62c247b51"
+      }
+    },
+    {
+      "id": "compile_fail/forge_price",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Building a trusted price from a raw number outside the verified boundary",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "2-0003",
+        "message": "`wad` is not visible",
+        "diagnostics_sha256": "a1ed4215c77fd2195a51c1b3cc008c7d3b800651c79a6aba8878111ce1097b0d"
+      }
+    },
+    {
+      "id": "compile_fail/liquidation_bonus_creates_bad_debt",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A liquidation bonus so large that liquidating at the threshold needs more collateral than the position holds",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0093",
+        "message": "const requirement is not satisfied",
+        "diagnostics_sha256": "46ca26247ce80d03a7c6fbd1846fee5badb1957985e49f5d73f8d7eda7deac58"
+      }
+    },
+    {
+      "id": "compile_fail/ltv_at_liquidation_threshold",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A loan-to-value equal to the liquidation threshold, so a new loan can be liquidated at once",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0093",
+        "message": "const requirement is not satisfied",
+        "diagnostics_sha256": "e2f552792d061a3c84adfc24a51d01d595b8dc85c82a32815d998f08e4162eed"
+      }
+    },
+    {
+      "id": "compile_fail/moonwell_component_feed_in_usd_market",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A market whose collateral must be priced in USD is configured with the cbETH/ETH component feed",
+      "incident": "Moonwell MIP-X43, 2026-02-15, about 1.78M USD bad debt",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "61d8ff3a0739b12984fe601d825e5cf043a36886a8cbd6ac6a2a7c2d37516cec"
+      }
+    },
+    {
+      "id": "compile_fail/oracle_read_without_effects",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Reading a price feed from a function whose signature does not declare the call and clock capabilities it uses",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0036",
+        "message": "missing effect `Call` required by `read`",
+        "diagnostics_sha256": "b2e34593a8b43e533e7282d5fad58fcb5b6cb910b240dbe9f490146630f5f8a2"
+      }
+    },
+    {
+      "id": "compile_fail/payout_settled_as_charge",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A payout rounded down is used where the amount charged must be rounded up",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "00cfa56f7cefa14c3e7fbd7400a069e6bb62e93bc01e9ef28e0ea3a739e27e3d"
+      }
+    },
+    {
+      "id": "compile_fail/scale_asset_with_too_many_decimals",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Scaling a 24-decimal asset into 18-decimal internal units, which cannot be done without losing value",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0093",
+        "message": "const requirement is not satisfied",
+        "diagnostics_sha256": "90339119724d39ffa1c4c8003dfa25f700f3bea6af44d8f1f222afe32a43fb61"
+      }
+    },
+    {
+      "id": "compile_fail/test_constructor_from_production_root",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A production root reaching Dimension's unsafe test constructors without trusting them in fe.toml",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "16-0015",
+        "message": "call reaches unsafe code in `dimension`, which is not allowed to use it",
+        "diagnostics_sha256": "8480f17aa5bad6155c65daf46dfe8db35a73ac67b3bf2cd9f14869dd0adf9337"
+      }
+    },
+    {
+      "id": "compile_fail/value_with_another_assets_price",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Valuing a USDC balance with the cbETH price",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "4c3afa7574878e29bd8a40de926d4f7614ab73369cd4c4e607a17805b352f82e"
+      }
+    }
+  ]
+}

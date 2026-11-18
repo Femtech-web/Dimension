@@ -1,0 +1,8 @@
+PASS composes_the_price_moonwell_needed
+PASS reads_a_fresh_answer_into_internal_units
+PASS rejects_a_feed_reporting_other_decimals
+PASS rejects_a_non_positive_answer
+PASS rejects_an_answer_from_the_future
+PASS rejects_an_answer_older_than_allowed
+PASS rejects_an_answer_outside_the_band
+test result: ok. 7 passed; 0 failed

@@ -1,0 +1,39 @@
+//! Dimension: financial correctness for Fe.
+//!
+//! Amounts, prices and values carry their asset, direction and rounding in
+//! their types; external numbers become trusted values only at a verified
+//! boundary; and risk parameters are checked when the code compiles.
+
+pub use self::asset::Asset
+pub use self::flow::{
+    Admitted,
+    Collateral,
+    Debt,
+    Flow,
+    Given,
+    In,
+    Out,
+    Owed,
+    Settled,
+    Stage,
+    Valuation,
+}
+pub use self::policy::{RiskPolicy, borrow_capacity, is_healthy}
+pub use self::rounding::{Ceil, Floor, Rounding}
+pub use self::value::{
+    Amount,
+    Price,
+    Quantity,
+    Rate,
+    ScalingFactor,
+    Value,
+    WAD,
+    admit,
+    covers,
+    given,
+    haircut,
+    owed,
+    scaling_factor,
+    settle,
+    value_of,
+}

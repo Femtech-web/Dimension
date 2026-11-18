@@ -1,0 +1,42 @@
+//! Risk parameters checked by the compiler.
+
+use super::flow::{Collateral, Debt}
+use super::value::{Value, covers, haircut}
+
+/// A lending market's risk parameters, in basis points. Every function taking a
+/// `RiskPolicy` states the conditions that make the parameters coherent, so an
+/// incoherent policy fails to compile wherever it is used.
+pub trait RiskPolicy {
+    /// Share of collateral value that may be borrowed.
+    const LTV_BPS: u256
+    /// Share of collateral value below which a position may be liquidated.
+    const LIQUIDATION_THRESHOLD_BPS: u256
+    /// Extra collateral a liquidator receives, on top of the debt repaid.
+    const LIQUIDATION_BONUS_BPS: u256
+}
+
+/// How much may be borrowed against `collateral`.
+pub fn borrow_capacity<Q, P: RiskPolicy>(_ collateral: Value<Q, Collateral>) -> Value<Q, Collateral>
+where P::LTV_BPS < P::LIQUIDATION_THRESHOLD_BPS, P::LIQUIDATION_THRESHOLD_BPS <= 10_000
+{
+    haircut(collateral, bps: P::LTV_BPS)
+}
+
+/// Whether a position with `collateral` and `debt` is safe from liquidation.
+///
+/// The bonus condition keeps liquidation from creating bad debt: at the
+/// threshold, seizing debt plus bonus must not need more collateral than the
+/// position holds.
+pub fn is_healthy<Q, P: RiskPolicy>(
+    _ collateral: Value<Q, Collateral>,
+    _ debt: Value<Q, Debt>,
+) -> bool
+where
+    P::LTV_BPS < P::LIQUIDATION_THRESHOLD_BPS,
+    P::LIQUIDATION_THRESHOLD_BPS * (10_000 + P::LIQUIDATION_BONUS_BPS) <= 100_000_000
+{
+    covers(
+        haircut(collateral, bps: P::LIQUIDATION_THRESHOLD_BPS),
+        debt,
+    )
+}

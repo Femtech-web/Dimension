@@ -1,0 +1,43 @@
+use dimension::{
+    Amount,
+    Collateral,
+    Debt,
+    Price,
+    RiskPolicy,
+    Value,
+    WAD,
+    borrow_capacity,
+    is_healthy,
+    value_of,
+}
+use dimension::value::testing::assume_price
+use super::assets::{ETH, USD}
+
+pub struct Conservative {}
+
+impl RiskPolicy for Conservative {
+    const LTV_BPS: u256 = 8_000
+    const LIQUIDATION_THRESHOLD_BPS: u256 = 8_500
+    const LIQUIDATION_BONUS_BPS: u256 = 500
+}
+
+#[test]
+fn borrow_capacity_applies_ltv() {
+    let p: Price<ETH, USD> = unsafe {
+        assume_price(2_000 * WAD)
+    }
+    let c: Value<USD, Collateral> = value_of(Amount<ETH>::new(WAD), p)
+    assert(borrow_capacity<USD, Conservative>(c).wad() == 1_600 * WAD)
+}
+
+#[test]
+fn health_uses_the_liquidation_threshold() {
+    let p: Price<ETH, USD> = unsafe {
+        assume_price(2_000 * WAD)
+    }
+    let c: Value<USD, Collateral> = value_of(Amount<ETH>::new(WAD), p)
+    let safe: Value<USD, Debt> = value_of(Amount<ETH>::new(WAD * 85 / 100), p)
+    let unsafe_debt: Value<USD, Debt> = value_of(Amount<ETH>::new(WAD * 85 / 100 + 1), p)
+    assert(is_healthy<USD, Conservative>(c, safe))
+    assert(!is_healthy<USD, Conservative>(c, unsafe_debt))
+}

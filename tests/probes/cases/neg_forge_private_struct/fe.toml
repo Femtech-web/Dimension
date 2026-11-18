@@ -1,0 +1,6 @@
+[ingot]
+name = "neg_forge_private_struct"
+version = "0.1.0"
+
+[dependencies]
+probe_core = { path = "../../core" }

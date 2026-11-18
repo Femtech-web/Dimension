@@ -1,0 +1,6 @@
+[ingot]
+name = "liquidation_bonus_creates_bad_debt"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../../ingots/dimension" }

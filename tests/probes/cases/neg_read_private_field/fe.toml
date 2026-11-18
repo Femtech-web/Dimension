@@ -1,0 +1,6 @@
+[ingot]
+name = "neg_read_private_field"
+version = "0.1.0"
+
+[dependencies]
+probe_core = { path = "../../core" }

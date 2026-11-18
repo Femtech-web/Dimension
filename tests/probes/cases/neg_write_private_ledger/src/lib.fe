@@ -1,0 +1,4 @@
+use probe_core::Ledger
+pub fn f(_ l: mut Ledger) {
+    l.a = 1_000_000
+}

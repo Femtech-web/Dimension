@@ -1,0 +1,5 @@
+error[8-0000]: type mismatch
+  ┌─ src/lib.fe:6:23
+  │
+6 │     collateral_usd(a, feed).raw()
+  │                       ^^^^ expected `Price<CBETH, USD>`, but `Price<CBETH, ETH>` is given

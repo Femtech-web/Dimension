@@ -1,0 +1,12 @@
+error[16-0015]: call reaches unsafe code in `protocol`, which is not allowed to use it
+  ┌─ src/lib.fe:2:22
+  │
+2 │ pub fn f() -> u256 { forge() }
+  │                      ^^^^^^^ this call reaches unsafe code in `protocol`
+  │
+  ┌─ src/lib.fe:5:32
+  │
+5 │     let p: Price<CBETH, USD> = unsafe { *q }
+  │                                ------------- unsafe code in `protocol`
+  │
+  = to trust `protocol`, add `allow_unsafe = true` to its entry under `[dependencies]` in fe.toml

@@ -1,0 +1,10 @@
+error[8-0093]: const requirement is not satisfied
+   ┌─ src/lib.fe:32:5
+   │
+32 │     borrow_capacity<USD, Reckless>(c)
+   │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ condition evaluated to `false`
+   │
+   ┌─ src/policy.fe:20:7
+   │
+20 │ where P::LTV_BPS < P::LIQUIDATION_THRESHOLD_BPS, P::LIQUIDATION_THRESHOLD_BPS <= 10_000
+   │       ----------------------------------------- required by this predicate

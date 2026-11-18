@@ -1,0 +1,7 @@
+use probe_core::{Price, Amount, Down, CBETH, ETH, USD, collateral_usd, price_unchecked, amount_unchecked}
+// Moonwell-shaped: a cbETH/ETH price wired where a cbETH/USD price is required
+pub fn f() -> u256 {
+    let feed: Price<CBETH, ETH> = price_unchecked(1_120_000_000_000_000_000)
+    let a: Amount<CBETH, Down> = amount_unchecked(1)
+    collateral_usd(a, feed).raw()
+}

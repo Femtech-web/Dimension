@@ -1,0 +1,16 @@
+use std::abi::sol
+use probe_core::{Price, Amount, Down, CBETH, ETH, USD, collateral_usd, price_unchecked, amount_unchecked}
+msg M {
+    #[selector = sol("value(uint256,uint256,uint256)")]
+    Value { amount: u256, cbeth_eth: u256, eth_usd: u256 } -> u256,
+}
+pub contract V {
+    recv M {
+        Value { amount, cbeth_eth, eth_usd } -> u256 {
+            let a: Price<CBETH, ETH> = price_unchecked(cbeth_eth)
+            let b: Price<ETH, USD> = price_unchecked(eth_usd)
+            let amt: Amount<CBETH, Down> = amount_unchecked(amount)
+            collateral_usd(amt, a * b).raw()
+        }
+    }
+}

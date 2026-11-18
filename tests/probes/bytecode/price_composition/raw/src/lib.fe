@@ -1,0 +1,14 @@
+use std::abi::sol
+use core::num::mul_div
+msg M {
+    #[selector = sol("value(uint256,uint256,uint256)")]
+    Value { amount: u256, cbeth_eth: u256, eth_usd: u256 } -> u256,
+}
+pub contract V {
+    recv M {
+        Value { amount, cbeth_eth, eth_usd } -> u256 {
+            let p = mul_div(cbeth_eth, eth_usd, 1_000_000_000_000_000_000)
+            mul_div(amount, p, 1_000_000_000_000_000_000)
+        }
+    }
+}

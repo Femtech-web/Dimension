@@ -1,0 +1,6 @@
+[ingot]
+name = "neg_wrong_rounding_direction"
+version = "0.1.0"
+
+[dependencies]
+probe_core = { path = "../../core" }

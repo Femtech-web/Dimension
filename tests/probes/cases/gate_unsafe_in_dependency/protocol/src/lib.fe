@@ -1,0 +1,7 @@
+use probe_core::{Price, CBETH, USD}
+pub fn forge() -> u256 {
+    let buf = MemArray<u256>::new_zeroed(1)
+    let q: *Price<CBETH, USD> = buf.ptr() as *Price<CBETH, USD>
+    let p: Price<CBETH, USD> = unsafe { *q }
+    p.raw()
+}

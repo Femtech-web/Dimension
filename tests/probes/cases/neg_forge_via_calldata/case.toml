@@ -1,0 +1,5 @@
+kind = "compile_fail"
+expect_code = "9-0006"
+layer = "compile-time"
+mechanism = "Decoding a trusted Price straight from calldata without a verification boundary"
+consequential_codes = ["9-0008", "6-0003"]

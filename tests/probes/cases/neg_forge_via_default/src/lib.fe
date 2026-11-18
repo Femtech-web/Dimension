@@ -1,0 +1,6 @@
+use probe_core::{Price, CBETH, USD, price_unchecked}
+pub fn f() -> u256 {
+    var p: Price<CBETH, USD> = price_unchecked(1)
+    let q = core::mem::take(mut p)
+    q.raw()
+}

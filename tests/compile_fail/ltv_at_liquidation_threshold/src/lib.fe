@@ -1,0 +1,33 @@
+use dimension::Asset
+pub struct USD {}
+pub struct ETH {}
+pub struct CBETH {}
+pub struct WSTETH {}
+pub struct USDC {}
+impl Asset for USD {
+    const DECIMALS: u256 = 8
+}
+impl Asset for ETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for CBETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for WSTETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for USDC {
+    const DECIMALS: u256 = 6
+}
+use dimension::{Collateral, RiskPolicy, Value, borrow_capacity}
+
+pub struct Reckless {}
+impl RiskPolicy for Reckless {
+    const LTV_BPS: u256 = 8_500
+    const LIQUIDATION_THRESHOLD_BPS: u256 = 8_500
+    const LIQUIDATION_BONUS_BPS: u256 = 500
+}
+
+pub fn capacity(_ c: Value<USD, Collateral>) -> Value<USD, Collateral> {
+    borrow_capacity<USD, Reckless>(c)
+}

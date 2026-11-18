@@ -1,0 +1,4 @@
+kind = "test"
+backends = ["sonatina", "native"]
+layer = "compile-time and runtime"
+mechanism = "Price composition, typed rounding, policy predicates, the Balancer upscale edge search, and EVM-only feed boundary checks"

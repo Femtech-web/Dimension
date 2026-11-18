@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "6-0003"
+layer = "compile-time"
+mechanism = "An outside ingot posing as an approved price source by implementing a sealed trait"

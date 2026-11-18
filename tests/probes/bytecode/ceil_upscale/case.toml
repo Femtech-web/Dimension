@@ -1,0 +1,5 @@
+kind = "bytecode"
+contract = "P"
+levels = ["0", "1", "2", "s"]
+identical_at = ["1", "2", "s"]
+question = "Does selecting the rounding direction through a trait type parameter cost anything over calling mul_div_ceil directly?"

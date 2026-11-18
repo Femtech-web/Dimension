@@ -1,0 +1,10 @@
+error[8-0093]: const requirement is not satisfied
+    ┌─ src/lib.fe:8:5
+    │
+  8 │     scaling_factor<WIDE>()
+    │     ^^^^^^^^^^^^^^^^^^^^^^ condition evaluated to `false`
+    │
+    ┌─ src/value.fe:108:61
+    │
+108 │ pub fn scaling_factor<T: Asset>() -> ScalingFactor<T> where T::DECIMALS <= 18 {
+    │                                                             ----------------- required by this predicate

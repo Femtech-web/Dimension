@@ -1,0 +1,5 @@
+error[8-0000]: type mismatch
+   ┌─ src/lib.fe:32:9
+   │
+32 │         owed<WSTETH, Out>(mul_div(raw, factor, 1_000_000_000_000_000_000)),
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Quantity<WSTETH, Out, Admitted>`, but `Quantity<WSTETH, Out, Owed>` is given

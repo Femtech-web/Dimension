@@ -1,0 +1,3 @@
+kind = "compile_pass"
+layer = "documented-limit"
+mechanism = "A root ingot can forge any trusted value with a pointer cast and unsafe; Dimension relies on protocol code living in dependency ingots without allow_unsafe"

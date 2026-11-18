@@ -1,0 +1,13 @@
+error[8-0000]: type mismatch
+  ┌─ src/lib.fe:5:17
+  │
+5 │     let c = a * b
+  │                 ^ expected `Price<ETH, _>`, but `Price<USD, ETH>` is given
+error[8-0031]: type annotation is needed
+  ┌─ src/lib.fe:5:9
+  │
+5 │     let c = a * b
+  │         ^
+  │         │
+  │         type annotation is needed
+  │         consider giving `: Price<CBETH, _>` here

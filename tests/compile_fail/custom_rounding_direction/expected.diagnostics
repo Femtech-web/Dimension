@@ -1,0 +1,5 @@
+error[6-0003]: trait bound is not satisfied
+  ┌─ src/lib.fe:3:19
+  │
+3 │ impl Rounding for Nearest {
+  │                   ^^^^^^^ `Nearest` doesn't implement `Sealed`

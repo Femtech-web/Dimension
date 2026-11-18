@@ -1,0 +1,26 @@
+use dimension::Asset
+pub struct USD {}
+pub struct ETH {}
+pub struct CBETH {}
+pub struct WSTETH {}
+pub struct USDC {}
+impl Asset for USD {
+    const DECIMALS: u256 = 8
+}
+impl Asset for ETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for CBETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for WSTETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for USDC {
+    const DECIMALS: u256 = 6
+}
+use dimension::{Amount, Collateral, Price, Value, value_of}
+
+pub fn value(_ a: Amount<USDC>, _ p: Price<CBETH, USD>) -> Value<USD, Collateral> {
+    value_of(a, p)
+}

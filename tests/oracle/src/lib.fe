@@ -1,0 +1,177 @@
+//! The oracle boundary against a mock Chainlink feed. EVM only.
+//! No `allow_unsafe`: every price here comes through `oracle::read`.
+
+use std::evm::{Call, Ctx, Evm}
+use dimension::{Asset, Price, WAD}
+use dimension::value::oracle::{AggregatorV3, Feed, feed, read, verify}
+
+pub struct USD {}
+pub struct ETH {}
+pub struct CBETH {}
+
+impl Asset for USD {
+    const DECIMALS: u256 = 8
+}
+impl Asset for ETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for CBETH {
+    const DECIMALS: u256 = 18
+}
+
+struct FeedState { answer: i256, updated_at: u256, decimals: u8 }
+
+pub contract MockFeed {
+    mut s: FeedState,
+
+    init(answer: i256, updated_at: u256, decimals: u8)
+    uses (mut s)
+    {
+        s.answer = answer
+        s.updated_at = updated_at
+        s.decimals = decimals
+    }
+
+    recv AggregatorV3 {
+        Decimals -> u8 uses (s) {
+            s.decimals
+        }
+        LatestRoundData -> (u256, i256, u256, u256, u256)
+        uses (s)
+        {
+            (1, s.answer, s.updated_at, s.updated_at, 1)
+        }
+    }
+}
+
+const HOUR: u256 = 3_600
+
+fn deploy(_ answer: i256, updated_at: u256, decimals: u8, salt: u256) -> Address
+uses (evm: mut Evm)
+{
+    evm.create2<MockFeed>(
+        value: Wei::zero(),
+        args: (answer, updated_at, decimals),
+        salt,
+    )
+}
+
+fn eth_usd_feed(_ addr: Address) -> Feed<ETH, USD> {
+    feed(
+        addr,
+        decimals: 8,
+        max_age: HOUR,
+        min_wad: 100 * WAD,
+        max_wad: 100_000 * WAD,
+    )
+}
+
+fn cbeth_eth_feed(_ addr: Address) -> Feed<CBETH, ETH> {
+    feed(
+        addr,
+        decimals: 18,
+        max_age: HOUR,
+        min_wad: WAD / 2,
+        max_wad: 2 * WAD,
+    )
+}
+
+#[test]
+fn reads_a_fresh_answer_into_internal_units()
+uses (evm: mut Evm, call: mut Call, ctx: Ctx)
+{
+    let now = ctx.timestamp().as_seconds()
+    let f = eth_usd_feed(
+        deploy(2_000_12345678, updated_at: now, decimals: 8, salt: 1),
+    )
+    verify(f)
+    assert(read(f).wad() == 2_000_123_456_780_000_000_000)
+}
+
+#[test]
+fn composes_the_price_moonwell_needed()
+uses (evm: mut Evm, call: mut Call, ctx: Ctx)
+{
+    let now = ctx.timestamp().as_seconds()
+    let cbeth_eth = cbeth_eth_feed(
+        deploy(
+            1_120_000_000_000_000_000,
+            updated_at: now,
+            decimals: 18,
+            salt: 2,
+        ),
+    )
+    let eth_usd = eth_usd_feed(
+        deploy(2_000_00000000, updated_at: now, decimals: 8, salt: 3),
+    )
+    let cbeth_usd: Price<CBETH, USD> = read(cbeth_eth) * read(eth_usd)
+    assert(cbeth_usd.wad() == 2_240 * WAD)
+}
+
+#[test(should_revert, selector = 0x04f9e16b)]
+fn rejects_a_feed_reporting_other_decimals()
+uses (evm: mut Evm, call: mut Call)
+{
+    // The cbETH/ETH feed (18 decimals) registered as if it were a USD feed (8 decimals).
+    let addr = deploy(
+        1_120_000_000_000_000_000,
+        updated_at: 1,
+        decimals: 18,
+        salt: 4,
+    )
+    verify(eth_usd_feed(addr))
+}
+
+#[test(should_revert, selector = 0x63b64fb7)]
+fn rejects_an_answer_outside_the_band()
+uses (evm: mut Evm, call: mut Call, ctx: Ctx)
+{
+    // The Moonwell MIP-X43 price: 1.12, read where a cbETH/USD price near 2,200 belongs.
+    let now = ctx.timestamp().as_seconds()
+    let usd_band: Feed<CBETH, USD> = feed(
+        deploy(112_000_000, updated_at: now, decimals: 8, salt: 5),
+        decimals: 8,
+        max_age: HOUR,
+        min_wad: 100 * WAD,
+        max_wad: 100_000 * WAD,
+    )
+    let _ = read(usd_band)
+}
+
+#[test(should_revert, selector = 0xfac0852b)]
+fn rejects_an_answer_older_than_allowed()
+uses (evm: mut Evm, call: mut Call, ctx: Ctx)
+{
+    let now = ctx.timestamp().as_seconds()
+    let addr = deploy(2_000_00000000, updated_at: now - 1, decimals: 8, salt: 6)
+    let f: Feed<ETH, USD> = feed(
+        addr,
+        decimals: 8,
+        max_age: 0,
+        min_wad: 100 * WAD,
+        max_wad: 100_000 * WAD,
+    )
+    let _ = read(f)
+}
+
+#[test(should_revert, selector = 0xfac0852b)]
+fn rejects_an_answer_from_the_future()
+uses (evm: mut Evm, call: mut Call, ctx: Ctx)
+{
+    let now = ctx.timestamp().as_seconds()
+    let _ = read(
+        eth_usd_feed(
+            deploy(2_000_00000000, updated_at: now + 1, decimals: 8, salt: 7),
+        ),
+    )
+}
+
+#[test(should_revert, selector = 0x828c8880)]
+fn rejects_a_non_positive_answer()
+uses (evm: mut Evm, call: mut Call, ctx: Ctx)
+{
+    let now = ctx.timestamp().as_seconds()
+    let _ = read(
+        eth_usd_feed(deploy(0, updated_at: now, decimals: 8, salt: 8)),
+    )
+}

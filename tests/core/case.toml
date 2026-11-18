@@ -1,0 +1,4 @@
+kind = "test"
+backends = ["sonatina", "native"]
+layer = "compile-time and runtime"
+mechanism = "The public Dimension API: rounding by flow against exact rational results, decimal scaling, price composition, valuation sides, and risk policies"

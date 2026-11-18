@@ -1,0 +1,7 @@
+use probe_core::{RiskPolicy, max_borrow}
+pub struct Reckless {}
+impl RiskPolicy for Reckless {
+    const LTV_BPS: u256 = 9_000
+    const LIQ_THRESHOLD_BPS: u256 = 8_500
+}
+pub fn f() -> u256 { max_borrow<Reckless>(10_000) }

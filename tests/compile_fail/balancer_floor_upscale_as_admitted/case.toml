@@ -1,0 +1,5 @@
+kind = "compile_fail"
+expect_code = "8-0000"
+layer = "compile-time"
+mechanism = "An amount leaving the pool is scaled with floor rounding and handed to the math as if it had been admitted"
+incident = "Balancer V2, 2025-11-03, about 95M to 128M USD"

@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "6-0003"
+layer = "compile-time"
+mechanism = "Obtaining a trusted Price through core::mem::take, which needs Default"

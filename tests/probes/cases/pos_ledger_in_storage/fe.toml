@@ -1,0 +1,6 @@
+[ingot]
+name = "pos_ledger_in_storage"
+version = "0.1.0"
+
+[dependencies]
+probe_core = { path = "../../core" }

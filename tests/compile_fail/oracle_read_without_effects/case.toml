@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "8-0036"
+layer = "compile-time"
+mechanism = "Reading a price feed from a function whose signature does not declare the call and clock capabilities it uses"

@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "2-0003"
+layer = "compile-time"
+mechanism = "Building a trusted Price from raw fields outside its defining ingot"

@@ -1,0 +1,26 @@
+use dimension::Asset
+pub struct USD {}
+pub struct ETH {}
+pub struct CBETH {}
+pub struct WSTETH {}
+pub struct USDC {}
+impl Asset for USD {
+    const DECIMALS: u256 = 8
+}
+impl Asset for ETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for CBETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for WSTETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for USDC {
+    const DECIMALS: u256 = 6
+}
+use dimension::{In, Out, Quantity, ScalingFactor, Settled, owed, settle}
+
+pub fn charge(_ internal: u256, _ factor: ScalingFactor<WSTETH>) -> Quantity<WSTETH, In, Settled> {
+    settle(owed<WSTETH, Out>(internal), factor)
+}

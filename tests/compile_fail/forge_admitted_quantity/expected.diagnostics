@@ -1,0 +1,10 @@
+error[2-0003]: `v` is not visible
+   ┌─ src/lib.fe:25:16
+   │
+25 │     Quantity { v: 17 }
+   │                ^^^^^ `v` is not visible
+   │
+   ┌─ src/value.fe:43:32
+   │
+43 │ pub struct Quantity<T, F, S> { v: u256 }
+   │                                - `v` is defined here

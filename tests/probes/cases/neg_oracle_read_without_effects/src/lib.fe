@@ -1,0 +1,6 @@
+use probe_core::{ETH, USD}
+use probe_core::oracle::{FeedBinding, read}
+// An oracle read with no declared capabilities: the signature hides that it calls out and reads the clock.
+pub fn f(_ b: FeedBinding<ETH, USD>) -> u256 {
+    read(b).raw()
+}

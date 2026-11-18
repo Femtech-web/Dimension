@@ -1,0 +1,5 @@
+kind = "compile_fail"
+expect_code = "8-0000"
+layer = "compile-time"
+mechanism = "Composing prices whose middle assets do not match (cbETH/ETH times USD/ETH)"
+consequential_codes = ["8-0031"]

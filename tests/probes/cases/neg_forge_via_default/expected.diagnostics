@@ -1,0 +1,10 @@
+error[6-0003]: trait bound is not satisfied
+   ┌─ src/lib.fe:4:13
+   │
+ 4 │     let q = core::mem::take(mut p)
+   │             ^^^^^^^^^^^^^^^ `Price<CBETH, USD>` doesn't implement `Default`
+   │
+   ┌─ src/mem.fe:30:16
+   │
+30 │ pub fn take<T: Default>(_ dest: mut T) -> T {
+   │                ------- required by this bound on `take`

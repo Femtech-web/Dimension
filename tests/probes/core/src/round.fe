@@ -1,0 +1,80 @@
+// P17: rounding direction as a type-level policy, on the Balancer V2 `_upscale` mechanism.
+// A rate-scaled constant-sum pool: token A has rate r (scaled units = raw * r / 1e18), B has rate 1.
+use core::num::{mul_div, mul_div_ceil}
+
+const ONE: u256 = 1_000_000_000_000_000_000
+const RATE: u256 = 1_058_132_408_689_971_699   // the rate from OpenZeppelin's write-up
+
+pub trait Rounding {
+    fn mul_div(_ a: u256, _ b: u256, _ d: u256) -> u256
+}
+pub struct Floor {}
+pub struct Ceil {}
+impl Rounding for Floor { fn mul_div(_ a: u256, _ b: u256, _ d: u256) -> u256 { mul_div(a, b, d) } }
+impl Rounding for Ceil { fn mul_div(_ a: u256, _ b: u256, _ d: u256) -> u256 { mul_div_ceil(a, b, d) } }
+
+// An amount in scaled units that remembers how it was rounded.
+pub struct Scaled<R> { v: u256 }
+impl<R> Copy for Scaled<R> {}
+
+pub fn upscale<R: Rounding>(_ raw: u256, _ rate: u256) -> Scaled<R> {
+    Scaled { v: R::mul_div(raw, rate, ONE) }
+}
+
+// GIVEN_OUT: the trader names how much A leaves the pool and pays B for it.
+// The amount leaving must be upscaled with Ceil, so the trader pays for every scaled unit.
+pub fn in_given_out(_ out_a: Scaled<Ceil>) -> u256 {
+    out_a.v   // constant sum, B has rate 1
+}
+
+// Untyped baseline: Balancer's direction-agnostic upscale (always mulDown).
+pub fn in_given_out_untyped(_ out_a_raw: u256) -> u256 {
+    mul_div(out_a_raw, RATE, ONE)
+}
+
+pub fn in_given_out_typed(_ out_a_raw: u256) -> u256 {
+    in_given_out(upscale<Ceil>(out_a_raw, RATE))
+}
+
+// Trader's gain in scaled units (x1e18) for one GIVEN_OUT swap: value received minus value paid.
+fn gain_x1e18(_ out_raw: u256, _ paid_b: u256) -> i256 {
+    let received: i256 = (out_raw * RATE).downcast().unwrap()
+    let paid: i256 = (paid_b * ONE).downcast().unwrap()
+    received - paid
+}
+
+#[test]
+fn p17_search_small_amounts() {
+    var profitable_untyped: u256 = 0
+    var profitable_typed: u256 = 0
+    var best: i256 = 0
+    var out: u256 = 1
+    while out <= 20_000 {
+        let g0 = gain_x1e18(out, in_given_out_untyped(out))
+        let g1 = gain_x1e18(out, in_given_out_typed(out))
+        if g0 > 0 { profitable_untyped += 1 }
+        if g1 > 0 { profitable_typed += 1 }
+        if g0 > best { best = g0 }
+        out += 1
+    }
+    assert(profitable_untyped > 19_000)
+    assert(profitable_typed == 0)
+    assert(best > 0)
+}
+
+#[test]
+fn p17_attack_loop() {
+    // Repeat the 17-unit GIVEN_OUT swap from the write-up and accumulate the trader's edge.
+    var edge_untyped: i256 = 0
+    var edge_typed: i256 = 0
+    var i: u256 = 0
+    while i < 1_000 {
+        edge_untyped += gain_x1e18(17, in_given_out_untyped(17))
+        edge_typed += gain_x1e18(17, in_given_out_typed(17))
+        i += 1
+    }
+    assert(in_given_out_untyped(17) == 17)   // 17 * 1.058... = 17.98 -> 17 paid
+    assert(in_given_out_typed(17) == 18)
+    assert(edge_untyped > 0)
+    assert(edge_typed <= 0)
+}

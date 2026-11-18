@@ -1,0 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! A faithful port of Balancer V2's stable pool arithmetic: same results, same
+//! wrapping, same `BAL#` revert reasons. Checked against the original Solidity
+//! in `contracts/reference`.

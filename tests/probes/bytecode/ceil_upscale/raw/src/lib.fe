@@ -1,0 +1,9 @@
+use std::abi::sol
+use core::num::mul_div_ceil
+msg M {
+    #[selector = sol("quote(uint256,uint256)")]
+    Quote { out: u256, rate: u256 } -> u256,
+}
+pub contract P {
+    recv M { Quote { out, rate } -> u256 { mul_div_ceil(out, rate, 1_000_000_000_000_000_000) } }
+}

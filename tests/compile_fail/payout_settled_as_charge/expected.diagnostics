@@ -1,0 +1,5 @@
+error[8-0000]: type mismatch
+   ┌─ src/lib.fe:25:5
+   │
+25 │     settle(owed<WSTETH, Out>(internal), factor)
+   │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Quantity<WSTETH, In, Settled>`, but `Quantity<WSTETH, Out, Settled>` is given

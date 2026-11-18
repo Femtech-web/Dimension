@@ -1,0 +1,13 @@
+# Internal build notes, never published
+private-notes/
+
+# Fe build output
+out/
+
+.DS_Store
+.tools/
+__pycache__/
+
+# Reference project (Foundry)
+contracts/reference/lib/
+contracts/reference/cache/

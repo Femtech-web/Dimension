@@ -1,0 +1,5 @@
+error[8-0000]: type mismatch
+  ┌─ src/lib.fe:5:20
+  │
+5 │     collateral_usd(a, p).raw()
+  │                    ^ expected `Amount<CBETH, Down>`, but `Amount<CBETH, Up>` is given

@@ -1,0 +1,75 @@
+//! Rounding by meaning: admission and settlement, checked against the exact
+//! rational result rather than against another rounding implementation.
+
+use dimension::{In, Out, ScalingFactor, WAD, admit, given, owed, scaling_factor, settle}
+use dimension::value::testing::assume_rate
+use super::assets::{USDC, WSTETH, WSTETH_RATE}
+
+fn wsteth_factor() -> ScalingFactor<WSTETH> {
+    scaling_factor<WSTETH>().with_rate(unsafe { assume_rate(WSTETH_RATE) })
+}
+
+/// `r` is floor(a * b / d), proved by cross-multiplication.
+fn is_floor(_ r: u256, _ a: u256, _ b: u256, _ d: u256) -> bool {
+    r * d <= a * b && a * b < (r + 1) * d
+}
+
+/// `r` is ceil(a * b / d), proved by cross-multiplication.
+fn is_ceil(_ r: u256, _ a: u256, _ b: u256, _ d: u256) -> bool {
+    a * b <= r * d && (r == 0 || (r - 1) * d < a * b)
+}
+
+#[test]
+fn balancer_given_out_is_rounded_up() {
+    // Balancer V2's _upscale gave 17 here; an amount leaving the pool must count as 18.
+    let out = admit(given<WSTETH, Out>(17), wsteth_factor())
+    assert(out.value() == 18)
+}
+
+#[test]
+fn given_in_is_rounded_down() {
+    let incoming = admit(given<WSTETH, In>(17), wsteth_factor())
+    assert(incoming.value() == 17)
+}
+
+#[test]
+fn settlement_charges_up_and_pays_down() {
+    let factor = wsteth_factor()
+    assert(settle(owed<WSTETH, In>(18), factor).value() == 18)
+    assert(settle(owed<WSTETH, Out>(18), factor).value() == 17)
+}
+
+#[test]
+fn decimal_scaling() {
+    assert(scaling_factor<USDC>().value() == WAD * 1_000_000_000_000)
+    assert(
+        admit(given<USDC, In>(1), scaling_factor<USDC>()).value() == 1_000_000_000_000,
+    )
+    assert(scaling_factor<WSTETH>().value() == WAD)
+}
+
+#[test]
+fn admission_matches_exact_rounding_on_every_small_amount() {
+    let factor = wsteth_factor().value()
+    var raw: u256 = 0
+    while raw < 5_000 {
+        let out = admit(given<WSTETH, Out>(raw), wsteth_factor()).value()
+        let incoming = admit(given<WSTETH, In>(raw), wsteth_factor()).value()
+        assert(is_ceil(out, raw, factor, WAD))
+        assert(is_floor(incoming, raw, factor, WAD))
+        raw += 1
+    }
+}
+
+#[test]
+fn settlement_matches_exact_rounding_on_every_small_amount() {
+    let factor = wsteth_factor().value()
+    var internal: u256 = 0
+    while internal < 5_000 {
+        let charge = settle(owed<WSTETH, In>(internal), wsteth_factor()).value()
+        let payout = settle(owed<WSTETH, Out>(internal), wsteth_factor()).value()
+        assert(is_ceil(charge, internal, WAD, factor))
+        assert(is_floor(payout, internal, WAD, factor))
+        internal += 1
+    }
+}

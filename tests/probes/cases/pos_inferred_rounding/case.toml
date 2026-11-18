@@ -1,0 +1,4 @@
+kind = "test"
+backends = ["sonatina"]
+layer = "compile-time"
+mechanism = "An unannotated upscale infers the ceiling rounding its consumer requires"

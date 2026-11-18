@@ -1,0 +1,10 @@
+error[2-0003]: `a` is not visible
+    ┌─ src/lib.fe:3:7
+    │
+  3 │     l.a = 1_000_000
+    │       ^ `a` is not visible
+    │
+    ┌─ src/lib.fe:103:5
+    │
+103 │     a: u256,
+    │     - `a` is defined here

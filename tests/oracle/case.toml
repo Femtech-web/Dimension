@@ -1,0 +1,4 @@
+kind = "test"
+backends = ["sonatina"]
+layer = "bind-time and runtime"
+mechanism = "The oracle boundary against a mock Chainlink feed: declared decimals, positive, fresh and in-band answers, and composite pricing"

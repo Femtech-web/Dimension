@@ -1,0 +1,5 @@
+kind = "compile_fail"
+entry = "app"
+expect_code = "16-0015"
+layer = "compile-time"
+mechanism = "Forging a trusted value with unsafe code inside a protocol dependency the root did not allow to use unsafe"

@@ -1,0 +1,343 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! Balancer V2 `StableMath` (pkg/pool-stable/contracts/StableMath.sol), ported
+//! operation for operation. `fp::` is Balancer's `FixedPoint` (what the
+//! Solidity reaches through `using FixedPoint for uint256`), `math::` its
+//! integer `Math`. Where the Solidity uses a bare operator, so does this port,
+//! and like Solidity 0.7 it wraps.
+//!
+//! The token count is the const parameter `N`. Balancer bounds it at runtime
+//! (2 to 5 tokens); here a pool with any other count does not compile.
+//! Indices must be below `N`: an out-of-range index is an `INVALID` opcode in
+//! Solidity 0.7 and a `Panic(0x32)` here.
+
+#![arithmetic(unchecked)]
+
+use super::fixed_point as fp
+use super::math
+
+pub const MIN_AMP: u256 = 1
+pub const MAX_AMP: u256 = 5_000
+pub const AMP_PRECISION: u256 = 1_000
+
+/// The StableSwap invariant D, found by Newton-Raphson. Rounds down.
+pub fn calculate_invariant<const N: usize>(_ amp: u256, _ balances: [u256; N]) -> u256
+where N >= 2, N <= 5
+{
+    let n = N as u256
+    var sum: u256 = 0
+    var i: usize = 0
+    while i < N {
+        sum = fp::add(sum, balances[i])
+        i += 1
+    }
+    if sum == 0 { return 0 }
+
+    var invariant = sum
+    let amp_times_total = amp * n
+    var round: u256 = 0
+    while round < 255 {
+        var d_p = invariant
+        var j: usize = 0
+        while j < N {
+            d_p = math::div_down(math::mul(d_p, invariant), math::mul(balances[j], n))
+            j += 1
+        }
+        let prev = invariant
+        invariant = math::div_down(
+            math::mul(
+                fp::add(
+                    math::div_down(math::mul(amp_times_total, sum), AMP_PRECISION),
+                    math::mul(d_p, n),
+                ),
+                invariant,
+            ),
+            fp::add(
+                math::div_down(
+                    math::mul(amp_times_total - AMP_PRECISION, invariant),
+                    AMP_PRECISION,
+                ),
+                math::mul(n + 1, d_p),
+            ),
+        )
+        if invariant > prev {
+            if invariant - prev <= 1 {
+                return invariant
+            }
+        } else if prev - invariant <= 1 {
+            return invariant
+        }
+        round += 1
+    }
+    assert!(false, "BAL#321")
+    0
+}
+
+/// Tokens out for `amount_in` of `index_in`. Rounds down.
+pub fn calc_out_given_in<const N: usize>(
+    _ amp: u256,
+    _ balances: [u256; N],
+    index_in: usize,
+    index_out: usize,
+    amount_in: u256,
+    invariant: u256,
+) -> u256
+where N >= 2, N <= 5
+{
+    var b = balances
+    b[index_in] = fp::add(b[index_in], amount_in)
+    let final_out = get_token_balance_given_invariant_and_all_other_balances(
+        amp,
+        b,
+        invariant,
+        index: index_out,
+    )
+    // Balancer restores the balance it added to before reading the output balance.
+    fp::sub(fp::sub(balances[index_out], final_out), 1)
+}
+
+/// Tokens in for `amount_out` of `index_out`. Rounds up.
+pub fn calc_in_given_out<const N: usize>(
+    _ amp: u256,
+    _ balances: [u256; N],
+    index_in: usize,
+    index_out: usize,
+    amount_out: u256,
+    invariant: u256,
+) -> u256
+where N >= 2, N <= 5
+{
+    var b = balances
+    b[index_out] = fp::sub(b[index_out], amount_out)
+    let final_in = get_token_balance_given_invariant_and_all_other_balances(
+        amp,
+        b,
+        invariant,
+        index: index_in,
+    )
+    fp::add(fp::sub(final_in, balances[index_in]), 1)
+}
+
+/// BPT minted for joining with `amounts_in`. Rounds down.
+pub fn calc_bpt_out_given_exact_tokens_in<const N: usize>(
+    _ amp: u256,
+    _ balances: [u256; N],
+    amounts_in: [u256; N],
+    bpt_total_supply: u256,
+    current_invariant: u256,
+    swap_fee: u256,
+) -> u256
+where N >= 2, N <= 5
+{
+    let sum = sum_of(balances)
+    var ratios: [u256; N] = [0; N]
+    var invariant_ratio_with_fees: u256 = 0
+    var i: usize = 0
+    while i < N {
+        let current_weight = fp::div_down(balances[i], sum)
+        ratios[i] = fp::div_down(fp::add(balances[i], amounts_in[i]), balances[i])
+        invariant_ratio_with_fees = fp::add(
+            invariant_ratio_with_fees,
+            fp::mul_down(ratios[i], current_weight),
+        )
+        i += 1
+    }
+
+    var new_balances: [u256; N] = [0; N]
+    i = 0
+    while i < N {
+        var amount_in_without_fee = amounts_in[i]
+        if ratios[i] > invariant_ratio_with_fees {
+            let non_taxable = fp::mul_down(balances[i], fp::sub(invariant_ratio_with_fees, fp::ONE))
+            let taxable = fp::sub(amounts_in[i], non_taxable)
+            amount_in_without_fee = fp::add(non_taxable, fp::mul_down(taxable, fp::ONE - swap_fee))
+        }
+        new_balances[i] = fp::add(balances[i], amount_in_without_fee)
+        i += 1
+    }
+
+    let invariant_ratio = fp::div_down(calculate_invariant(amp, new_balances), current_invariant)
+    if invariant_ratio > fp::ONE {
+        fp::mul_down(bpt_total_supply, invariant_ratio - fp::ONE)
+    } else {
+        0
+    }
+}
+
+/// Tokens of `index` needed to mint exactly `bpt_amount_out`. Rounds up.
+pub fn calc_token_in_given_exact_bpt_out<const N: usize>(
+    _ amp: u256,
+    _ balances: [u256; N],
+    index: usize,
+    bpt_amount_out: u256,
+    bpt_total_supply: u256,
+    current_invariant: u256,
+    swap_fee: u256,
+) -> u256
+where N >= 2, N <= 5
+{
+    let new_invariant = fp::mul_up(
+        fp::div_up(
+            fp::add(bpt_total_supply, bpt_amount_out),
+            bpt_total_supply,
+        ),
+        current_invariant,
+    )
+    let new_balance = get_token_balance_given_invariant_and_all_other_balances(
+        amp,
+        balances,
+        invariant: new_invariant,
+        index,
+    )
+    let amount_in_without_fee = fp::sub(new_balance, balances[index])
+
+    let current_weight = fp::div_down(balances[index], sum_of(balances))
+    let taxable_percentage = fp::complement(current_weight)
+    let taxable = fp::mul_up(amount_in_without_fee, taxable_percentage)
+    let non_taxable = fp::sub(amount_in_without_fee, taxable)
+    fp::add(non_taxable, fp::div_up(taxable, fp::ONE - swap_fee))
+}
+
+/// BPT burned to withdraw exactly `amounts_out`. Rounds up.
+pub fn calc_bpt_in_given_exact_tokens_out<const N: usize>(
+    _ amp: u256,
+    _ balances: [u256; N],
+    amounts_out: [u256; N],
+    bpt_total_supply: u256,
+    current_invariant: u256,
+    swap_fee: u256,
+) -> u256
+where N >= 2, N <= 5
+{
+    let sum = sum_of(balances)
+    var ratios: [u256; N] = [0; N]
+    var invariant_ratio_without_fees: u256 = 0
+    var i: usize = 0
+    while i < N {
+        let current_weight = fp::div_up(balances[i], sum)
+        ratios[i] = fp::div_up(fp::sub(balances[i], amounts_out[i]), balances[i])
+        invariant_ratio_without_fees = fp::add(
+            invariant_ratio_without_fees,
+            fp::mul_up(ratios[i], current_weight),
+        )
+        i += 1
+    }
+
+    var new_balances: [u256; N] = [0; N]
+    i = 0
+    while i < N {
+        var amount_out_with_fee = amounts_out[i]
+        if invariant_ratio_without_fees > ratios[i] {
+            let non_taxable = fp::mul_down(
+                balances[i],
+                fp::complement(invariant_ratio_without_fees),
+            )
+            let taxable = fp::sub(amounts_out[i], non_taxable)
+            amount_out_with_fee = fp::add(non_taxable, fp::div_up(taxable, fp::ONE - swap_fee))
+        }
+        new_balances[i] = fp::sub(balances[i], amount_out_with_fee)
+        i += 1
+    }
+
+    let invariant_ratio = fp::div_down(calculate_invariant(amp, new_balances), current_invariant)
+    fp::mul_up(bpt_total_supply, fp::complement(invariant_ratio))
+}
+
+/// Tokens of `index` withdrawn for burning exactly `bpt_amount_in`. Rounds down.
+pub fn calc_token_out_given_exact_bpt_in<const N: usize>(
+    _ amp: u256,
+    _ balances: [u256; N],
+    index: usize,
+    bpt_amount_in: u256,
+    bpt_total_supply: u256,
+    current_invariant: u256,
+    swap_fee: u256,
+) -> u256
+where N >= 2, N <= 5
+{
+    let new_invariant = fp::mul_up(
+        fp::div_up(
+            fp::sub(bpt_total_supply, bpt_amount_in),
+            bpt_total_supply,
+        ),
+        current_invariant,
+    )
+    let new_balance = get_token_balance_given_invariant_and_all_other_balances(
+        amp,
+        balances,
+        invariant: new_invariant,
+        index,
+    )
+    let amount_out_without_fee = fp::sub(balances[index], new_balance)
+
+    let current_weight = fp::div_down(balances[index], sum_of(balances))
+    let taxable_percentage = fp::complement(current_weight)
+    let taxable = fp::mul_up(amount_out_without_fee, taxable_percentage)
+    let non_taxable = fp::sub(amount_out_without_fee, taxable)
+    fp::add(non_taxable, fp::mul_down(taxable, fp::ONE - swap_fee))
+}
+
+/// The balance of `index` that, with every other balance fixed, gives
+/// `invariant`. Rounds up.
+pub fn get_token_balance_given_invariant_and_all_other_balances<const N: usize>(
+    _ amp: u256,
+    _ balances: [u256; N],
+    invariant: u256,
+    index: usize,
+) -> u256
+where N >= 2, N <= 5
+{
+    let n = N as u256
+    let amp_times_total = amp * n
+    var sum = balances[0]
+    var p_d = balances[0] * n
+    var j: usize = 1
+    while j < N {
+        p_d = math::div_down(math::mul(math::mul(p_d, balances[j]), n), invariant)
+        sum = fp::add(sum, balances[j])
+        j += 1
+    }
+    sum = sum - balances[index]
+
+    let inv2 = math::mul(invariant, invariant)
+    let c = math::mul(
+        math::mul(
+            math::div_up(inv2, math::mul(amp_times_total, p_d)),
+            AMP_PRECISION,
+        ),
+        balances[index],
+    )
+    let b = fp::add(
+        sum,
+        math::mul(math::div_down(invariant, amp_times_total), AMP_PRECISION),
+    )
+
+    var token_balance = math::div_up(fp::add(inv2, c), fp::add(invariant, b))
+    var round: u256 = 0
+    while round < 255 {
+        let prev = token_balance
+        token_balance = math::div_up(
+            fp::add(math::mul(token_balance, token_balance), c),
+            fp::sub(fp::add(math::mul(token_balance, 2), b), invariant),
+        )
+        if token_balance > prev {
+            if token_balance - prev <= 1 {
+                return token_balance
+            }
+        } else if prev - token_balance <= 1 {
+            return token_balance
+        }
+        round += 1
+    }
+    assert!(false, "BAL#322")
+    0
+}
+
+fn sum_of<const N: usize>(_ balances: [u256; N]) -> u256 {
+    var sum: u256 = 0
+    var i: usize = 0
+    while i < N {
+        sum = fp::add(sum, balances[i])
+        i += 1
+    }
+    sum
+}

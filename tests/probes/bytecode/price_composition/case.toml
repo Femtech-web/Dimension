@@ -1,0 +1,5 @@
+kind = "bytecode"
+contract = "V"
+levels = ["0", "1", "2", "s"]
+identical_at = ["1", "2", "s"]
+question = "Does composing typed prices and amounts cost anything over the same arithmetic on raw u256?"

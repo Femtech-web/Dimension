@@ -1,0 +1,12 @@
+PASS admission_matches_exact_rounding_on_every_small_amount
+PASS balancer_given_out_is_rounded_up
+PASS borrow_capacity_applies_ltv
+PASS collateral_rounds_down_and_debt_rounds_up
+PASS composite_price_through_the_middle_asset
+PASS decimal_scaling
+PASS given_in_is_rounded_down
+PASS health_uses_the_liquidation_threshold
+PASS settlement_charges_up_and_pays_down
+PASS settlement_matches_exact_rounding_on_every_small_amount
+PASS values_on_one_side_add
+test result: ok. 11 passed; 0 failed

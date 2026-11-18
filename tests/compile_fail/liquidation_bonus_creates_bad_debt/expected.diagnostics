@@ -1,0 +1,10 @@
+error[8-0093]: const requirement is not satisfied
+   ┌─ src/lib.fe:32:5
+   │
+32 │     is_healthy<USD, Generous>(c, d)
+   │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ condition evaluated to `false`
+   │
+   ┌─ src/policy.fe:36:5
+   │
+36 │     P::LIQUIDATION_THRESHOLD_BPS * (10_000 + P::LIQUIDATION_BONUS_BPS) <= 100_000_000
+   │     --------------------------------------------------------------------------------- required by this predicate

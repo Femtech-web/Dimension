@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "16-0015"
+layer = "compile-time"
+mechanism = "A production root reaching Dimension's unsafe test constructors without trusting them in fe.toml"

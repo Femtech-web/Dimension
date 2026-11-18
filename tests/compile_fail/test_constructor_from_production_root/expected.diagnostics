@@ -1,0 +1,15 @@
+error[16-0015]: call reaches unsafe code in `dimension`, which is not allowed to use it
+   ┌─ src/lib.fe:27:9
+   │
+27 │         assume_price(1_120_000_000_000_000_000)
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this call reaches unsafe code in `dimension`
+   │
+   ┌─ src/value/testing.fe:8:62
+   │
+ 8 │   pub unsafe fn assume_price<B, Q>(_ wad: u256) -> Price<B, Q> {
+   │ ╭──────────────────────────────────────────────────────────────'
+ 9 │ │     Price { wad }
+10 │ │ }
+   │ ╰─' unsafe code in `dimension`
+   │
+   = to trust `dimension`, add `allow_unsafe = true` to its entry under `[dependencies]` in fe.toml

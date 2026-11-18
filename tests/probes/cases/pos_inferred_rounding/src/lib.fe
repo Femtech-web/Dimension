@@ -1,0 +1,7 @@
+use probe_core::round::{upscale, in_given_out}
+// No rounding named: the type checker picks Ceil from in_given_out's signature
+pub fn f(_ out_raw: u256) -> u256 {
+    in_given_out(upscale(out_raw, 1_058_132_408_689_971_699))
+}
+#[test]
+fn inferred_is_ceil() { assert(f(17) == 18) }

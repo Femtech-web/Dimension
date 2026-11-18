@@ -1,0 +1,6 @@
+[ingot]
+name = "ceil_upscale_typed"
+version = "0.1.0"
+
+[dependencies]
+probe_core = { path = "../../../core" }

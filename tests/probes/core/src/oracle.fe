@@ -1,0 +1,89 @@
+#![cfg(target = "evm")]
+// P12: verification boundary from a Chainlink-shaped feed to a typed Price.
+use std::abi::sol
+use std::evm::{Evm, Call, Ctx}
+use super::{Asset, Price, USD, ETH, CBETH}
+
+pub msg AggregatorV3 {
+    #[selector = sol("decimals()")]
+    Decimals -> u8,
+    #[selector = sol("latestRoundData()")]
+    LatestRoundData -> (u256, i256, u256, u256, u256),
+}
+
+struct FeedStore {
+    answer: i256,
+    updated: u256,
+    dec: u8,
+}
+
+pub contract MockFeed {
+    mut s: FeedStore
+
+    init(answer: i256, updated: u256, dec: u8) uses (mut s) {
+        s.answer = answer
+        s.updated = updated
+        s.dec = dec
+    }
+
+    recv AggregatorV3 {
+        Decimals -> u8 uses (s) { s.dec }
+        LatestRoundData -> (u256, i256, u256, u256, u256) uses (s) {
+            (1, s.answer, s.updated, s.updated, 1)
+        }
+    }
+}
+
+// A binding can only be made through `bind`, which checks the feed's decimals.
+pub struct FeedBinding<B, Q> {
+    addr: Address,
+    dec: u8,
+    max_age: u256,
+    min_raw: u256,
+    max_raw: u256,
+}
+impl<B, Q> Copy for FeedBinding<B, Q> {}
+
+pub fn bind<B, Q>(_ addr: Address, expected_dec: u8, max_age: u256, min_raw: u256, max_raw: u256) -> FeedBinding<B, Q>
+uses (call: mut Call) {
+    let dec: u8 = call.static(addr: addr, gas: 50000, message: AggregatorV3::Decimals {})
+    assert(dec == expected_dec)
+    FeedBinding { addr, dec, max_age, min_raw, max_raw }
+}
+
+// The only way from a raw feed answer to Price<B, Q>.
+pub fn read<B, Q>(_ b: FeedBinding<B, Q>) -> Price<B, Q> uses (call: mut Call, ctx: Ctx) {
+    let (_, answer, _, updated, _) = call.static(addr: b.addr, gas: 50000, message: AggregatorV3::LatestRoundData {})
+    assert(answer > 0)
+    let now = ctx.timestamp().as_seconds()
+    assert(now - updated <= b.max_age)
+    let pos: u256 = answer.downcast().unwrap()
+    let raw: u256 = pos * 10 ** (18 - (b.dec as u256))
+    assert(raw >= b.min_raw && raw <= b.max_raw)
+    Price { raw }
+}
+
+#[test]
+fn p12_fresh_read() uses (evm: mut Evm, call: mut Call, ctx: Ctx) {
+    let now = evm.timestamp().as_seconds()
+    let feed = evm.create2<MockFeed>(value: Wei::zero(), args: (200_000_000_000, now, 8), salt: 1)
+    let b: FeedBinding<ETH, USD> = bind(feed, expected_dec: 8, max_age: 3600, min_raw: 100_000_000_000_000_000_000, max_raw: 100_000_000_000_000_000_000_000)
+    let p = read(b)
+    assert(p.raw() == 2_000_000_000_000_000_000_000)
+}
+
+#[test(should_revert)]
+fn p12_wrong_decimals_rejected_at_bind() uses (evm: mut Evm, call: mut Call, ctx: Ctx) {
+    let now = evm.timestamp().as_seconds()
+    let feed = evm.create2<MockFeed>(value: Wei::zero(), args: (1_120_000_000_000_000_000, now, 18), salt: 2)
+    let _b: FeedBinding<CBETH, USD> = bind(feed, expected_dec: 8, max_age: 3600, min_raw: 0, max_raw: 1)
+}
+
+#[test(should_revert)]
+fn p12_out_of_band_rejected_at_read() uses (evm: mut Evm, call: mut Call, ctx: Ctx) {
+    // Moonwell-shaped: a cbETH/ETH answer (1.12) arriving where cbETH/USD (~2,200) is expected.
+    let now = evm.timestamp().as_seconds()
+    let feed = evm.create2<MockFeed>(value: Wei::zero(), args: (112_000_000, now, 8), salt: 3)
+    let b: FeedBinding<CBETH, USD> = bind(feed, expected_dec: 8, max_age: 3600, min_raw: 100_000_000_000_000_000_000, max_raw: 100_000_000_000_000_000_000_000)
+    let _p = read(b)
+}

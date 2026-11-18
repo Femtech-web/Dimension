@@ -1,0 +1,10 @@
+error[2-0003]: `wad` is not visible
+    ┌─ src/lib.fe:25:13
+    │
+ 25 │     Price { wad: 1_120_000_000_000_000_000 }
+    │             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `wad` is not visible
+    │
+    ┌─ src/value.fe:125:26
+    │
+125 │ pub struct Price<B, Q> { wad: u256 }
+    │                          --- `wad` is defined here

@@ -1,0 +1,6 @@
+[ingot]
+name = "neg_static_assert_decimals"
+version = "0.1.0"
+
+[dependencies]
+probe_core = { path = "../../core" }

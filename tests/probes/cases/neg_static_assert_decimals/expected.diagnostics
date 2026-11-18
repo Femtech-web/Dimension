@@ -1,0 +1,9 @@
+error[8-0081]: static assertion failed
+  ┌─ src/lib.fe:3:15
+  │
+3 │ static_assert(USD_DEC == 18)
+  │               ^^^^^^^^^^^^^ `static_assert` evaluated to `false`
+  │
+  = left: `8`
+  = right: `18`
+  = operator: `==`

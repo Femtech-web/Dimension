@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "8-0093"
+layer = "compile-time"
+mechanism = "A liquidation bonus so large that liquidating at the threshold needs more collateral than the position holds"

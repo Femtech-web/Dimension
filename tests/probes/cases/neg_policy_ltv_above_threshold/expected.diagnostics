@@ -1,0 +1,10 @@
+error[8-0093]: const requirement is not satisfied
+    ┌─ src/lib.fe:7:22
+    │
+  7 │ pub fn f() -> u256 { max_borrow<Reckless>(10_000) }
+    │                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ condition evaluated to `false`
+    │
+    ┌─ src/lib.fe:129:7
+    │
+129 │ where P::LTV_BPS < P::LIQ_THRESHOLD_BPS {
+    │       --------------------------------- required by this predicate

@@ -1,0 +1,27 @@
+# Differential tests: Balancer V2's Solidity (third_party/) against the Fe port.
+[profile.default]
+src = "src"
+test = "test"
+libs = ["lib"]
+out = "out"
+cache_path = "cache"
+auto_detect_solc = true
+optimizer = true
+optimizer_runs = 9999
+# Fe emits PUSH0 and MCOPY, so tests execute under Cancun; solc 0.7 compiles for its own latest target.
+evm_version = "cancun"
+allow_paths = ["../../third_party"]
+fs_permissions = [{ access = "read", path = "../../ingots/balancer_v2/out" }, { access = "read-write", path = "cache" }]
+remappings = [
+  "@balancer-labs/v2-solidity-utils/=../../third_party/balancer-v2/pkg/solidity-utils/",
+  "@balancer-labs/v2-interfaces/=../../third_party/balancer-v2/pkg/interfaces/",
+  "@balancer-labs/v2-pool-stable/=../../third_party/balancer-v2/pkg/pool-stable/",
+  "forge-std/=lib/forge-std/src/",
+]
+
+[fuzz]
+seed = "0xd1e5e0"
+runs = 10000
+
+[lint]
+lint_on_build = false

@@ -1,0 +1,6 @@
+[ingot]
+name = "payout_settled_as_charge"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../../ingots/dimension" }

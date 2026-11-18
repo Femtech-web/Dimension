@@ -1,0 +1,48 @@
+{
+  "schema": "dimension.cases/v1",
+  "suite": "unit",
+  "fe": {
+    "version": "26.6.0",
+    "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110",
+    "binary_sha256": "de045cf2ccd5a4052d92cde7745ff052747235b9c98e745a0995a8ad40a0c78e"
+  },
+  "platform": "mac_arm64",
+  "summary": {
+    "cases": 2,
+    "ok": 2,
+    "by_kind": {
+      "test": 2
+    }
+  },
+  "cases": [
+    {
+      "id": "core",
+      "kind": "test",
+      "layer": "compile-time and runtime",
+      "mechanism": "The public Dimension API: rounding by flow against exact rational results, decimal scaling, price composition, valuation sides, and risk policies",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "sonatina": {
+          "passed": 11
+        },
+        "native": {
+          "passed": 11
+        }
+      }
+    },
+    {
+      "id": "oracle",
+      "kind": "test",
+      "layer": "bind-time and runtime",
+      "mechanism": "The oracle boundary against a mock Chainlink feed: declared decimals, positive, fresh and in-band answers, and composite pricing",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "sonatina": {
+          "passed": 7
+        }
+      }
+    }
+  ]
+}

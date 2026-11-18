@@ -1,0 +1,6 @@
+[ingot]
+name = "forge_admitted_quantity"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../../ingots/dimension" }

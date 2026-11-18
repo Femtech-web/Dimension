@@ -1,0 +1,82 @@
+//! What a quantity means to the protocol, and therefore how it must round.
+//!
+//! Every rounding direction in Dimension follows from one rule: a rounding
+//! error must never move value from the protocol to whoever triggered it.
+
+use super::rounding::{Ceil, Floor, Rounding}
+
+trait Sealed {}
+
+/// The direction value moves, seen from the protocol.
+pub trait Flow: Sealed {
+    /// Rounding for bringing a given amount into internal accounting.
+    type Admission: Rounding
+    /// Rounding for turning an internal result into an amount to transfer.
+    type Obligation: Rounding
+}
+
+/// Value the protocol receives. Count less than arrives; charge at least
+/// what is owed.
+pub struct In {}
+
+/// Value the protocol pays out. Count at least what leaves; pay no more
+/// than what is owed.
+pub struct Out {}
+
+impl Sealed for In {}
+impl Sealed for Out {}
+
+impl Flow for In {
+    type Admission = Floor
+    type Obligation = Ceil
+}
+
+impl Flow for Out {
+    type Admission = Ceil
+    type Obligation = Floor
+}
+
+/// Where a flow quantity is in its life. Each stage is reachable only through
+/// the operation that rounds correctly into it.
+pub trait Stage: Sealed {}
+
+/// A raw amount named by the caller, as received at an entry point.
+pub struct Given {}
+/// A given amount in internal 18-decimal units, rounded by `Flow::Admission`.
+pub struct Admitted {}
+/// An internal result the protocol's math computed.
+pub struct Owed {}
+/// A raw amount to transfer, rounded by `Flow::Obligation`.
+pub struct Settled {}
+
+impl Sealed for Given {}
+impl Sealed for Admitted {}
+impl Sealed for Owed {}
+impl Sealed for Settled {}
+
+impl Stage for Given {}
+impl Stage for Admitted {}
+impl Stage for Owed {}
+impl Stage for Settled {}
+
+/// Which side of a solvency check a value is counted on.
+pub trait Valuation: Sealed {
+    type Rounding: Rounding
+}
+
+/// Value backing a position. Rounded down so collateral is never overstated.
+pub struct Collateral {}
+
+/// Value a position owes. Rounded up so debt is never understated.
+pub struct Debt {}
+
+impl Sealed for Collateral {}
+impl Sealed for Debt {}
+
+impl Valuation for Collateral {
+    type Rounding = Floor
+}
+
+impl Valuation for Debt {
+    type Rounding = Ceil
+}

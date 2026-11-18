@@ -1,0 +1,16 @@
+error[8-0036]: missing effect `Call` required by `read`
+  ┌─ src/lib.fe:5:5
+  │
+5 │     read(b).raw()
+  │     ^^^^^^^ `read` requires effect `Call` to be in scope
+  │
+  = require it in this function's signature with `uses (call: mut Call)`, so that its callers provide it
+  = or provide it to a block of this function with `with (Call = value) { .. }`
+error[8-0036]: missing effect `Ctx` required by `read`
+  ┌─ src/lib.fe:5:5
+  │
+5 │     read(b).raw()
+  │     ^^^^^^^ `read` requires effect `Ctx` to be in scope
+  │
+  = require it in this function's signature with `uses (ctx: Ctx)`, so that its callers provide it
+  = or provide it to a block of this function with `with (Ctx = value) { .. }`

@@ -1,0 +1,60 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! Balancer V2 `FixedPoint` (pkg/solidity-utils/contracts/math/FixedPoint.sol).
+//!
+//! Arithmetic wraps, as in Solidity 0.7, except where Balancer checks, and a
+//! failed check reverts with Balancer's own `BAL#` reason. `powDown`/`powUp` are
+//! not ported: StableMath does not use them.
+
+#![arithmetic(unchecked)]
+
+pub const ONE: u256 = 1_000_000_000_000_000_000
+
+pub fn add(_ a: u256, _ b: u256) -> u256 {
+    let c = a + b
+    assert!(c >= a, "BAL#000")
+    c
+}
+
+pub fn sub(_ a: u256, _ b: u256) -> u256 {
+    assert!(b <= a, "BAL#001")
+    a - b
+}
+
+pub fn mul_down(_ a: u256, _ b: u256) -> u256 {
+    let product = a * b
+    assert!(a == 0 || product / a == b, "BAL#003")
+    product / ONE
+}
+
+pub fn mul_up(_ a: u256, _ b: u256) -> u256 {
+    let product = a * b
+    assert!(a == 0 || product / a == b, "BAL#003")
+    if product == 0 {
+        0
+    } else {
+        (product - 1) / ONE + 1
+    }
+}
+
+pub fn div_down(_ a: u256, _ b: u256) -> u256 {
+    assert!(b != 0, "BAL#004")
+    let inflated = a * ONE
+    assert!(a == 0 || inflated / a == ONE, "BAL#005")
+    inflated / b
+}
+
+pub fn div_up(_ a: u256, _ b: u256) -> u256 {
+    assert!(b != 0, "BAL#004")
+    let inflated = a * ONE
+    assert!(a == 0 || inflated / a == ONE, "BAL#005")
+    if inflated == 0 {
+        0
+    } else {
+        (inflated - 1) / b + 1
+    }
+}
+
+/// `1 - x`, or 0 when `x` exceeds 1.
+pub fn complement(_ x: u256) -> u256 {
+    if x < ONE { ONE - x } else { 0 }
+}

@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "2-0003"
+layer = "compile-time"
+mechanism = "Writing ledger balances directly instead of through the conserving library functions"

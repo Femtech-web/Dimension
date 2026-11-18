@@ -1,0 +1,4 @@
+kind = "test"
+backends = ["sonatina"]
+layer = "compile-time"
+mechanism = "A library-owned ledger stored in another contract stays mutable only through the library's conserving functions"

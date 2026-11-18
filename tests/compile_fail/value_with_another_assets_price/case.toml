@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "8-0000"
+layer = "compile-time"
+mechanism = "Valuing a USDC balance with the cbETH price"

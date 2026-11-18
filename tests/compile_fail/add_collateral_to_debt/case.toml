@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "8-0000"
+layer = "compile-time"
+mechanism = "Adding a debt value to a collateral value, which hides the shortfall a solvency check must see"

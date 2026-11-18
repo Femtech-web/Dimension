@@ -1,0 +1,6 @@
+[ingot]
+name = "scale_asset_with_too_many_decimals"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../../ingots/dimension" }

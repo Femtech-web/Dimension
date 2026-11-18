@@ -1,0 +1,5 @@
+use probe_core::PriceSource
+pub struct Fake {}
+impl PriceSource for Fake {
+    fn quote(self) -> u256 { 1 }
+}

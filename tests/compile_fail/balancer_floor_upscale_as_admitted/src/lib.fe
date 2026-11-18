@@ -1,0 +1,34 @@
+use dimension::Asset
+pub struct USD {}
+pub struct ETH {}
+pub struct CBETH {}
+pub struct WSTETH {}
+pub struct USDC {}
+impl Asset for USD {
+    const DECIMALS: u256 = 8
+}
+impl Asset for ETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for CBETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for WSTETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for USDC {
+    const DECIMALS: u256 = 6
+}
+use dimension::{Admitted, Out, Quantity, owed}
+use core::num::mul_div
+
+fn calc_in_given_out(_ out: Quantity<WSTETH, Out, Admitted>) -> u256 {
+    out.value()
+}
+
+// Balancer V2's _upscale: always mulDown, whichever way the amount moves.
+pub fn upscale_down(_ raw: u256, _ factor: u256) -> u256 {
+    calc_in_given_out(
+        owed<WSTETH, Out>(mul_div(raw, factor, 1_000_000_000_000_000_000)),
+    )
+}

@@ -1,0 +1,7 @@
+use probe_core::{Price, CBETH, ETH, USD, price_unchecked}
+pub fn f() -> u256 {
+    let a: Price<CBETH, ETH> = price_unchecked(1)
+    let b: Price<USD, ETH> = price_unchecked(1)
+    let c = a * b
+    0
+}

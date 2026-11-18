@@ -1,0 +1,6 @@
+[ingot]
+name = "neg_policy_ltv_above_threshold"
+version = "0.1.0"
+
+[dependencies]
+probe_core = { path = "../../core" }

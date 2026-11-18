@@ -1,0 +1,5 @@
+error[6-0003]: trait bound is not satisfied
+  ┌─ src/lib.fe:3:22
+  │
+3 │ impl PriceSource for Fake {
+  │                      ^^^^ `Fake` doesn't implement `Seal`

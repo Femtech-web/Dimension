@@ -1,0 +1,99 @@
+//! The verified boundary between external price feeds and `Price`.
+//!
+//! What this checks: that the feed reports the decimals the registry declared,
+//! that its answer is positive, recent and inside the declared band.
+//! What it cannot check: that the address really is the feed the registry says
+//! it is. A registry entry is a reviewed declaration, and a feed's description
+//! string is not evidence of anything.
+
+#![cfg(target = "evm")]
+
+use std::abi::sol
+use std::evm::{Call, Ctx}
+use super::{Price, WAD}
+
+const FEED_GAS: u256 = 100_000
+
+/// Chainlink's AggregatorV3Interface, the subset Dimension reads.
+pub msg AggregatorV3 {
+    #[selector = sol("decimals()")]
+    Decimals -> u8,
+    #[selector = sol("latestRoundData()")]
+    LatestRoundData -> (u256, i256, u256, u256, u256),
+}
+
+/// A feed approved for pricing `B` in `Q`, declared once as a constant in a
+/// protocol's registry.
+pub struct Feed<B, Q> { addr: Address, decimals: u8, max_age: u256, min_wad: u256, max_wad: u256 }
+
+impl<B, Q> Copy for Feed<B, Q> {}
+
+/// Declares a feed: its address, the decimals it must report, the oldest answer
+/// accepted in seconds, and the band a sane answer must fall in (18 decimals).
+pub const fn feed<B, Q>(
+    _ addr: Address,
+    decimals: u8,
+    max_age: u256,
+    min_wad: u256,
+    max_wad: u256,
+) -> Feed<B, Q> {
+    Feed { addr, decimals, max_age, min_wad, max_wad }
+}
+
+impl<B, Q> Feed<B, Q> {
+    pub fn address(self) -> Address {
+        self.addr
+    }
+}
+
+#[error]
+pub struct WrongDecimals { feed: Address, declared: u8, reported: u8 }
+
+#[error]
+pub struct NonPositiveAnswer { feed: Address }
+
+#[error]
+pub struct StaleAnswer { feed: Address, updated_at: u256, now: u256 }
+
+#[error]
+pub struct AnswerOutOfBand { feed: Address, wad: u256, min_wad: u256, max_wad: u256 }
+
+/// Checks that the feed behind `f` reports the declared decimals. Run when a
+/// protocol is deployed or reconfigured.
+pub fn verify<B, Q>(_ f: Feed<B, Q>) uses (call: mut Call) {
+    let reported: u8 = call.static(
+            addr: f.addr,
+            gas: FEED_GAS,
+            message: AggregatorV3::Decimals {},
+        )
+    if reported != f.decimals {
+        revert_error(
+            WrongDecimals { feed: f.addr, declared: f.decimals, reported },
+        )
+    }
+}
+
+/// Reads `f` and returns its answer as a `Price`, or reverts.
+pub fn read<B, Q>(_ f: Feed<B, Q>) -> Price<B, Q> uses (call: mut Call, ctx: Ctx) {
+    let (_, answer, _, updated_at, _) = call
+        .static(
+            addr: f.addr,
+            gas: FEED_GAS,
+            message: AggregatorV3::LatestRoundData {},
+        )
+    if answer <= 0 {
+        revert_error(NonPositiveAnswer { feed: f.addr })
+    }
+    let now = ctx.timestamp().as_seconds()
+    if updated_at > now || now - updated_at > f.max_age {
+        revert_error(StaleAnswer { feed: f.addr, updated_at, now })
+    }
+    let positive: u256 = answer.downcast().unwrap()
+    let wad = positive * WAD / 10 ** (f.decimals as u256)
+    if wad < f.min_wad || wad > f.max_wad {
+        revert_error(
+            AnswerOutOfBand { feed: f.addr, wad, min_wad: f.min_wad, max_wad: f.max_wad },
+        )
+    }
+    Price { wad }
+}

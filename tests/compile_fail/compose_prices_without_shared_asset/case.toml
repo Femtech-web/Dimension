@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "8-0000"
+layer = "compile-time"
+mechanism = "Multiplying cbETH/ETH by USD/ETH, which is not a cbETH/USD price"

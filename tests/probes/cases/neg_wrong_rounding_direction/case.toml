@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "8-0000"
+layer = "compile-time"
+mechanism = "An amount rounded up passed where a rounded-down amount is required"

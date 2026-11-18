@@ -1,0 +1,6 @@
+[ingot]
+name = "neg_forge_via_calldata"
+version = "0.1.0"
+
+[dependencies]
+probe_core = { path = "../../core" }

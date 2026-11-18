@@ -1,0 +1,14 @@
+//! Constructors that skip verification, for tests and benchmarks.
+//!
+//! They are `unsafe`, so a protocol ingot can call them only if the root
+//! grants it `allow_unsafe` in `fe.toml`, where a reviewer sees it.
+
+use super::{Price, Rate}
+
+pub unsafe fn assume_price<B, Q>(_ wad: u256) -> Price<B, Q> {
+    Price { wad }
+}
+
+pub unsafe fn assume_rate<T>(_ wad: u256) -> Rate<T> {
+    Rate { wad }
+}

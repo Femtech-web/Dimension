@@ -1,0 +1,5 @@
+error[8-0000]: type mismatch
+   ┌─ src/lib.fe:25:9
+   │
+25 │     a * b
+   │         ^ expected `Price<ETH, _>`, but `Price<USD, ETH>` is given

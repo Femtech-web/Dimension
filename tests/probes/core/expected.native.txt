@@ -1,0 +1,6 @@
+PASS p16_policy_ok
+PASS p17_attack_loop
+PASS p17_search_small_amounts
+PASS p2_composition
+PASS p7_rounding
+test result: ok. 5 passed; 0 failed

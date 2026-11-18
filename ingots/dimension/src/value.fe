@@ -1,0 +1,182 @@
+//! Financial values. Every type here carries what it measures in its type
+//! parameters, and the ones that depend on outside data can only be built at
+//! a verified boundary (the `oracle` child module) or, in tests, through the
+//! `unsafe` constructors in `testing`.
+
+use core::ops::{Add, Mul, Sub}
+use super::asset::Asset
+use super::flow::{Admitted, Collateral, Debt, Flow, Given, Owed, Settled, Valuation}
+use super::rounding::{Floor, Rounding}
+
+/// 1.0 in the 18-decimal fixed point used for internal units, prices and values.
+pub const WAD: u256 = 1_000_000_000_000_000_000
+
+/// A balance of `T` in `T`'s smallest unit.
+pub struct Amount<T> { raw: u256 }
+
+impl<T> Copy for Amount<T> {}
+
+impl<T> Amount<T> {
+    pub fn new(_ raw: u256) -> Self {
+        Amount { raw }
+    }
+
+    pub fn raw(self) -> u256 {
+        self.raw
+    }
+}
+
+impl<T> Add for Amount<T> {
+    fn add(own self, _ other: own Amount<T>) -> Amount<T> {
+        Amount { raw: self.raw + other.raw }
+    }
+}
+
+impl<T> Sub for Amount<T> {
+    fn sub(own self, _ other: own Amount<T>) -> Amount<T> {
+        Amount { raw: self.raw - other.raw }
+    }
+}
+
+/// An amount of `T` moving in direction `F`, at stage `S` of a swap or
+/// settlement. See `flow` for the stages and how each one is reached.
+pub struct Quantity<T, F, S> { v: u256 }
+
+impl<T, F, S> Copy for Quantity<T, F, S> {}
+
+impl<T, F, S> Quantity<T, F, S> {
+    /// Raw units for `Given` and `Settled`, internal 18-decimal units for
+    /// `Admitted` and `Owed`.
+    pub fn value(self) -> u256 {
+        self.v
+    }
+}
+
+/// An amount named by the caller, labelled with the direction it moves.
+pub fn given<T, F: Flow>(_ raw: u256) -> Quantity<T, F, Given> {
+    Quantity { v: raw }
+}
+
+/// A result of the protocol's own math, in internal units. Its direction comes
+/// from the math function's return type.
+pub fn owed<T, F: Flow>(_ internal: u256) -> Quantity<T, F, Owed> {
+    Quantity { v: internal }
+}
+
+/// Brings a given amount into internal units. The rounding follows from `F`:
+/// an amount leaving the protocol is rounded up, an amount arriving is rounded
+/// down. This is the only way to obtain an `Admitted` quantity.
+pub fn admit<T, F: Flow>(_ q: Quantity<T, F, Given>, _ factor: ScalingFactor<T>) -> Quantity<
+    T,
+    F,
+    Admitted,
+> {
+    Quantity { v: F::Admission::mul_div(q.v, factor.v, WAD) }
+}
+
+/// Turns an internal result into a raw amount to transfer. The rounding follows
+/// from `F`: a charge is rounded up, a payout down. This is the only way to
+/// obtain a `Settled` quantity.
+pub fn settle<T, F: Flow>(_ q: Quantity<T, F, Owed>, _ factor: ScalingFactor<T>) -> Quantity<
+    T,
+    F,
+    Settled,
+> {
+    Quantity { v: F::Obligation::mul_div(q.v, WAD, factor.v) }
+}
+
+/// An exchange rate of `T` to the unit its pool accounts in (for example stETH
+/// per wstETH), 18 decimals. External data.
+pub struct Rate<T> { wad: u256 }
+
+impl<T> Copy for Rate<T> {}
+
+impl<T> Rate<T> {
+    pub fn wad(self) -> u256 {
+        self.wad
+    }
+}
+
+/// Multiplier from `T`'s smallest unit to internal units: decimal scaling,
+/// optionally times a `Rate`.
+pub struct ScalingFactor<T> { v: u256 }
+
+impl<T> Copy for ScalingFactor<T> {}
+
+/// The decimal-only factor for `T`. Assets with more than 18 decimals cannot be
+/// scaled up into internal units, so they are rejected at compile time.
+pub fn scaling_factor<T: Asset>() -> ScalingFactor<T> where T::DECIMALS <= 18 {
+    ScalingFactor { v: WAD * 10 ** (18 - T::DECIMALS) }
+}
+
+impl<T> ScalingFactor<T> {
+    /// Includes `rate` in the factor, rounding down.
+    pub fn with_rate(self, _ rate: Rate<T>) -> Self {
+        ScalingFactor { v: Floor::mul_div(self.v, rate.wad, WAD) }
+    }
+
+    pub fn value(self) -> u256 {
+        self.v
+    }
+}
+
+/// How many whole units of `Q` one whole unit of `B` is worth, 18 decimals.
+/// External data.
+pub struct Price<B, Q> { wad: u256 }
+
+impl<B, Q> Copy for Price<B, Q> {}
+
+impl<B, Q> Price<B, Q> {
+    pub fn wad(self) -> u256 {
+        self.wad
+    }
+}
+
+/// Chains prices through a shared middle asset: A/B times B/C is A/C. Rounds
+/// down, losing less than 10^-18 of a unit of the quote per step.
+impl<A, B, C> Mul<Price<B, C>> for Price<A, B> {
+    type Output = Price<A, C>
+    fn mul(own self, _ other: own Price<B, C>) -> Price<A, C> {
+        Price { wad: Floor::mul_div(self.wad, other.wad, WAD) }
+    }
+}
+
+/// A value in whole units of `Q`, 18 decimals, counted on side `V` of a
+/// solvency check. Values on different sides can be compared but never added.
+pub struct Value<Q, V> { wad: u256 }
+
+impl<Q, V> Copy for Value<Q, V> {}
+
+impl<Q, V> Value<Q, V> {
+    pub fn zero() -> Self {
+        Value { wad: 0 }
+    }
+
+    pub fn wad(self) -> u256 {
+        self.wad
+    }
+}
+
+impl<Q, V> Add for Value<Q, V> {
+    fn add(own self, _ other: own Value<Q, V>) -> Value<Q, V> {
+        Value { wad: self.wad + other.wad }
+    }
+}
+
+/// Values `amount` at `price`, rounding for side `V`: collateral down, debt up.
+pub fn value_of<T: Asset, Q, V: Valuation>(_ amount: Amount<T>, _ price: Price<T, Q>) -> Value<
+    Q,
+    V,
+> {
+    Value { wad: V::Rounding::mul_div(amount.raw, price.wad, 10 ** T::DECIMALS) }
+}
+
+/// Keeps `bps` basis points of a collateral value, rounding down.
+pub fn haircut<Q>(_ collateral: Value<Q, Collateral>, bps: u256) -> Value<Q, Collateral> {
+    Value { wad: Floor::mul_div(collateral.wad, bps, 10_000) }
+}
+
+/// Whether `collateral` is at least `debt`.
+pub fn covers<Q>(_ collateral: Value<Q, Collateral>, _ debt: Value<Q, Debt>) -> bool {
+    collateral.wad >= debt.wad
+}

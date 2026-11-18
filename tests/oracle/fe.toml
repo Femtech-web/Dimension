@@ -1,0 +1,6 @@
+[ingot]
+name = "dimension_oracle_tests"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../ingots/dimension" }

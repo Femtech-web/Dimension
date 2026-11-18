@@ -1,0 +1,6 @@
+[ingot]
+name = "bypass_unsafe_in_root"
+version = "0.1.0"
+
+[dependencies]
+probe_core = { path = "../../core" }

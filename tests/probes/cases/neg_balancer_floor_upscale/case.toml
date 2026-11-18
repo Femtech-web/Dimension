@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "8-0000"
+layer = "compile-time"
+mechanism = "Balancer V2 _upscale: a floor-rounded scaled amount used where the operation requires ceiling rounding"

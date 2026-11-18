@@ -1,0 +1,141 @@
+// Feasibility probes for Dimension. Not project code.
+use core::num::{mul_div, mul_div_ceil}
+use core::ops::Mul
+
+// ---- P1: asset identities as zero-sized types with associated consts ----
+pub trait Asset {
+    const DECIMALS: u256
+}
+
+pub struct USD {}
+pub struct ETH {}
+pub struct CBETH {}
+
+impl Asset for USD { const DECIMALS: u256 = 8 }
+impl Asset for ETH { const DECIMALS: u256 = 18 }
+impl Asset for CBETH { const DECIMALS: u256 = 18 }
+
+// ---- P1: phantom type parameters (B and Q appear in no field) ----
+pub struct Price<B, Q> { raw: u256 }   // raw: 18-decimal fixed point, quote per base
+
+impl<B, Q> Copy for Price<B, Q> {}
+
+impl<B, Q> Price<B, Q> {
+    pub fn raw(self) -> u256 { self.raw }
+}
+
+// ---- P2: cross-type composition with an associated Output type ----
+impl<A, B, C> Mul<Price<B, C>> for Price<A, B> {
+    type Output = Price<A, C>
+    fn mul(own self, _ other: own Price<B, C>) -> Price<A, C> {
+        Price { raw: mul_div(self.raw, other.raw, 1_000_000_000_000_000_000) }
+    }
+}
+
+// Amounts carry the asset and a rounding direction.
+pub struct Down {}
+pub struct Up {}
+
+pub struct Amount<T, R> { raw: u256 }
+impl<T, R> Copy for Amount<T, R> {}
+impl<T, R> Amount<T, R> {
+    pub fn raw(self) -> u256 { self.raw }
+}
+
+// value_of rounds down (used for collateral), debt_of rounds up (used for debt)
+pub fn value_down<T, Q>(_ a: Amount<T, Down>, _ p: Price<T, Q>) -> Amount<Q, Down> {
+    Amount { raw: mul_div(a.raw, p.raw, 1_000_000_000_000_000_000) }
+}
+pub fn value_up<T, Q>(_ a: Amount<T, Up>, _ p: Price<T, Q>) -> Amount<Q, Up> {
+    Amount { raw: mul_div_ceil(a.raw, p.raw, 1_000_000_000_000_000_000) }
+}
+
+// Test-only constructors (in the real design these sit behind a verification boundary)
+pub fn price_unchecked<B, Q>(_ raw: u256) -> Price<B, Q> { Price { raw } }
+pub fn amount_unchecked<T, R>(_ raw: u256) -> Amount<T, R> { Amount { raw } }
+
+// A protocol function that only accepts a USD price of cbETH
+pub fn collateral_usd(_ amount: Amount<CBETH, Down>, _ p: Price<CBETH, USD>) -> Amount<USD, Down> {
+    value_down(amount, p)
+}
+
+// ---- P6: static_assert over associated consts ----
+const CBETH_DEC: u256 = CBETH::DECIMALS
+static_assert(CBETH_DEC == 18)
+
+// ---- P9: untyped twin for bytecode comparison ----
+pub fn collateral_usd_raw(_ amount: u256, _ p: u256) -> u256 {
+    mul_div(amount, p, 1_000_000_000_000_000_000)
+}
+
+#[test]
+fn p2_composition() {
+    let cbeth_eth: Price<CBETH, ETH> = price_unchecked(1_120_000_000_000_000_000)   // 1.12 ETH
+    let eth_usd: Price<ETH, USD> = price_unchecked(2_000_000_000_000_000_000_000)   // 2000 USD
+    let cbeth_usd: Price<CBETH, USD> = cbeth_eth * eth_usd
+    assert(cbeth_usd.raw() == 2_240_000_000_000_000_000_000)
+    let v = collateral_usd(amount_unchecked(1_000_000_000_000_000_000), cbeth_usd)
+    assert(v.raw() == 2_240_000_000_000_000_000_000)
+}
+
+#[test]
+fn p7_rounding() {
+    let p: Price<CBETH, USD> = price_unchecked(3)
+    let a_down: Amount<CBETH, Down> = amount_unchecked(1)
+    let a_up: Amount<CBETH, Up> = amount_unchecked(1)
+    assert(value_down(a_down, p).raw() == 0)
+    assert(value_up(a_up, p).raw() == 1)
+}
+
+// ---- P13: sealed trait ----
+trait Seal {}
+pub trait PriceSource: Seal {
+    fn quote(self) -> u256
+}
+pub struct ApprovedSource { v: u256 }
+impl Seal for ApprovedSource {}
+impl PriceSource for ApprovedSource {
+    fn quote(self) -> u256 { self.v }
+}
+
+// ---- P14: a ledger only this ingot can mutate; transfers conserve the total ----
+pub struct Ledger {
+    a: u256,
+    b: u256,
+    total: u256,
+}
+pub fn ledger_mint(_ l: mut Ledger, to_a: bool, _ x: u256) {
+    if to_a { l.a += x } else { l.b += x }
+    l.total += x
+}
+pub fn ledger_move(_ l: mut Ledger, a_to_b: bool, _ x: u256) {
+    if a_to_b {
+        l.a -= x
+        l.b += x
+    } else {
+        l.b -= x
+        l.a += x
+    }
+    assert(l.a + l.b == l.total)
+}
+pub fn ledger_a(_ l: Ledger) -> u256 { l.a }
+
+// ---- P16: risk policy as associated consts, checked by a const where predicate ----
+pub trait RiskPolicy {
+    const LTV_BPS: u256
+    const LIQ_THRESHOLD_BPS: u256
+}
+pub fn max_borrow<P: RiskPolicy>(_ collateral: u256) -> u256
+where P::LTV_BPS < P::LIQ_THRESHOLD_BPS {
+    collateral * P::LTV_BPS / 10_000
+}
+pub struct SanePolicy {}
+impl RiskPolicy for SanePolicy {
+    const LTV_BPS: u256 = 8_000
+    const LIQ_THRESHOLD_BPS: u256 = 8_500
+}
+
+#[test]
+fn p16_policy_ok() {
+    assert(max_borrow<SanePolicy>(10_000) == 8_000)
+}

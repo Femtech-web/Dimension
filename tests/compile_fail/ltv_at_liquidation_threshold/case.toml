@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "8-0093"
+layer = "compile-time"
+mechanism = "A loan-to-value equal to the liquidation threshold, so a new loan can be liquidated at once"

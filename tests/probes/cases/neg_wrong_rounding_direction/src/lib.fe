@@ -1,0 +1,6 @@
+use probe_core::{Price, Amount, Up, CBETH, USD, collateral_usd, price_unchecked, amount_unchecked}
+pub fn f() -> u256 {
+    let p: Price<CBETH, USD> = price_unchecked(1)
+    let a: Amount<CBETH, Up> = amount_unchecked(1)
+    collateral_usd(a, p).raw()
+}

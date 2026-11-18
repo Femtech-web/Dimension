@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "8-0036"
+layer = "compile-time"
+mechanism = "A function reading an oracle without declaring the Call and Ctx capabilities it uses"

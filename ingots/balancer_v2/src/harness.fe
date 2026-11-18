@@ -1,0 +1,420 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! Exposes the ported arithmetic with the same ABI as
+//! `contracts/reference/src/StableMathHarness.sol`, so identical calldata can be
+//! sent to the Fe port and to Balancer's Solidity and the results compared byte
+//! for byte, reverts included.
+
+#![cfg(target = "evm")]
+
+use std::abi::sol
+use super::stable::fixed_point as fp
+use super::stable::math
+use super::stable::stable_math as sm
+
+pub msg StableMathAbi {
+    #[selector = sol("mulDown(uint256,uint256)")]
+    MulDown { a: u256, b: u256 } -> u256,
+    #[selector = sol("mulUp(uint256,uint256)")]
+    MulUp { a: u256, b: u256 } -> u256,
+    #[selector = sol("divDown(uint256,uint256)")]
+    DivDown { a: u256, b: u256 } -> u256,
+    #[selector = sol("divUp(uint256,uint256)")]
+    DivUp { a: u256, b: u256 } -> u256,
+    #[selector = sol("complement(uint256)")]
+    Complement { x: u256 } -> u256,
+    #[selector = sol("mathDivUp(uint256,uint256)")]
+    MathDivUp { a: u256, b: u256 } -> u256,
+
+    #[selector = sol("calculateInvariant2(uint256,uint256[2])")]
+    CalculateInvariant2 { amp: u256, balances: [u256; 2] } -> u256,
+    #[selector = sol("calculateInvariant3(uint256,uint256[3])")]
+    CalculateInvariant3 { amp: u256, balances: [u256; 3] } -> u256,
+
+    #[selector = sol(
+        "calcOutGivenIn2(uint256,uint256[2],uint256,uint256,uint256,uint256)",
+    )]
+    CalcOutGivenIn2 {
+        amp: u256,
+        balances: [u256; 2],
+        index_in: u256,
+        index_out: u256,
+        amount_in: u256,
+        invariant: u256,
+    } -> u256,
+    #[selector = sol(
+        "calcOutGivenIn3(uint256,uint256[3],uint256,uint256,uint256,uint256)",
+    )]
+    CalcOutGivenIn3 {
+        amp: u256,
+        balances: [u256; 3],
+        index_in: u256,
+        index_out: u256,
+        amount_in: u256,
+        invariant: u256,
+    } -> u256,
+
+    #[selector = sol(
+        "calcInGivenOut2(uint256,uint256[2],uint256,uint256,uint256,uint256)",
+    )]
+    CalcInGivenOut2 {
+        amp: u256,
+        balances: [u256; 2],
+        index_in: u256,
+        index_out: u256,
+        amount_out: u256,
+        invariant: u256,
+    } -> u256,
+    #[selector = sol(
+        "calcInGivenOut3(uint256,uint256[3],uint256,uint256,uint256,uint256)",
+    )]
+    CalcInGivenOut3 {
+        amp: u256,
+        balances: [u256; 3],
+        index_in: u256,
+        index_out: u256,
+        amount_out: u256,
+        invariant: u256,
+    } -> u256,
+
+    #[selector = sol(
+        "calcBptOutGivenExactTokensIn2(uint256,uint256[2],uint256[2],uint256,uint256,uint256)",
+    )]
+    CalcBptOutGivenExactTokensIn2 {
+        amp: u256,
+        balances: [u256; 2],
+        amounts_in: [u256; 2],
+        supply: u256,
+        invariant: u256,
+        fee: u256,
+    } -> u256,
+    #[selector = sol(
+        "calcBptOutGivenExactTokensIn3(uint256,uint256[3],uint256[3],uint256,uint256,uint256)",
+    )]
+    CalcBptOutGivenExactTokensIn3 {
+        amp: u256,
+        balances: [u256; 3],
+        amounts_in: [u256; 3],
+        supply: u256,
+        invariant: u256,
+        fee: u256,
+    } -> u256,
+
+    #[selector = sol(
+        "calcTokenInGivenExactBptOut2(uint256,uint256[2],uint256,uint256,uint256,uint256,uint256)",
+    )]
+    CalcTokenInGivenExactBptOut2 {
+        amp: u256,
+        balances: [u256; 2],
+        index: u256,
+        bpt_out: u256,
+        supply: u256,
+        invariant: u256,
+        fee: u256,
+    } -> u256,
+    #[selector = sol(
+        "calcTokenInGivenExactBptOut3(uint256,uint256[3],uint256,uint256,uint256,uint256,uint256)",
+    )]
+    CalcTokenInGivenExactBptOut3 {
+        amp: u256,
+        balances: [u256; 3],
+        index: u256,
+        bpt_out: u256,
+        supply: u256,
+        invariant: u256,
+        fee: u256,
+    } -> u256,
+
+    #[selector = sol(
+        "calcBptInGivenExactTokensOut2(uint256,uint256[2],uint256[2],uint256,uint256,uint256)",
+    )]
+    CalcBptInGivenExactTokensOut2 {
+        amp: u256,
+        balances: [u256; 2],
+        amounts_out: [u256; 2],
+        supply: u256,
+        invariant: u256,
+        fee: u256,
+    } -> u256,
+    #[selector = sol(
+        "calcBptInGivenExactTokensOut3(uint256,uint256[3],uint256[3],uint256,uint256,uint256)",
+    )]
+    CalcBptInGivenExactTokensOut3 {
+        amp: u256,
+        balances: [u256; 3],
+        amounts_out: [u256; 3],
+        supply: u256,
+        invariant: u256,
+        fee: u256,
+    } -> u256,
+
+    #[selector = sol(
+        "calcTokenOutGivenExactBptIn2(uint256,uint256[2],uint256,uint256,uint256,uint256,uint256)",
+    )]
+    CalcTokenOutGivenExactBptIn2 {
+        amp: u256,
+        balances: [u256; 2],
+        index: u256,
+        bpt_in: u256,
+        supply: u256,
+        invariant: u256,
+        fee: u256,
+    } -> u256,
+    #[selector = sol(
+        "calcTokenOutGivenExactBptIn3(uint256,uint256[3],uint256,uint256,uint256,uint256,uint256)",
+    )]
+    CalcTokenOutGivenExactBptIn3 {
+        amp: u256,
+        balances: [u256; 3],
+        index: u256,
+        bpt_in: u256,
+        supply: u256,
+        invariant: u256,
+        fee: u256,
+    } -> u256,
+
+    #[selector = sol("getTokenBalance2(uint256,uint256[2],uint256,uint256)")]
+    GetTokenBalance2 { amp: u256, balances: [u256; 2], invariant: u256, index: u256 } -> u256,
+    #[selector = sol("getTokenBalance3(uint256,uint256[3],uint256,uint256)")]
+    GetTokenBalance3 { amp: u256, balances: [u256; 3], invariant: u256, index: u256 } -> u256,
+}
+
+fn idx(_ i: u256) -> usize {
+    i.downcast().unwrap()
+}
+
+pub contract StableMathFe {
+    recv StableMathAbi {
+        MulDown { a, b } -> u256 {
+            fp::mul_down(a, b)
+        }
+        MulUp { a, b } -> u256 {
+            fp::mul_up(a, b)
+        }
+        DivDown { a, b } -> u256 {
+            fp::div_down(a, b)
+        }
+        DivUp { a, b } -> u256 {
+            fp::div_up(a, b)
+        }
+        Complement { x } -> u256 {
+            fp::complement(x)
+        }
+        MathDivUp { a, b } -> u256 {
+            math::div_up(a, b)
+        }
+
+        CalculateInvariant2 { amp, balances } -> u256 {
+            sm::calculate_invariant(amp, balances)
+        }
+        CalculateInvariant3 { amp, balances } -> u256 {
+            sm::calculate_invariant(amp, balances)
+        }
+
+        CalcOutGivenIn2 { amp, balances, index_in, index_out, amount_in, invariant } -> u256 {
+            sm::calc_out_given_in(
+                amp,
+                balances,
+                index_in: idx(index_in),
+                index_out: idx(index_out),
+                amount_in,
+                invariant,
+            )
+        }
+        CalcOutGivenIn3 { amp, balances, index_in, index_out, amount_in, invariant } -> u256 {
+            sm::calc_out_given_in(
+                amp,
+                balances,
+                index_in: idx(index_in),
+                index_out: idx(index_out),
+                amount_in,
+                invariant,
+            )
+        }
+
+        CalcInGivenOut2 { amp, balances, index_in, index_out, amount_out, invariant } -> u256 {
+            sm::calc_in_given_out(
+                amp,
+                balances,
+                index_in: idx(index_in),
+                index_out: idx(index_out),
+                amount_out,
+                invariant,
+            )
+        }
+        CalcInGivenOut3 { amp, balances, index_in, index_out, amount_out, invariant } -> u256 {
+            sm::calc_in_given_out(
+                amp,
+                balances,
+                index_in: idx(index_in),
+                index_out: idx(index_out),
+                amount_out,
+                invariant,
+            )
+        }
+
+        CalcBptOutGivenExactTokensIn2 {
+            amp,
+            balances,
+            amounts_in,
+            supply,
+            invariant,
+            fee,
+        } -> u256 {
+            sm::calc_bpt_out_given_exact_tokens_in(
+                amp,
+                balances,
+                amounts_in,
+                bpt_total_supply: supply,
+                current_invariant: invariant,
+                swap_fee: fee,
+            )
+        }
+        CalcBptOutGivenExactTokensIn3 {
+            amp,
+            balances,
+            amounts_in,
+            supply,
+            invariant,
+            fee,
+        } -> u256 {
+            sm::calc_bpt_out_given_exact_tokens_in(
+                amp,
+                balances,
+                amounts_in,
+                bpt_total_supply: supply,
+                current_invariant: invariant,
+                swap_fee: fee,
+            )
+        }
+
+        CalcTokenInGivenExactBptOut2 {
+            amp,
+            balances,
+            index,
+            bpt_out,
+            supply,
+            invariant,
+            fee,
+        } -> u256 {
+            sm::calc_token_in_given_exact_bpt_out(
+                amp,
+                balances,
+                index: idx(index),
+                bpt_amount_out: bpt_out,
+                bpt_total_supply: supply,
+                current_invariant: invariant,
+                swap_fee: fee,
+            )
+        }
+        CalcTokenInGivenExactBptOut3 {
+            amp,
+            balances,
+            index,
+            bpt_out,
+            supply,
+            invariant,
+            fee,
+        } -> u256 {
+            sm::calc_token_in_given_exact_bpt_out(
+                amp,
+                balances,
+                index: idx(index),
+                bpt_amount_out: bpt_out,
+                bpt_total_supply: supply,
+                current_invariant: invariant,
+                swap_fee: fee,
+            )
+        }
+
+        CalcBptInGivenExactTokensOut2 {
+            amp,
+            balances,
+            amounts_out,
+            supply,
+            invariant,
+            fee,
+        } -> u256 {
+            sm::calc_bpt_in_given_exact_tokens_out(
+                amp,
+                balances,
+                amounts_out,
+                bpt_total_supply: supply,
+                current_invariant: invariant,
+                swap_fee: fee,
+            )
+        }
+        CalcBptInGivenExactTokensOut3 {
+            amp,
+            balances,
+            amounts_out,
+            supply,
+            invariant,
+            fee,
+        } -> u256 {
+            sm::calc_bpt_in_given_exact_tokens_out(
+                amp,
+                balances,
+                amounts_out,
+                bpt_total_supply: supply,
+                current_invariant: invariant,
+                swap_fee: fee,
+            )
+        }
+
+        CalcTokenOutGivenExactBptIn2 {
+            amp,
+            balances,
+            index,
+            bpt_in,
+            supply,
+            invariant,
+            fee,
+        } -> u256 {
+            sm::calc_token_out_given_exact_bpt_in(
+                amp,
+                balances,
+                index: idx(index),
+                bpt_amount_in: bpt_in,
+                bpt_total_supply: supply,
+                current_invariant: invariant,
+                swap_fee: fee,
+            )
+        }
+        CalcTokenOutGivenExactBptIn3 {
+            amp,
+            balances,
+            index,
+            bpt_in,
+            supply,
+            invariant,
+            fee,
+        } -> u256 {
+            sm::calc_token_out_given_exact_bpt_in(
+                amp,
+                balances,
+                index: idx(index),
+                bpt_amount_in: bpt_in,
+                bpt_total_supply: supply,
+                current_invariant: invariant,
+                swap_fee: fee,
+            )
+        }
+
+        GetTokenBalance2 { amp, balances, invariant, index } -> u256 {
+            sm::get_token_balance_given_invariant_and_all_other_balances(
+                amp,
+                balances,
+                invariant,
+                index: idx(index),
+            )
+        }
+        GetTokenBalance3 { amp, balances, invariant, index } -> u256 {
+            sm::get_token_balance_given_invariant_and_all_other_balances(
+                amp,
+                balances,
+                invariant,
+                index: idx(index),
+            )
+        }
+    }
+}

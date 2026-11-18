@@ -1,0 +1,371 @@
+{
+  "schema": "dimension.cases/v1",
+  "suite": "probes",
+  "fe": {
+    "version": "26.6.0",
+    "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110",
+    "binary_sha256": "de045cf2ccd5a4052d92cde7745ff052747235b9c98e745a0995a8ad40a0c78e"
+  },
+  "platform": "mac_arm64",
+  "summary": {
+    "cases": 20,
+    "ok": 20,
+    "by_kind": {
+      "bytecode": 2,
+      "compile_fail": 14,
+      "compile_pass": 1,
+      "test": 3
+    }
+  },
+  "cases": [
+    {
+      "id": "probes/bytecode/ceil_upscale",
+      "kind": "bytecode",
+      "layer": "cost",
+      "mechanism": "Does selecting the rounding direction through a trait type parameter cost anything over calling mul_div_ceil directly?",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "question": "Does selecting the rounding direction through a trait type parameter cost anything over calling mul_div_ceil directly?",
+        "levels": {
+          "O0": {
+            "typed": {
+              "bytes": 2163,
+              "sha256": "3a9dd38b97ce95bbdb7c725fab5fecb6b27c267b43cf6194b9f0028384cd1b17"
+            },
+            "raw": {
+              "bytes": 2116,
+              "sha256": "c7e47cce69095997b5f3dd80513cb0c5f7681be7d8811dd15f7cc30f50b78acc"
+            },
+            "identical": false
+          },
+          "O1": {
+            "typed": {
+              "bytes": 225,
+              "sha256": "e2e6788dff25cd4336b6990787fa2b078b359e27768fcf959688961f75ce5dcb"
+            },
+            "raw": {
+              "bytes": 225,
+              "sha256": "e2e6788dff25cd4336b6990787fa2b078b359e27768fcf959688961f75ce5dcb"
+            },
+            "identical": true
+          },
+          "O2": {
+            "typed": {
+              "bytes": 225,
+              "sha256": "e2e6788dff25cd4336b6990787fa2b078b359e27768fcf959688961f75ce5dcb"
+            },
+            "raw": {
+              "bytes": 225,
+              "sha256": "e2e6788dff25cd4336b6990787fa2b078b359e27768fcf959688961f75ce5dcb"
+            },
+            "identical": true
+          },
+          "Os": {
+            "typed": {
+              "bytes": 225,
+              "sha256": "e2e6788dff25cd4336b6990787fa2b078b359e27768fcf959688961f75ce5dcb"
+            },
+            "raw": {
+              "bytes": 225,
+              "sha256": "e2e6788dff25cd4336b6990787fa2b078b359e27768fcf959688961f75ce5dcb"
+            },
+            "identical": true
+          }
+        }
+      }
+    },
+    {
+      "id": "probes/bytecode/price_composition",
+      "kind": "bytecode",
+      "layer": "cost",
+      "mechanism": "Does composing typed prices and amounts cost anything over the same arithmetic on raw u256?",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "question": "Does composing typed prices and amounts cost anything over the same arithmetic on raw u256?",
+        "levels": {
+          "O0": {
+            "typed": {
+              "bytes": 2207,
+              "sha256": "9651c4b5dd73466d6775a5180c5d1f76d8298b61d78d8e19aaa8f7da7dc10cba"
+            },
+            "raw": {
+              "bytes": 2044,
+              "sha256": "350aedffab7f3eb443f6da05fb38f4f927ce1a745948a496d29956feb5294f13"
+            },
+            "identical": false
+          },
+          "O1": {
+            "typed": {
+              "bytes": 222,
+              "sha256": "dc2318f47ef7a7a71044359f4effbadf0fc394e0a5e9d02f5ee85c0684f3c702"
+            },
+            "raw": {
+              "bytes": 222,
+              "sha256": "dc2318f47ef7a7a71044359f4effbadf0fc394e0a5e9d02f5ee85c0684f3c702"
+            },
+            "identical": true
+          },
+          "O2": {
+            "typed": {
+              "bytes": 222,
+              "sha256": "dc2318f47ef7a7a71044359f4effbadf0fc394e0a5e9d02f5ee85c0684f3c702"
+            },
+            "raw": {
+              "bytes": 222,
+              "sha256": "dc2318f47ef7a7a71044359f4effbadf0fc394e0a5e9d02f5ee85c0684f3c702"
+            },
+            "identical": true
+          },
+          "Os": {
+            "typed": {
+              "bytes": 222,
+              "sha256": "dc2318f47ef7a7a71044359f4effbadf0fc394e0a5e9d02f5ee85c0684f3c702"
+            },
+            "raw": {
+              "bytes": 222,
+              "sha256": "dc2318f47ef7a7a71044359f4effbadf0fc394e0a5e9d02f5ee85c0684f3c702"
+            },
+            "identical": true
+          }
+        }
+      }
+    },
+    {
+      "id": "probes/cases/bypass_unsafe_in_root",
+      "kind": "compile_pass",
+      "layer": "documented-limit",
+      "mechanism": "A root ingot can forge any trusted value with a pointer cast and unsafe; Dimension relies on protocol code living in dependency ingots without allow_unsafe",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "compiles": true
+      }
+    },
+    {
+      "id": "probes/cases/gate_unsafe_in_dependency",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Forging a trusted value with unsafe code inside a protocol dependency the root did not allow to use unsafe",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "16-0015",
+        "message": "call reaches unsafe code in `protocol`, which is not allowed to use it",
+        "diagnostics_sha256": "daa337589b5805ab89f66c62dd309ea01bf258f2a64cea66552931c89252bfb5"
+      }
+    },
+    {
+      "id": "probes/cases/neg_balancer_floor_upscale",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Balancer V2 _upscale: a floor-rounded scaled amount used where the operation requires ceiling rounding",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "66c1d1f85dbbe6e72bdeb7851404b0c1e464eebdad56f3c84be12ba44e2251c0"
+      }
+    },
+    {
+      "id": "probes/cases/neg_forge_private_struct",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Building a trusted Price from raw fields outside its defining ingot",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "2-0003",
+        "message": "`raw` is not visible",
+        "diagnostics_sha256": "e5638b65e1ef813264e870aae56cb989d3d9f939534d117ca65f207c940cda93"
+      }
+    },
+    {
+      "id": "probes/cases/neg_forge_via_calldata",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Decoding a trusted Price straight from calldata without a verification boundary",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "9-0006",
+        "message": "selector declares `uint256` but field `p` has ABI type `(uint256)`",
+        "diagnostics_sha256": "53003823cec53268d8e2c831371de558de65563db65d6b0c1a4879f3523ae6fe"
+      }
+    },
+    {
+      "id": "probes/cases/neg_forge_via_default",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Obtaining a trusted Price through core::mem::take, which needs Default",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "6-0003",
+        "message": "trait bound is not satisfied",
+        "diagnostics_sha256": "2000e6bca8d2bfb5304ef557e38adfb74ea1a02dcdb7fb210344419206cc5e43"
+      }
+    },
+    {
+      "id": "probes/cases/neg_implement_sealed_trait",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "An outside ingot posing as an approved price source by implementing a sealed trait",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "6-0003",
+        "message": "trait bound is not satisfied",
+        "diagnostics_sha256": "a516a58303f3ff2548d8472cd41b345340e736df006bfa4cf0394c48dc3b89f9"
+      }
+    },
+    {
+      "id": "probes/cases/neg_invalid_price_chain",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Composing prices whose middle assets do not match (cbETH/ETH times USD/ETH)",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "bd60e320684b3645cb27f26b1328e08f4d7bc29d69ffaf37dd7ac50b12e0bb5a"
+      }
+    },
+    {
+      "id": "probes/cases/neg_oracle_read_without_effects",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A function reading an oracle without declaring the Call and Ctx capabilities it uses",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0036",
+        "message": "missing effect `Call` required by `read`",
+        "diagnostics_sha256": "6bfd782819e1298ad4f49fce7aaf1864ed583700ed98ad2987a3bf90d04f28e0"
+      }
+    },
+    {
+      "id": "probes/cases/neg_policy_ltv_above_threshold",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A risk policy whose loan-to-value exceeds its liquidation threshold",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0093",
+        "message": "const requirement is not satisfied",
+        "diagnostics_sha256": "a6a29640069458799b520a3aa9212c55f3560d52353ed5557b1c8e37ab7f6821"
+      }
+    },
+    {
+      "id": "probes/cases/neg_read_private_field",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Reading a trusted value's raw representation outside its defining ingot",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "2-0003",
+        "message": "`raw` is not visible",
+        "diagnostics_sha256": "9f5135bf94b33dc9e1f84a9252a7863130e89311e156f243eaa59c80fff6f79e"
+      }
+    },
+    {
+      "id": "probes/cases/neg_static_assert_decimals",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A configuration constant that contradicts an asset's declared decimals",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0081",
+        "message": "static assertion failed",
+        "diagnostics_sha256": "73276541f0080d21c99d6820dbc3abb1ccbd006806c7d124f9791760bb5e892f"
+      }
+    },
+    {
+      "id": "probes/cases/neg_write_private_ledger",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Writing ledger balances directly instead of through the conserving library functions",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "2-0003",
+        "message": "`a` is not visible",
+        "diagnostics_sha256": "1013774c283bba6951ef4432ca3901c2629ef286a1a4a21dd5710e3f8328690a"
+      }
+    },
+    {
+      "id": "probes/cases/neg_wrong_quote_currency",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A cbETH/ETH price passed where a cbETH/USD price is required (the Moonwell MIP-X43 shape)",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "01719e1ae190844a403ce0d410e90b6355ea9eff4f8e843058207a60468de047"
+      }
+    },
+    {
+      "id": "probes/cases/neg_wrong_rounding_direction",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "An amount rounded up passed where a rounded-down amount is required",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "52b86867b165d4c6ab8ca0089d98d2037d4c0c7bb6faa39ce372730920abdb47"
+      }
+    },
+    {
+      "id": "probes/cases/pos_inferred_rounding",
+      "kind": "test",
+      "layer": "compile-time",
+      "mechanism": "An unannotated upscale infers the ceiling rounding its consumer requires",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "sonatina": {
+          "passed": 1
+        }
+      }
+    },
+    {
+      "id": "probes/cases/pos_ledger_in_storage",
+      "kind": "test",
+      "layer": "compile-time",
+      "mechanism": "A library-owned ledger stored in another contract stays mutable only through the library's conserving functions",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "sonatina": {
+          "passed": 1
+        }
+      }
+    },
+    {
+      "id": "probes/core",
+      "kind": "test",
+      "layer": "compile-time and runtime",
+      "mechanism": "Price composition, typed rounding, policy predicates, the Balancer upscale edge search, and EVM-only feed boundary checks",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "sonatina": {
+          "passed": 8
+        },
+        "native": {
+          "passed": 5
+        }
+      }
+    }
+  ]
+}

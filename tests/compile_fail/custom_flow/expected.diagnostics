@@ -1,0 +1,5 @@
+error[6-0003]: trait bound is not satisfied
+  ┌─ src/lib.fe:3:15
+  │
+3 │ impl Flow for Sideways {
+  │               ^^^^^^^^ `Sideways` doesn't implement `Sealed`

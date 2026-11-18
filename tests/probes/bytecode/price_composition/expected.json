@@ -1,0 +1,46 @@
+{
+  "O0": {
+    "typed": {
+      "bytes": 2207,
+      "sha256": "9651c4b5dd73466d6775a5180c5d1f76d8298b61d78d8e19aaa8f7da7dc10cba"
+    },
+    "raw": {
+      "bytes": 2044,
+      "sha256": "350aedffab7f3eb443f6da05fb38f4f927ce1a745948a496d29956feb5294f13"
+    },
+    "identical": false
+  },
+  "O1": {
+    "typed": {
+      "bytes": 222,
+      "sha256": "dc2318f47ef7a7a71044359f4effbadf0fc394e0a5e9d02f5ee85c0684f3c702"
+    },
+    "raw": {
+      "bytes": 222,
+      "sha256": "dc2318f47ef7a7a71044359f4effbadf0fc394e0a5e9d02f5ee85c0684f3c702"
+    },
+    "identical": true
+  },
+  "O2": {
+    "typed": {
+      "bytes": 222,
+      "sha256": "dc2318f47ef7a7a71044359f4effbadf0fc394e0a5e9d02f5ee85c0684f3c702"
+    },
+    "raw": {
+      "bytes": 222,
+      "sha256": "dc2318f47ef7a7a71044359f4effbadf0fc394e0a5e9d02f5ee85c0684f3c702"
+    },
+    "identical": true
+  },
+  "Os": {
+    "typed": {
+      "bytes": 222,
+      "sha256": "dc2318f47ef7a7a71044359f4effbadf0fc394e0a5e9d02f5ee85c0684f3c702"
+    },
+    "raw": {
+      "bytes": 222,
+      "sha256": "dc2318f47ef7a7a71044359f4effbadf0fc394e0a5e9d02f5ee85c0684f3c702"
+    },
+    "identical": true
+  }
+}

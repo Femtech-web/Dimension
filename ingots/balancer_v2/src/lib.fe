@@ -1,0 +1,3 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! Balancer V2 stable pool, ported to Fe: the faithful arithmetic, and the same
+//! pool with its scaling boundaries typed by Dimension.

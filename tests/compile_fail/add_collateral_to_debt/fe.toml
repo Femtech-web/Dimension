@@ -1,0 +1,6 @@
+[ingot]
+name = "add_collateral_to_debt"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../../ingots/dimension" }

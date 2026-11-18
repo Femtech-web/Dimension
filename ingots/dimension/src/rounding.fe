@@ -1,0 +1,33 @@
+//! Rounding directions. Sealed: Floor and Ceil are the only implementations,
+//! so code generic over `R: Rounding` always rounds one of these two ways.
+
+use core::num::{mul_div, mul_div_ceil}
+
+trait Sealed {}
+
+pub trait Rounding: Sealed {
+    /// `a * b / d` with a 512-bit intermediate, rounded in this direction.
+    /// Reverts if `d` is zero or the result does not fit in a u256.
+    fn mul_div(_ a: u256, _ b: u256, _ d: u256) -> u256
+}
+
+/// Toward zero.
+pub struct Floor {}
+
+/// Away from zero.
+pub struct Ceil {}
+
+impl Sealed for Floor {}
+impl Sealed for Ceil {}
+
+impl Rounding for Floor {
+    fn mul_div(_ a: u256, _ b: u256, _ d: u256) -> u256 {
+        mul_div(a, b, d)
+    }
+}
+
+impl Rounding for Ceil {
+    fn mul_div(_ a: u256, _ b: u256, _ d: u256) -> u256 {
+        mul_div_ceil(a, b, d)
+    }
+}

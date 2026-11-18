@@ -1,0 +1,4 @@
+kind = "compile_fail"
+expect_code = "8-0081"
+layer = "compile-time"
+mechanism = "A configuration constant that contradicts an asset's declared decimals"

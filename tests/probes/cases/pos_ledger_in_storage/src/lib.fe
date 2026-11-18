@@ -1,0 +1,27 @@
+use std::abi::sol
+use std::evm::Evm
+use probe_core::{Ledger, ledger_mint, ledger_move, ledger_a}
+msg M {
+    #[selector = sol("mint(uint256)")]
+    Mint { x: u256 },
+    #[selector = sol("move(uint256)")]
+    Move { x: u256 },
+    #[selector = sol("a()")]
+    A -> u256,
+}
+pub contract Bank {
+    mut l: Ledger
+    recv M {
+        Mint { x } uses (mut l) { ledger_mint(mut l, to_a: true, x) }
+        Move { x } uses (mut l) { ledger_move(mut l, a_to_b: true, x) }
+        A -> u256 uses (l) { ledger_a(l) }
+    }
+}
+#[test]
+fn ledger_in_storage() uses (evm: mut Evm, call: mut std::evm::Call) {
+    let bank = evm.create2<Bank>(value: Wei::zero(), args: (), salt: 0)
+    bank.call(M::Mint { x: 100 })
+    bank.call(M::Move { x: 40 })
+    let a: u256 = bank.call(M::A {})
+    assert(a == 60)
+}

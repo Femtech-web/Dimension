@@ -1,0 +1,10 @@
+error[2-0003]: `raw` is not visible
+   ┌─ src/lib.fe:3:40
+   │
+ 3 │     let p: Price<CBETH, USD> = Price { raw: 5 }
+   │                                        ^^^^^^ `raw` is not visible
+   │
+   ┌─ src/lib.fe:19:26
+   │
+19 │ pub struct Price<B, Q> { raw: u256 }   // raw: 18-decimal fixed point, quote per base
+   │                          --- `raw` is defined here

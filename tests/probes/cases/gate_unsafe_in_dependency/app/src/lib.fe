@@ -1,0 +1,2 @@
+use protocol::forge
+pub fn f() -> u256 { forge() }

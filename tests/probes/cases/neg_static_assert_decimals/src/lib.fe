@@ -1,0 +1,3 @@
+use probe_core::{Asset, USD}
+const USD_DEC: u256 = USD::DECIMALS
+static_assert(USD_DEC == 18)

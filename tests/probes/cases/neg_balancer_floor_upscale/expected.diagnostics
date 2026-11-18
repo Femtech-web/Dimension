@@ -1,0 +1,5 @@
+error[8-0000]: type mismatch
+  ┌─ src/lib.fe:4:18
+  │
+4 │     in_given_out(upscale<Floor>(out_raw, 1_058_132_408_689_971_699))
+  │                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Scaled<Ceil>`, but `Scaled<Floor>` is given

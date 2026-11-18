@@ -1,0 +1,6 @@
+[ingot]
+name = "test_constructor_from_production_root"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../../ingots/dimension" }

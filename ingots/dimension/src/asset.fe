@@ -1,0 +1,8 @@
+/// A unit of account: a token, or a currency used only as a quote such as USD.
+///
+/// Each implementing type is a distinct asset to the compiler, so amounts and
+/// prices of different assets cannot be mixed.
+pub trait Asset {
+    /// Decimals of the asset's smallest unit, as its token contract reports them.
+    const DECIMALS: u256
+}
