@@ -4,6 +4,24 @@ Changes to the `dimension` library ingot (`ingots/dimension`). Versions follow
 semantic versioning; before 1.0, a minor version may change the API. Fe resolves
 a git dependency's `rev` as a full commit hash, so each release lists its commit.
 
+## 0.2.0: 2026-11-20
+
+The commit is recorded here when the release is tagged. Release notes:
+[docs/releases/v0.2.0.md](docs/releases/v0.2.0.md).
+
+### Added
+
+- `credit` and `debit`, which move a held balance, and `issue` and `retire`,
+  which move a supply the protocol issues, such as its shares. Each takes only
+  the direction that fits: an amount arriving can be credited, one leaving
+  debited, shares going out issued, shares coming back retired. So a label is
+  checked against what the code does with the money.
+- `TokenUnits`, a sealed trait for the two stages in token units, `Given` and
+  `Settled`. The four functions take only those, so internal 18-decimal units
+  never reach a raw balance.
+
+Nothing in 0.1.0 changes: this release only adds.
+
 ## 0.1.0: 2026-11-19
 
 Commit `57ce4106575a173b9fc51ebb44c3c2243e285cd5` (tag `v0.1.0`). Release notes:

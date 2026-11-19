@@ -64,6 +64,14 @@ impl Stage for Admitted {}
 impl Stage for Owed {}
 impl Stage for Settled {}
 
+/// The stages whose amount is in the token's own units, as transferred:
+/// `Given` and `Settled`. `Admitted` and `Owed` are internal 18-decimal units,
+/// which never belong in a raw balance.
+pub trait TokenUnits: Stage {}
+
+impl TokenUnits for Given {}
+impl TokenUnits for Settled {}
+
 /// Which side of a solvency check a value is counted on.
 pub trait Valuation: Sealed {
     type Rounding: Rounding

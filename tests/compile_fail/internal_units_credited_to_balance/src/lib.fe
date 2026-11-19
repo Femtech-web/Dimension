@@ -1,0 +1,13 @@
+use dimension::{Asset, In, admit, credit, given, scaling_factor}
+
+pub struct USDC {}
+
+impl Asset for USDC {
+    const DECIMALS: u256 = 6
+}
+
+// A USDC deposit added to the desk's USDC balance after admission, in internal
+// 18-decimal units: 10^12 times what arrived.
+pub fn deposit(_ held: u256, _ raw: u256) -> u256 {
+    credit(held, admit(given<USDC, In>(raw), scaling_factor<USDC>()))
+}

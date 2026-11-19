@@ -1,0 +1,21 @@
+use dimension::{Given, In, Out, Quantity, Settled, credit, exchange, issue}
+use vault::vault::{Shares, Vault}
+
+// A deposit written, consistently, as assets leaving the vault. Every signature
+// agrees, so the shares it issues round up, in the depositor's favour. Only the
+// vault's own books disagree: assets that leave cannot be credited, and
+// shares that come back cannot be issued.
+pub fn deposit<A>(_ v: mut Vault<A>, _ assets: Quantity<A, Out, Given>) -> Quantity<
+    Shares<A>,
+    In,
+    Settled,
+> {
+    let shares: Quantity<Shares<A>, In, Settled> = exchange(
+        assets,
+        numerator: v.total_shares + 1,
+        denominator: v.total_assets + 1,
+    )
+    v.total_assets = credit(v.total_assets, assets)
+    v.total_shares = issue(v.total_shares, shares)
+    shares
+}

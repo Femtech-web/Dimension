@@ -1,0 +1,26 @@
+error[8-0000]: type mismatch
+   ┌─ src/lib.fe:18:45
+   │
+18 │     v.total_assets = credit(v.total_assets, assets)
+   │                                             ^^^^^^ expected `Quantity<_, In, _>`, but `Quantity<A, Out, Given>` is given
+error[8-0000]: type mismatch
+   ┌─ src/lib.fe:19:44
+   │
+19 │     v.total_shares = issue(v.total_shares, shares)
+   │                                            ^^^^^^ expected `Quantity<_, Out, _>`, but `Quantity<Shares<A>, In, Settled>` is given
+error[8-0031]: type annotation is needed
+   ┌─ src/lib.fe:18:22
+   │
+18 │     v.total_assets = credit(v.total_assets, assets)
+   │                      ^^^^^^
+   │                      │
+   │                      type annotation is needed
+   │                      consider giving `: fn credit<_, _>` here
+error[8-0031]: type annotation is needed
+   ┌─ src/lib.fe:19:22
+   │
+19 │     v.total_shares = issue(v.total_shares, shares)
+   │                      ^^^^^
+   │                      │
+   │                      type annotation is needed
+   │                      consider giving `: fn issue<_, _>` here

@@ -21,6 +21,12 @@ trusts, or misprice them, and warns on what to review:
 - the Fe version is one Dimension is tested on (warn), and the project compiles (fail);
 - every Chainlink feed it declares is the feed it claims to be (fail), with `--network`.
 
+It also lists every label: each place a raw number gets its direction
+(`given<T, In>`, `owed<T, Out>`). The compiler cannot see whether a raw number
+really arrives or leaves. A labelled amount that reaches `credit` or `debit` is
+checked against the balance it moves; the list is the rest of what a reviewer
+must read.
+
 Exits 1 if any check fails. Python 3.11+, standard library only.
 """
 
@@ -41,9 +47,11 @@ import feed_check  # noqa: E402
 SOURCE = "https://github.com/Femtech-web/Dimension"
 QUICKSTART = "examples/quickstart/src"
 SUPPORTED_FE = ("26.6.0", "26.7.0")
-_RELEASE = re.compile(r"^## (\d+\.\d+\.\d+)\b.*?\n\nCommit `([0-9a-f]{40})`", re.MULTILINE | re.DOTALL)
+# A release counts once its commit is recorded on the line after its heading.
+_RELEASE = re.compile(r"^## (\d+\.\d+\.\d+)\b[^\n]*\n\nCommit `([0-9a-f]{40})`", re.MULTILINE)
 _FULL_COMMIT = re.compile(r"^[0-9a-f]{40}$")
 _UNSAFE = re.compile(r"\bunsafe\b")
+_LABEL = re.compile(r"\b(given|owed)\s*<")
 
 
 def releases() -> dict[str, str]:
@@ -68,7 +76,7 @@ def new(target: Path, rev: str | None, source: str) -> int:
     for f in files:
         (target / "src" / f).write_text(git("show", f"{commit}:{QUICKSTART}/{f}"))
     label = f"   # v{known[commit]}" if commit in known else ""
-    version = known.get(commit, next(iter(known.values())))
+    version = tomllib.loads(git("show", f"{commit}:ingots/dimension/fe.toml"))["ingot"]["version"]
     (target / "fe.toml").write_text(
         f'[ingot]\nname = "{name}"\nversion = "0.1.0"\n\n'
         "# Fe resolves `rev` as a full commit hash. Move to a new release only after\n"
@@ -85,6 +93,7 @@ def new(target: Path, rev: str | None, source: str) -> int:
 class Checklist:
     def __init__(self) -> None:
         self.rows: list[tuple[str, str, str]] = []
+        self.labels: list[tuple[str, str]] = []
 
     def add(self, status: str, name: str, detail: str) -> None:
         self.rows.append((status, name, detail))
@@ -105,6 +114,24 @@ def find_fe(explicit: str | None) -> str | None:
 
 def without_comments(text: str) -> str:
     return re.sub(r"//[^\n]*", "", text)
+
+
+def labels(path: Path, project: Path) -> list[tuple[str, str]]:
+    """Each `given<..>` or `owed<..>` call in a source file: where, and the label."""
+    text = without_comments(path.read_text())
+    found = []
+    for m in _LABEL.finditer(text):
+        if text[: m.start()].rstrip().endswith("fn"):
+            continue
+        depth, end = 0, m.end() - 1
+        while end < len(text):
+            depth += {"<": 1, ">": -1}.get(text[end], 0)
+            if depth == 0:
+                break
+            end += 1
+        line = text.count("\n", 0, m.start()) + 1
+        found.append((f"{path.relative_to(project)}:{line}", re.sub(r"\s+", " ", text[m.start() : end + 1])))
+    return found
 
 
 def checklist(project: Path, network: str | None, rpc: str | None, fe_path: str | None) -> Checklist:
@@ -149,6 +176,15 @@ def checklist(project: Path, network: str | None, rpc: str | None, fe_path: str 
         for i, line in enumerate(without_comments(path.read_text()).splitlines(), 1)
         if _UNSAFE.search(line)
     ]
+    rows.labels = [site for path in sources for site in labels(path, project)]
+    rows.add(
+        "note",
+        "labels",
+        f"{len(rows.labels)} places a raw number gets its direction, listed below: review each"
+        if rows.labels
+        else "no raw number gets a direction here",
+    )
+
     if unsafe:
         rows.add("FAIL", "unsafe code", f"{', '.join(unsafe[:5])}: unsafe code can forge any value Dimension trusts")
     else:
@@ -202,6 +238,11 @@ def check(project: Path, network: str | None, rpc: str | None, fe_path: str | No
     print(f"dimension check {project}")
     for status, name, detail in rows.rows:
         print(f"  {status}  {name:<13} {detail}")
+    if rows.labels:
+        width = max(len(where) for where, _ in rows.labels)
+        print("\n  labels to review (amounts that reach credit or debit are also checked against their balance):")
+        for where, label in rows.labels:
+            print(f"    {where:<{width}}  {label}")
     return 1 if rows.failed else 0
 
 

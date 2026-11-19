@@ -4,8 +4,8 @@ const LAYERS = [
   {
     when: "Compile time",
     name: "Financial types",
-    how: "Amounts carry token, direction and stage; prices carry their pair; policies carry predicates.",
-    stops: "Balancer's _upscale in the typed pool. MIP-X43's feed in a USD slot.",
+    how: "Amounts carry token, direction and stage, and balances move only the way an amount is labelled; prices carry their pair; policies carry predicates.",
+    stops: "Balancer's _upscale in the typed pool. MIP-X43's feed in a USD slot. A deposit labelled as leaving.",
   },
   {
     when: "Deployment",

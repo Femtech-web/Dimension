@@ -1,0 +1,6 @@
+use super::deposit
+
+#[test]
+fn a_deposit_adds_what_arrived() {
+    assert(deposit(5, 7) == 12)
+}

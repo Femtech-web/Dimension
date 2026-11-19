@@ -98,7 +98,7 @@ $ make show CASE=typed_pool_with_balancer_upscale
 | Exact-out swaps that lower value per share | 48 | **0** | **0** |
 | Greedy attacker on a 1,000-wei pool, invariant units | **+20.923** | −151.416 | −151.416 |
 | Value per share after the attack, on an EVM | **−3.38%** | +19.51% | +19.51% |
-| Gas per exact-out exit | 24,493 | 25,338 (+3.4%) | 26,154 (+6.8%) |
+| Gas per exact-out exit | 24,493 | 25,332 (+3.4%) | 26,148 (+6.8%) |
 
 On the typed kernels, the same steps charge the attacker more once the balances
 reach dust: 17 wei of osETH out costs 1,071,109 wei of WETH instead of 625,492.
@@ -204,6 +204,10 @@ flowchart LR
      the protocol, at stage `Given`, `Admitted`, `Owed` or `Settled`. Only
      `admit` and `settle` reach the trusted stages, and they take their
      rounding from the direction. A call site never names a rounding.
+   - Balances and share supplies move only through `credit`, `debit`,
+     `issue` and `retire`, which take the matching direction, in token
+     units. A label is checked against what the code does with the money:
+     an amount labelled as arriving cannot be paid out of a balance.
    - `Price<B, Q>` composes only through a shared asset.
    - `Value<Q, V>` rounds collateral down and debt up, and the two cannot be
      added.
@@ -267,6 +271,7 @@ The rest of Dimension leans on Fe throughout:
 | Phantom generics, module-scoped privacy | Trusted values have private fields; only their checking functions construct them |
 | Sealed traits with associated types | Exactly two roundings, two flows and two valuation sides; none can be added |
 | A recursive associated type (`type Opposite: Flow`) | An exchange's result moves opposite to what it received, so an ERC-4626 vault's four roundings need no code |
+| A sealed sub-trait of a sealed trait (`TokenUnits: Stage`) | `credit` and `debit` accept only `Given` and `Settled` amounts, so internal 18-decimal units never reach a raw balance, and no one can add a stage that would |
 | `where` predicates on associated constants | Incoherent risk policies and assets over 18 decimals fail to compile |
 | Const generics with bounds | One StableMath for 2 to 5 tokens (`const N: usize where N >= 2, N <= 5`) |
 | Effects | A feed read needs `uses (call: mut Call, ctx: Ctx)`. Failure is an effect too: one kernel reverts with Balancer's `BAL#` codes on the EVM and records failures in a native search |
@@ -286,13 +291,13 @@ The rest of Dimension leans on Fe throughout:
 | The pool contracts at every optimization level | `-O0`, `-O1`, `-O2`, `-Os` | the same attack to the wei at each; gas and size per level | `make evm` |
 | Typed code on Dimension against the same code by hand on raw `u256` | 2 pairs, 8 functions, 4,096 calls per level, 4 levels | identical results at every level; above `-O0`, identical gas, and identical bytes for the roundings | `make evm` |
 | Admission and settlement against the exact rational result | 20,000 per backend | exact floor and ceil | `make unit` |
-| Constructions the compiler must reject | 17 cases, each with a corrected twin | all rejected with the intended error; all twins pass | `make compile-fail` |
+| Constructions the compiler must reject | 19 cases, each with a corrected twin | all rejected with the intended error; all twins pass | `make compile-fail` |
 | Language behaviour the design rests on | 20 probes with golden outputs and bytecode hashes | all as recorded, identical on macOS and Linux | `make probes` |
 | Moonwell's market on Base forks | 14 blocks across the incident | Dimension correct at every block; identical to Moonwell where Moonwell was right | `make moonwell` |
 | Each declared feed against Chainlink's directory and Base | the registry, plus 2 wrong declarations that compile | the registry passes 10 of 10 checks per feed; both wrong ones rejected, one that passes every on-chain check | `make feeds` |
 | The ERC-4626 vault against OpenZeppelin's ERC4626 | 40,000 vectors, 33,684 where the rounding decides | all equal | `make vault` |
 | The vault against the exact rational result | 32,768 states × 4 previews, both backends | exact floor or ceil as EIP-4626 requires | `make unit` |
-| Planted bugs in the safety-critical code | 17 mutants across 7 layers | every one caught, for the reason expected of it | `make mutants FORKS=1` |
+| Planted bugs in the safety-critical code | 19 mutants across 7 layers | every one caught, for the reason expected of it | `make mutants FORKS=1` |
 | A fresh project from `dimension new`, taking Dimension by git | the quickstart, a misuse, two unsafe setups | builds and passes its tests; the misuse is rejected; `dimension check` passes it and fails both setups | `make consumer` |
 
 Every run writes a report to [`docs/results/`](docs/results). Each claim in it
@@ -372,10 +377,12 @@ python3 cli/dimension.py check ../my-protocol --network base    # the checklist 
 ```
 
 `check` fails a project that could forge or misprice what Dimension trusts:
-`allow_unsafe` set on Dimension, any `unsafe` code, code that does not compile,
-or a Chainlink feed that is not the feed it is declared to be, checked against
-Chainlink's directory and the chain by [`feed_check.py`](cli/feed_check.py). It
-warns on a dependency not pinned to a release, and on an untested Fe version.
+`allow_unsafe` granted to any dependency, any `unsafe` code, code that does not
+compile, or a Chainlink feed that is not the feed it is declared to be, checked
+against Chainlink's directory and the chain by
+[`feed_check.py`](cli/feed_check.py). It warns on a dependency not pinned to a
+release, and on an untested Fe version. And it lists every label, each place a
+raw number gets its direction, for review.
 
 The library's own page is [`ingots/dimension`](ingots/dimension), and its
 security policy is [SECURITY.md](SECURITY.md). `make consumer` checks this path
@@ -397,6 +404,13 @@ pass it, and fail it once `allow_unsafe` or `unsafe` code is added.
   or another oracle network has no directory to check against, and stays a
   reviewed declaration. The trust moves to Chainlink's own record, at review
   time; nothing enforces it on chain.
+- **A label is trusted until the money moves.** `given` and `owed` attach a
+  direction to a raw number, and the compiler cannot see which way it really
+  goes. An amount that moves a balance or a supply through `credit`, `debit`,
+  `issue` or `retire` is checked against that movement. In the typed Balancer
+  pool, 16 of its 17 labels reach one, and the 17th feeds StableMath, whose
+  signature fixes its direction. `dimension check` lists every label, so
+  review covers exactly those lines.
 - **`unsafe` code in your own ingot can forge any value.** `allow_unsafe`
   gates dependencies, not the root, so a pointer cast in a deployed ingot can
   build a `Price` no read produced; [`tests/unsafe_root`](tests/unsafe_root)
@@ -407,7 +421,7 @@ pass it, and fail it once `allow_unsafe` or `unsafe` code is added.
   cannot safely be shortened: started from the invariant before the
   operation, Newton's integer iteration settles on a different value at dust
   balances, and in the search that let 13 losing operations through. The
-  typed contract costs 800 to 1,000 gas more per operation (+3% to +6%), for
+  typed contract costs about 800 to 1,000 gas more per operation (+3% to +6%), for
   its checked rate read.
 - **Rounding up refuses some dust:** 1 wei out of a 2-wei balance, which
   Balancer paid out for free.
@@ -443,7 +457,7 @@ type-checks, and every test suite passes, on Fe 26.7.0. The manifest is
 | `make help` | Every target |
 
 CI runs `make ci` and `make mutants` on Linux, and the fork comparisons, with
-all 17 mutants, in a separate job.
+all 19 mutants, in a separate job.
 Native executables exist for `linux_amd64` and `mac_arm64` in Fe 26.6.0;
 elsewhere the native search is skipped.
 

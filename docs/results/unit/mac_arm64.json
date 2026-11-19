@@ -40,10 +40,10 @@
       "problems": [],
       "observed": {
         "sonatina": {
-          "passed": 14
+          "passed": 17
         },
         "native": {
-          "passed": 14
+          "passed": 17
         }
       }
     },

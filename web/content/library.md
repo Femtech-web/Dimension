@@ -82,8 +82,8 @@ fe build                     # bytecode and ABI in out/
 | Module | Provides |
 |---|---|
 | `asset` | `Asset`: a token type and its decimals |
-| `flow`, `rounding` | `In` and `Out`, the stages `Given`, `Admitted`, `Owed`, `Settled`, the valuation sides `Collateral` and `Debt`. Sealed: `Floor` and `Ceil` are the only roundings |
-| `value` | `Quantity`, `ScalingFactor`, `Rate`, `Price`, `Amount`, `Value`, and the only functions that produce the trusted ones: `admit`, `settle`, `exchange`, `value_of` |
+| `flow`, `rounding` | `In` and `Out`, the stages `Given`, `Admitted`, `Owed`, `Settled` (`TokenUnits`: the two in token units), the valuation sides `Collateral` and `Debt`. Sealed: `Floor` and `Ceil` are the only roundings |
+| `value` | `Quantity`, `ScalingFactor`, `Rate`, `Price`, `Amount`, `Value`, and the only functions that produce the trusted ones: `admit`, `settle`, `exchange`, `value_of`. `credit` and `debit` move a held balance, `issue` and `retire` a supply, each only in the direction an amount is labelled |
 | `value::oracle` | EVM only. `Feed<B, Q>` and `RateSource<T>` declarations; `verify` at deployment; `read` and `read_rate` with freshness and band checks |
 | `policy` | `RiskPolicy`, with `borrow_capacity` and `is_healthy` checked by compile-time predicates |
 | `invariant` | `Backing` and `preserves_share_value`, an exact runtime share-value check |

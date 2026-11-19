@@ -20,6 +20,8 @@ In scope:
 - a rounding that favours the caller, in `admit`, `settle`, `scaled_by`,
   `exchange` or `value_of`;
 - a boundary check that accepts what it is documented to reject;
+- `credit`, `debit`, `issue` or `retire` accepting an amount moving the wrong
+  way, or in internal units;
 - `preserves_share_value` returning a wrong answer.
 
 Not vulnerabilities, because they are documented limits

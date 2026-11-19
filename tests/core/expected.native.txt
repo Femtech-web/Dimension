@@ -3,6 +3,7 @@ PASS balancer_given_out_is_rounded_up
 PASS borrow_capacity_applies_ltv
 PASS collateral_rounds_down_and_debt_rounds_up
 PASS composite_price_through_the_middle_asset
+PASS debiting_more_than_is_held_reverts
 PASS decimal_scaling
 PASS equal_or_higher_share_value_is_preserved
 PASS given_in_is_rounded_down
@@ -11,5 +12,7 @@ PASS one_unit_lower_is_caught
 PASS products_beyond_256_bits_compare_exactly
 PASS settlement_charges_up_and_pays_down
 PASS settlement_matches_exact_rounding_on_every_small_amount
+PASS shares_going_out_are_issued_and_shares_coming_back_retired
+PASS value_arriving_is_credited_and_value_leaving_debited
 PASS values_on_one_side_add
-test result: ok. 14 passed; 0 failed
+test result: ok. 17 passed; 0 failed

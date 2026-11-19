@@ -23,6 +23,14 @@ original code and the real chains.
   the library itself, at `-O1`, `-O2` and `-Os`: its roundings compile to the
   same bytes as the hand-written calls, and an ERC-4626 vault built on it costs
   the same gas on every call, with identical results.
+- **A label checked against the money.** An amount's direction is a label
+  until it moves a balance or a supply. `credit`, `debit`, `issue` and
+  `retire` take only the matching direction, so a deposit labelled,
+  consistently, as leaving, which would round its shares up, does not compile
+  where it is credited. Units-of-measure libraries check that units agree; this
+  checks that a declared direction agrees with what the code does with the
+  value. In the typed Balancer pool, 16 of the 17 labels are checked this way,
+  and `dimension check` lists all of them.
 - **The incident's own code, typed.** Balancer's StableMath, pool paths and
   protocol fees were ported faithfully. They were checked against the Solidity
   on 220,000 vectors, against the deployed pool on 669 quotes, and against the

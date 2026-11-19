@@ -5,7 +5,19 @@
 
 use core::ops::{Add, Mul, Sub}
 use super::asset::Asset
-use super::flow::{Admitted, Collateral, Debt, Flow, Given, Owed, Settled, Valuation}
+use super::flow::{
+    Admitted,
+    Collateral,
+    Debt,
+    Flow,
+    Given,
+    In,
+    Out,
+    Owed,
+    Settled,
+    TokenUnits,
+    Valuation,
+}
 use super::rounding::{Floor, Rounding}
 
 /// 1.0 in the 18-decimal fixed point used for internal units, prices and values.
@@ -96,6 +108,34 @@ pub fn exchange<A, B, G: Flow>(
     denominator: u256,
 ) -> Quantity<B, G::Opposite, Settled> {
     Quantity { v: <G::Opposite as Flow>::Obligation::mul_div(given.v, numerator, denominator) }
+}
+
+/// Adds value arriving to `held`, a balance of `T` in token units. Only an
+/// amount moving `In`, in token units, can be credited. So a label is checked
+/// against what the code does with the money: an amount labelled as leaving
+/// cannot be added to what the protocol holds.
+pub fn credit<T, S: TokenUnits>(_ held: u256, _ q: Quantity<T, In, S>) -> u256 {
+    held + q.v
+}
+
+/// Takes value leaving from `held`, a balance of `T` in token units. Only an
+/// amount moving `Out`, in token units, can be debited, and debiting more than
+/// is held reverts.
+pub fn debit<T, S: TokenUnits>(_ held: u256, _ q: Quantity<T, Out, S>) -> u256 {
+    held - q.v
+}
+
+/// Adds shares going out to `supply`, the total of a token the protocol itself
+/// issues, such as a pool's or a vault's shares. Only an amount moving `Out`,
+/// in token units, can be issued.
+pub fn issue<T, S: TokenUnits>(_ supply: u256, _ q: Quantity<T, Out, S>) -> u256 {
+    supply + q.v
+}
+
+/// Removes shares coming back from `supply`. Only an amount moving `In`, in
+/// token units, can be retired, and retiring more than was issued reverts.
+pub fn retire<T, S: TokenUnits>(_ supply: u256, _ q: Quantity<T, In, S>) -> u256 {
+    supply - q.v
 }
 
 impl<T, F: Flow> Quantity<T, F, Settled> {

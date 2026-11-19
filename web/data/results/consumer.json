@@ -3,7 +3,7 @@
   "question": "Does Dimension work as a dependency of someone else's project?",
   "dependency": {
     "source": "this repository's git history",
-    "rev": "7b41fc70b4c4b050957008ec4f6bbd7a7bb866bb",
+    "rev": "0f548cb41d22ad1348baca0b953d58079815284b",
     "name": "dimension",
     "version": "0.1.0"
   },
@@ -16,12 +16,12 @@
     {
       "question": "Can a new project depend on Dimension from git, and does it get Dimension's checks?",
       "holds": true,
-      "evidence": "`dimension new` creates the quickstart taking Dimension at 7b41fc7 by git source; it builds and passes its 3 tests; an incoming amount used as an outgoing one is rejected with 8-0000"
+      "evidence": "`dimension new` creates the quickstart taking Dimension at 0f548cb by git source; it builds and passes its 3 tests; an incoming amount used as an outgoing one is rejected with 8-0000"
     },
     {
-      "question": "Does `dimension check` pass that project, and fail it once it can forge values Dimension trusts?",
+      "question": "Does `dimension check` pass that project, list its labels for review, and fail it once it can forge values Dimension trusts?",
       "holds": true,
-      "evidence": "the new project: 5 of 6 checks ok, and a warning on pinned (it pins HEAD, not a release); with allow_unsafe set on Dimension it fails allow_unsafe; with a price forged by a pointer cast, which compiles, it fails unsafe code"
+      "evidence": "the new project: 5 of 6 checks ok, and a warning on pinned (it pins HEAD, not a release); its 3 labels listed for review (given<USDC, In>, owed<USDC, Out>, owed<USDC, In>); with allow_unsafe set on Dimension it fails allow_unsafe; with a price forged by a pointer cast, which compiles, it fails unsafe code"
     }
   ]
 }

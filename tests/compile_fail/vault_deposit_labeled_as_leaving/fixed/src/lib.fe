@@ -1,0 +1,19 @@
+use dimension::{Given, In, Out, Quantity, Settled, credit, exchange, issue}
+use vault::vault::{Shares, Vault}
+
+// The deposit labelled as what it is, assets arriving: its shares round down,
+// and crediting it to the vault's assets compiles.
+pub fn deposit<A>(_ v: mut Vault<A>, _ assets: Quantity<A, In, Given>) -> Quantity<
+    Shares<A>,
+    Out,
+    Settled,
+> {
+    let shares: Quantity<Shares<A>, Out, Settled> = exchange(
+        assets,
+        numerator: v.total_shares + 1,
+        denominator: v.total_assets + 1,
+    )
+    v.total_assets = credit(v.total_assets, assets)
+    v.total_shares = issue(v.total_shares, shares)
+    shares
+}

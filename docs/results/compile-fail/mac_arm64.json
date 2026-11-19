@@ -8,10 +8,10 @@
   },
   "platform": "mac_arm64",
   "summary": {
-    "cases": 17,
-    "ok": 17,
+    "cases": 19,
+    "ok": 19,
     "by_kind": {
-      "compile_fail": 17
+      "compile_fail": 19
     }
   },
   "cases": [
@@ -165,7 +165,7 @@
       "observed": {
         "error_code": "2-0003",
         "message": "`v` is not visible",
-        "diagnostics_sha256": "89f6d9ca3806bd0659ec9eb77f1d790a8e4f7844883173c1c2da81e62c247b51",
+        "diagnostics_sha256": "c500241ad19d286a36c718f685293cd83d91a494e983b61d7cb632c0590e8a4f",
         "twin": {
           "mode": "test",
           "fix": [
@@ -189,7 +189,7 @@
       "observed": {
         "error_code": "2-0003",
         "message": "`wad` is not visible",
-        "diagnostics_sha256": "ba455b10206cfdd42e0594cef5a8f3392a828620498b1d2159bd9b9812197f2b",
+        "diagnostics_sha256": "9db5057edf00dd10fc0f480e38735e02140403228119c8edb5a4ff59d940a262",
         "twin": {
           "mode": "check",
           "fix": [
@@ -203,6 +203,33 @@
             "+{",
             "+    read(f)"
           ],
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/internal_units_credited_to_balance",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A deposit is credited to a raw USDC balance in internal 18-decimal units, overstating it by 10^12: only amounts in token units can be credited",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "6-0003",
+        "message": "trait bound is not satisfied",
+        "diagnostics_sha256": "91e5f13c8149c1291fb66d4aaf7ad45f2958d386f42226158af649f9af2c196c",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::{Asset, In, admit, credit, given, scaling_factor}",
+            "+use dimension::{Asset, In, credit, given}",
+            "-// A USDC deposit added to the desk's USDC balance after admission, in internal",
+            "-// 18-decimal units: 10^12 times what arrived.",
+            "+// The deposit credited in USDC's own units, as it arrived.",
+            "-    credit(held, admit(given<USDC, In>(raw), scaling_factor<USDC>()))",
+            "+    credit(held, given<USDC, In>(raw))"
+          ],
+          "passed": 1,
           "ok": true
         }
       }
@@ -337,7 +364,7 @@
       "observed": {
         "error_code": "8-0093",
         "message": "const requirement is not satisfied",
-        "diagnostics_sha256": "dfa31d998bba16782730409aeba4aadaba2110bf2323ed8b1e5080896f46e03b",
+        "diagnostics_sha256": "f2bedcfd785bf5714e90348f4dd1111bd4cd059a227081afc4ebf1069b7928e4",
         "twin": {
           "mode": "test",
           "fix": [
@@ -415,6 +442,39 @@
           "fix": [
             "-pub fn value(_ a: Amount<USDC>, _ p: Price<CBETH, USD>) -> Value<USD, Collateral> {",
             "+pub fn value(_ a: Amount<USDC>, _ p: Price<USDC, USD>) -> Value<USD, Collateral> {"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/vault_deposit_labeled_as_leaving",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A vault deposit labelled, consistently, as assets leaving the vault: every signature agrees, so its shares round up in the depositor's favour, and only the vault's books refuse the label: the deposit cannot be credited to its assets, nor its shares issued",
+      "incident": "ERC-4626 share rounding, the class EIP-4626's rounding rules exist to prevent",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "8ff7713bf2c107c43a4af95c4d49643555ca800a4e107da0335e728a9fc68150",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-// A deposit written, consistently, as assets leaving the vault. Every signature",
+            "-// agrees, so the shares it issues round up, in the depositor's favour. Only the",
+            "-// vault's own books disagree: assets that leave cannot be credited, and",
+            "-// shares that come back cannot be issued.",
+            "-pub fn deposit<A>(_ v: mut Vault<A>, _ assets: Quantity<A, Out, Given>) -> Quantity<",
+            "+// The deposit labelled as what it is, assets arriving: its shares round down,",
+            "+// and crediting it to the vault's assets compiles.",
+            "+pub fn deposit<A>(_ v: mut Vault<A>, _ assets: Quantity<A, In, Given>) -> Quantity<",
+            "-    In,",
+            "+    Out,",
+            "-    let shares: Quantity<Shares<A>, In, Settled> = exchange(",
+            "+    let shares: Quantity<Shares<A>, Out, Settled> = exchange("
           ],
           "passed": 1,
           "ok": true

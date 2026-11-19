@@ -17,6 +17,7 @@ pub use self::flow::{
     Owed,
     Settled,
     Stage,
+    TokenUnits,
     Valuation,
 }
 pub use self::policy::{RiskPolicy, borrow_capacity, is_healthy}
@@ -31,10 +32,14 @@ pub use self::value::{
     WAD,
     admit,
     covers,
+    credit,
+    debit,
     exchange,
     given,
     haircut,
+    issue,
     owed,
+    retire,
     scaling_factor,
     settle,
     value_of,

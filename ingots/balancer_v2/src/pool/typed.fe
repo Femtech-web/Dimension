@@ -10,6 +10,11 @@
 //!
 //! Joins and exits pay protocol fees exactly as in `faithful`.
 //!
+//! Every held balance moves through `credit` and `debit`, and the BPT supply
+//! through `issue` and `retire`, so each amount's direction is checked once more
+//! against what the pool does with it: an amount labelled as arriving cannot be
+//! paid out of a balance, and BPT labelled as coming back cannot be issued.
+//!
 //! With `guard`, each operation also enforces Dimension's runtime share-value
 //! check (see `pool::guarded`). It reuses the invariant the operation already
 //! computes for the state before. On joins and exits it takes the invariant of
@@ -28,6 +33,7 @@ use dimension::{
     Quantity,
     ScalingFactor,
     Settled,
+    TokenUnits,
     admit,
     preserves_share_value,
     scaling_factor,
@@ -56,6 +62,39 @@ uses (check: mut Check)
         factor.value() == pool.factors[index],
         "factor does not match the token at this index",
     )
+}
+
+/// Dimension's `credit`, with Balancer's checked addition, so that a failure
+/// reverts with Balancer's own code: only an amount arriving, in token units,
+/// can be added to a balance the pool holds.
+fn credit<T, S: TokenUnits>(_ held: u256, _ q: Quantity<T, In, S>) -> u256
+uses (check: mut Check)
+{
+    fp::add(held, q.value())
+}
+
+/// Dimension's `debit`, with Balancer's checked subtraction: only an amount
+/// leaving, in token units, can be taken from a balance the pool holds.
+fn debit<T, S: TokenUnits>(_ held: u256, _ q: Quantity<T, Out, S>) -> u256
+uses (check: mut Check)
+{
+    fp::sub(held, q.value())
+}
+
+/// Dimension's `issue`, with Balancer's checked addition: only BPT going out
+/// can be added to the supply.
+fn issue<T, S: TokenUnits>(_ supply: u256, _ q: Quantity<T, Out, S>) -> u256
+uses (check: mut Check)
+{
+    fp::add(supply, q.value())
+}
+
+/// Dimension's `retire`, with Balancer's checked subtraction: only BPT coming
+/// back can be taken from the supply.
+fn retire<T, S: TokenUnits>(_ supply: u256, _ q: Quantity<T, In, S>) -> u256
+uses (check: mut Check)
+{
+    fp::sub(supply, q.value())
 }
 
 /// The invariant of the balances the pool actually holds.
@@ -134,8 +173,8 @@ where N >= 2, N <= 5
         invariant: pre_invariant,
     )
     let amount_out = settle(out, factor_out)
-    pool.balances[i] = fp::add(pool.balances[i], raw_in)
-    pool.balances[j] = fp::sub(pool.balances[j], amount_out.value())
+    pool.balances[i] = credit(pool.balances[i], amount_in)
+    pool.balances[j] = debit(pool.balances[j], amount_out)
     if guard {
         enforce(pool, before, after_value: held(pool))
     }
@@ -169,8 +208,8 @@ where N >= 2, N <= 5
     )
     let amount_in = settle(scaled_in, factor_in)
         .scaled_by(numerator: fp::ONE, denominator: fp::complement(pool.fee))
-    pool.balances[i] = fp::add(pool.balances[i], amount_in.value())
-    pool.balances[j] = fp::sub(pool.balances[j], amount_out.value())
+    pool.balances[i] = credit(pool.balances[i], amount_in)
+    pool.balances[j] = debit(pool.balances[j], amount_out)
     if guard {
         enforce(pool, before, after_value: held(pool))
     }
@@ -201,10 +240,11 @@ where N >= 2, N <= 5
         invariant: pre_invariant,
     )
     balances[j] = fp::sub(balances[j], scaled_out.value())
-    pool.supply = fp::sub(before.shares, bpt_in.value())
-    pool.balances[j] = fp::sub(pool.balances[j], amount_out.value())
+    let bpt = settle(bpt_in, scaling_factor<Bpt>())
+    pool.supply = retire(before.shares, bpt)
+    pool.balances[j] = debit(pool.balances[j], amount_out)
     finish_join_exit(mut pool, balances, before, guard)
-    settle(bpt_in, scaling_factor<Bpt>())
+    bpt
 }
 
 pub fn exit_given_in<T, const N: usize>(
@@ -230,9 +270,9 @@ where N >= 2, N <= 5
         invariant: pre_invariant,
     )
     balances[j] = fp::sub(balances[j], scaled_out.value())
-    pool.supply = fp::sub(before.shares, bpt_in.value())
+    pool.supply = retire(before.shares, bpt_in)
     let amount_out = settle(scaled_out, factor)
-    pool.balances[j] = fp::sub(pool.balances[j], amount_out.value())
+    pool.balances[j] = debit(pool.balances[j], amount_out)
     finish_join_exit(mut pool, balances, before, guard)
     amount_out
 }
@@ -261,10 +301,11 @@ where N >= 2, N <= 5
         invariant: pre_invariant,
     )
     balances[i] = fp::add(balances[i], scaled_in.value())
-    pool.supply = fp::add(before.shares, bpt_out.value())
-    pool.balances[i] = fp::add(pool.balances[i], amount_in.value())
+    let bpt = settle(bpt_out, scaling_factor<Bpt>())
+    pool.supply = issue(before.shares, bpt)
+    pool.balances[i] = credit(pool.balances[i], amount_in)
     finish_join_exit(mut pool, balances, before, guard)
-    settle(bpt_out, scaling_factor<Bpt>())
+    bpt
 }
 
 pub fn join_given_out<T, const N: usize>(
@@ -290,9 +331,9 @@ where N >= 2, N <= 5
         invariant: pre_invariant,
     )
     balances[i] = fp::add(balances[i], scaled_in.value())
-    pool.supply = fp::add(before.shares, bpt_out.value())
+    pool.supply = issue(before.shares, bpt_out)
     let amount_in = settle(scaled_in, factor)
-    pool.balances[i] = fp::add(pool.balances[i], amount_in.value())
+    pool.balances[i] = credit(pool.balances[i], amount_in)
     finish_join_exit(mut pool, balances, before, guard)
     amount_in
 }

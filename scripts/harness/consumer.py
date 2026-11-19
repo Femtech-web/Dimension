@@ -99,6 +99,10 @@ def main() -> int:
     ok_out = built.output + tested.output
     rejected = misuse.code != 0 and "error[8-0000]" in misuse.output
     clean = not checked.failed
+    # The quickstart's labels, in order: a deposit arriving, a payout and a charge.
+    listed = [label for _, label in checked.labels]
+    labelled = listed == ["given<USDC, In>", "owed<USDC, Out>", "owed<USDC, In>"]
+    judged = [row for row in checked.rows if row[0] != "note"]
     caught = failures(unsafe_dep) == {"allow_unsafe"} and failures(unsafe_code) == {"unsafe code"}
     claims = [
         {
@@ -109,10 +113,11 @@ def main() -> int:
             + ("; an incoming amount used as an outgoing one is rejected with 8-0000" if rejected else "; the misuse was NOT rejected"),
         },
         {
-            "question": "Does `dimension check` pass that project, and fail it once it can forge values Dimension trusts?",
-            "holds": clean and caught,
-            "evidence": f"the new project: {sum(s.strip() == 'ok' for s, _, _ in checked.rows)} of {len(checked.rows)} checks ok, "
+            "question": "Does `dimension check` pass that project, list its labels for review, and fail it once it can forge values Dimension trusts?",
+            "holds": clean and caught and labelled,
+            "evidence": f"the new project: {sum(s.strip() == 'ok' for s, _, _ in judged)} of {len(judged)} checks ok, "
             f"and a warning on {', '.join(n for s, n, _ in checked.rows if s == 'warn') or 'nothing'} (it pins HEAD, not a release); "
+            f"its {len(listed)} labels listed for review ({', '.join(listed)}); "
             f"with allow_unsafe set on Dimension it fails {', '.join(sorted(failures(unsafe_dep))) or 'nothing'}; "
             f"with a price forged by a pointer cast, which compiles, it fails {', '.join(sorted(failures(unsafe_code))) or 'nothing'}",
         },

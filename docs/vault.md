@@ -56,6 +56,20 @@ compiler rejects it (case `vault_deposit_rounds_shares_up`):
 expected `Quantity<Shares<A>, Out, Settled>`, but `Quantity<_, In, Settled>` is given
 ```
 
+A developer could tell that lie consistently instead, declaring the deposit's
+assets `Out` and its shares `In` in every signature. The vault's books then
+refuse it. Each operation moves its assets with `credit` or `debit`, and its
+shares with `issue` or `retire`, and those take only the matching direction:
+
+```
+v.total_assets = credit(v.total_assets, assets)
+                                        ^^^^^^ expected `Quantity<_, In, _>`, but `Quantity<A, Out, Given>` is given
+v.total_shares = issue(v.total_shares, shares)
+                                       ^^^^^^ expected `Quantity<_, Out, _>`, but `Quantity<Shares<A>, In, Settled>` is given
+```
+
+That is case `vault_deposit_labeled_as_leaving`.
+
 Conversions count one virtual asset and one virtual share, as OpenZeppelin does
 with a decimals offset of 0. This keeps a first depositor from inflating the
 share price.

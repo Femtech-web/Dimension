@@ -1,0 +1,25 @@
+use dimension::{In, Out, credit, debit, given, issue, owed, retire, scaling_factor, settle}
+use super::assets::USDC
+
+#[test]
+fn value_arriving_is_credited_and_value_leaving_debited() {
+    let held = credit(100, given<USDC, In>(40))
+    assert(held == 140)
+    // 15.5 micro-USDC owed out is paid as 15, and 15 leaves the balance.
+    let paid = settle(
+        owed<USDC, Out>(15_500_000_000_000),
+        scaling_factor<USDC>(),
+    )
+    assert(debit(held, paid) == 125)
+}
+
+#[test]
+fn shares_going_out_are_issued_and_shares_coming_back_retired() {
+    assert(issue(1_000, given<USDC, Out>(10)) == 1_010)
+    assert(retire(1_000, given<USDC, In>(10)) == 990)
+}
+
+#[test(should_revert)]
+fn debiting_more_than_is_held_reverts() {
+    debit(5, given<USDC, Out>(6))
+}

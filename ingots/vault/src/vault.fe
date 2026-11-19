@@ -1,4 +1,4 @@
-use dimension::{Given, In, Out, Quantity, Settled, exchange}
+use dimension::{Given, In, Out, Quantity, Settled, credit, debit, exchange, issue, retire}
 
 /// The share token of a vault over `A`.
 pub struct Shares<A> {}
@@ -68,8 +68,8 @@ pub fn deposit<A>(_ v: mut Vault<A>, _ assets: Quantity<A, In, Given>) -> Quanti
     Settled,
 > {
     let shares = preview_deposit(v, assets)
-    v.total_assets += assets.value()
-    v.total_shares += shares.value()
+    v.total_assets = credit(v.total_assets, assets)
+    v.total_shares = issue(v.total_shares, shares)
     shares
 }
 
@@ -79,8 +79,8 @@ pub fn mint<A>(_ v: mut Vault<A>, _ shares: Quantity<Shares<A>, Out, Given>) -> 
     Settled,
 > {
     let assets = preview_mint(v, shares)
-    v.total_assets += assets.value()
-    v.total_shares += shares.value()
+    v.total_assets = credit(v.total_assets, assets)
+    v.total_shares = issue(v.total_shares, shares)
     assets
 }
 
@@ -90,8 +90,8 @@ pub fn withdraw<A>(_ v: mut Vault<A>, _ assets: Quantity<A, Out, Given>) -> Quan
     Settled,
 > {
     let shares = preview_withdraw(v, assets)
-    v.total_assets -= assets.value()
-    v.total_shares -= shares.value()
+    v.total_assets = debit(v.total_assets, assets)
+    v.total_shares = retire(v.total_shares, shares)
     shares
 }
 
@@ -101,7 +101,7 @@ pub fn redeem<A>(_ v: mut Vault<A>, _ shares: Quantity<Shares<A>, In, Given>) ->
     Settled,
 > {
     let assets = preview_redeem(v, shares)
-    v.total_assets -= assets.value()
-    v.total_shares -= shares.value()
+    v.total_assets = debit(v.total_assets, assets)
+    v.total_shares = retire(v.total_shares, shares)
     assets
 }

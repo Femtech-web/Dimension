@@ -15,6 +15,7 @@ established, and what it does not guarantee. Status words:
 |---|---|---|---|---|
 | Compile time | A price used for the wrong pair; prices composed without a shared asset; collateral added to debt | `Price<B, Q>` and `Value<Q, V>` phantom parameters; `Mul` only through a shared asset | compile-fail cases with twins; Moonwell's MIP-X43 configuration written against the real Base registry | tested |
 | Compile time | An amount rounded the wrong way when admitted or settled; a scaled amount handed to the math without admission | `Flow` and `Stage` types; `admit` and `settle` are the only producers; the typed kernel reaches StableMath only through `Admitted` signatures | Balancer's `_upscale` line put back into the typed pool is rejected; the explorer measures the effect | verified |
+| Compile time | An amount moved against its label: credited while labelled as leaving, issued while labelled as coming back; internal units added to a raw balance | `credit`, `debit`, `issue`, `retire` take only the matching direction, in `TokenUnits` (sealed) | compile-fail cases `vault_deposit_labeled_as_leaving`, `internal_units_credited_to_balance`; the typed pool and vault move every balance and supply this way, with every result unchanged; mutants | tested |
 | Compile time | A third rounding direction, a custom flow, an incoherent risk policy, an asset with more than 18 decimals | sealed traits; `where` predicates on associated constants | compile-fail cases | tested |
 | Compile time | Trusted values built from raw numbers; test constructors reached from production code | private fields; `unsafe fn` constructors gated by `allow_unsafe`; `make unsafe-policy` here, and `dimension check` for a team's own project | compile-fail cases `forge_price`, `forge_admitted_quantity`, `test_constructor_from_production_root`; CI policy check; `make consumer` requires `dimension check` to fail a project with `allow_unsafe` or `unsafe` code | tested |
 | Compile time | An oracle read in code that has not declared it calls out and reads the clock | effects: `read` requires `uses (call: mut Call, ctx: Ctx)` | compile-fail case `oracle_read_without_effects` | tested |
@@ -42,11 +43,16 @@ established, and what it does not guarantee. Status words:
 
 What they do not establish:
 
-- **That a label is true.** `given` and `owed` attach a direction to a raw
-  number, and `given<T, In>(x)` compiles even if `x` is in fact leaving. Such a
-  mislabel is visible in review. What does not compile is changing a
-  direction after rounding: a payout settled with payout rounding cannot be
-  used where a charge is required (`payout_settled_as_charge`).
+- **That a label is true, until the money moves.** `given` and `owed` attach
+  a direction to a raw number, and `given<T, In>(x)` compiles even if `x` is in
+  fact leaving. Two things do not compile. Changing a direction after
+  rounding: a payout cannot be used where a charge is required
+  (`payout_settled_as_charge`). And moving money against its label: `credit`,
+  `debit`, `issue` and `retire` take only the matching direction, so a deposit
+  labelled as leaving cannot be credited (`vault_deposit_labeled_as_leaving`).
+  In the typed Balancer pool, 16 of the 17 labels reach one of them, and the
+  17th feeds StableMath, whose signature fixes its direction.
+  `dimension check` lists every label for review.
 - **That StableMath is precise.** Its own rounding inside the invariant
   solvers is outside the scaling boundary. See the residuals below.
 - **That no attack exists.** The recorded attack cannot run. That no other
@@ -87,29 +93,29 @@ down and paid it for free.
 |---|---|---|---|
 | swapGivenIn | 15,164 | 16,104 (+6.2%) | 22,644 (+49.3%) |
 | swapGivenOut | 15,981 | 17,000 (+6.4%) | 23,553 (+47.4%) |
-| exitGivenIn | 23,240 | 24,259 (+4.4%) | 25,075 (+7.9%) |
-| exitGivenOut | 24,493 | 25,338 (+3.4%) | 26,154 (+6.8%) |
-| joinGivenIn | 25,585 | 26,386 (+3.1%) | 27,202 (+6.3%) |
+| exitGivenIn | 23,240 | 24,097 (+3.7%) | 24,913 (+7.2%) |
+| exitGivenOut | 24,493 | 25,332 (+3.4%) | 26,148 (+6.8%) |
+| joinGivenIn | 25,585 | 26,380 (+3.1%) | 27,196 (+6.3%) |
 | joinGivenOut | 23,453 | 24,360 (+3.9%) | 25,176 (+7.3%) |
 
 | Runtime bytecode | Faithful | Typed | Guarded |
 |---|---|---|---|
-| `-O0` | 19,423 B | 28,562 B | 28,568 B |
-| `-O1` (default) | 8,014 B | 9,693 B | 10,144 B |
-| `-O2` | 7,992 B | 9,675 B | 10,126 B |
-| `-Os` | 9,139 B | 10,232 B | 10,616 B |
+| `-O0` | 19,423 B | 28,740 B | 28,746 B |
+| `-O1` (default) | 8,014 B | 9,346 B | 9,797 B |
+| `-O2` | 7,992 B | 9,332 B | 9,783 B |
+| `-Os` | 9,139 B | 10,230 B | 10,614 B |
 
 | Mean gas per operation | Faithful | Typed | Guarded |
 |---|---|---|---|
-| `-O0` | 29,850 | 32,399 (+8.5%) | 35,675 (+19.5%) |
-| `-O1` (default) | 21,319 | 22,241 (+4.3%) | 24,967 (+17.1%) |
-| `-O2` | 21,303 | 22,225 (+4.3%) | 24,951 (+17.1%) |
+| `-O0` | 29,850 | 32,465 (+8.8%) | 35,742 (+19.7%) |
+| `-O1` (default) | 21,319 | 22,212 (+4.2%) | 24,938 (+17.0%) |
+| `-O2` | 21,303 | 22,198 (+4.2%) | 24,924 (+17.0%) |
 | `-Os` | 22,744 | 23,730 (+4.3%) | 26,541 (+16.7%) |
 
 Gas is measured on a pool with the osETH/wETH pool's balances and parameters
 before the exploit, including its 50% protocol swap fee, for 10 tokens or 10
 BPT per operation (`make evm`). The typed contract's overhead is nearly
-constant, 800 to 1,000 gas per operation, including operations the types do
+constant, about 800 to 1,000 gas per operation, including operations the types do
 not change, such as `swapGivenIn`. It is the rate read through the banded
 boundary and the factor checks, which the faithful contract does not do. The
 guard's cost on swaps is one invariant solve. Started from the invariant before

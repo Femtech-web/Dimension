@@ -45,17 +45,17 @@
       "typed": {
         "swapGivenIn": 16104,
         "swapGivenOut": 17000,
-        "exitGivenIn": 24259,
-        "exitGivenOut": 25338,
-        "joinGivenIn": 26386,
+        "exitGivenIn": 24097,
+        "exitGivenOut": 25332,
+        "joinGivenIn": 26380,
         "joinGivenOut": 24360
       },
       "guarded": {
         "swapGivenIn": 22644,
         "swapGivenOut": 23553,
-        "exitGivenIn": 25075,
-        "exitGivenOut": 26154,
-        "joinGivenIn": 27202,
+        "exitGivenIn": 24913,
+        "exitGivenOut": 26148,
+        "joinGivenIn": 27196,
         "joinGivenOut": 25176
       }
     },
@@ -63,7 +63,7 @@
       "typed": {
         "swapGivenIn": "+6.2%",
         "swapGivenOut": "+6.4%",
-        "exitGivenIn": "+4.4%",
+        "exitGivenIn": "+3.7%",
         "exitGivenOut": "+3.4%",
         "joinGivenIn": "+3.1%",
         "joinGivenOut": "+3.9%"
@@ -71,7 +71,7 @@
       "guarded": {
         "swapGivenIn": "+49.3%",
         "swapGivenOut": "+47.4%",
-        "exitGivenIn": "+7.9%",
+        "exitGivenIn": "+7.2%",
         "exitGivenOut": "+6.8%",
         "joinGivenIn": "+6.3%",
         "joinGivenOut": "+7.3%"
@@ -88,20 +88,20 @@
           "joinGivenOut": 31748
         },
         "typed": {
-          "swapGivenIn": 24851,
-          "swapGivenOut": 26469,
-          "exitGivenIn": 34032,
-          "exitGivenOut": 37663,
-          "joinGivenIn": 36896,
-          "joinGivenOut": 34482
+          "swapGivenIn": 24962,
+          "swapGivenOut": 26523,
+          "exitGivenIn": 34086,
+          "exitGivenOut": 37725,
+          "joinGivenIn": 36958,
+          "joinGivenOut": 34536
         },
         "guarded": {
-          "swapGivenIn": 32560,
-          "swapGivenOut": 34187,
-          "exitGivenIn": 35090,
-          "exitGivenOut": 38721,
-          "joinGivenIn": 37954,
-          "joinGivenOut": 35540
+          "swapGivenIn": 32671,
+          "swapGivenOut": 34241,
+          "exitGivenIn": 35144,
+          "exitGivenOut": 38783,
+          "joinGivenIn": 38016,
+          "joinGivenOut": 35594
         }
       },
       "O1": {
@@ -116,17 +116,17 @@
         "typed": {
           "swapGivenIn": 16104,
           "swapGivenOut": 17000,
-          "exitGivenIn": 24259,
-          "exitGivenOut": 25338,
-          "joinGivenIn": 26386,
+          "exitGivenIn": 24097,
+          "exitGivenOut": 25332,
+          "joinGivenIn": 26380,
           "joinGivenOut": 24360
         },
         "guarded": {
           "swapGivenIn": 22644,
           "swapGivenOut": 23553,
-          "exitGivenIn": 25075,
-          "exitGivenOut": 26154,
-          "joinGivenIn": 27202,
+          "exitGivenIn": 24913,
+          "exitGivenOut": 26148,
+          "joinGivenIn": 27196,
           "joinGivenOut": 25176
         }
       },
@@ -142,7 +142,7 @@
         "typed": {
           "swapGivenIn": 16095,
           "swapGivenOut": 16991,
-          "exitGivenIn": 24241,
+          "exitGivenIn": 24079,
           "exitGivenOut": 25314,
           "joinGivenIn": 26362,
           "joinGivenOut": 24345
@@ -150,7 +150,7 @@
         "guarded": {
           "swapGivenIn": 22635,
           "swapGivenOut": 23544,
-          "exitGivenIn": 25057,
+          "exitGivenIn": 24895,
           "exitGivenOut": 26130,
           "joinGivenIn": 27178,
           "joinGivenOut": 25161
@@ -169,16 +169,16 @@
           "swapGivenIn": 16611,
           "swapGivenOut": 17657,
           "exitGivenIn": 25575,
-          "exitGivenOut": 28711,
-          "joinGivenIn": 28292,
+          "exitGivenOut": 28709,
+          "joinGivenIn": 28290,
           "joinGivenOut": 25536
         },
         "guarded": {
           "swapGivenIn": 23390,
           "swapGivenOut": 24440,
           "exitGivenIn": 26401,
-          "exitGivenOut": 29537,
-          "joinGivenIn": 29118,
+          "exitGivenOut": 29535,
+          "joinGivenIn": 29116,
           "joinGivenOut": 26362
         }
       }
@@ -539,29 +539,29 @@
   },
   "runtime_bytecode_bytes": {
     "faithful": 8014,
-    "typed": 9693,
-    "guarded": 10144
+    "typed": 9346,
+    "guarded": 9797
   },
   "runtime_bytecode_bytes_by_level": {
     "O0": {
       "faithful": 19423,
-      "typed": 28562,
-      "guarded": 28568
+      "typed": 28740,
+      "guarded": 28746
     },
     "O1": {
       "faithful": 8014,
-      "typed": 9693,
-      "guarded": 10144
+      "typed": 9346,
+      "guarded": 9797
     },
     "O2": {
       "faithful": 7992,
-      "typed": 9675,
-      "guarded": 10126
+      "typed": 9332,
+      "guarded": 9783
     },
     "Os": {
       "faithful": 9139,
-      "typed": 10232,
-      "guarded": 10616
+      "typed": 10230,
+      "guarded": 10614
     }
   },
   "claims": [

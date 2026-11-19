@@ -35,7 +35,7 @@ For each incident this shows:
   pool, is a type error. StableMath only accepts amounts that went through
   `admit`.
 
-`make show` with no argument runs all 17 compile-fail cases the same way.
+`make show` with no argument runs all 19 compile-fail cases the same way.
 
 ## 3. Run everything offline (about 2 minutes)
 
@@ -99,7 +99,7 @@ rate-limited.
 
 ## 6. Try to break it
 
-`make mutants` (with `FORKS=1` for the last two) plants 17 realistic bugs, one at
+`make mutants` (with `FORKS=1` for the last two) plants 19 realistic bugs, one at
 a time, in a scratch copy, and requires the check meant for each to fail for
 the reason expected of it. CI runs it on every change. Its report is
 `docs/results/mutants/`. The changes
@@ -109,6 +109,7 @@ result observed.
 | Change | Run | What happens |
 |---|---|---|
 | In `pool/typed.fe`, replace `admit(amount_out, factor)` with Balancer's `upscale(amount_out.value(), factor.value())` (importing `upscale`) | `.tools/fe-26.6.0/fe check ingots/balancer_v2` | `error[8-0000]`: expected `Quantity<_, Out, Admitted>`, but `u256` is given |
+| In `ingots/vault/src/vault.fe`, make `withdraw` credit the assets that leave: `credit(v.total_assets, assets)` | `.tools/fe-26.6.0/fe check ingots/vault` | `error[8-0000]`: expected `Quantity<_, In, _>`, but `Quantity<A, Out, Given>` is given. The withdrawal's own label says the assets leave |
 | In `dimension/src/flow.fe`, make `Out` admit with `Floor` | `make explore` | The typed kernel loses exactly as Balancer did (48 and 57,990), and the attacker profits again (+20.923 D). The runtime guard still holds: it rejects all of them. The layers are independent. |
 | In `stable/stable_math.fe`, drop the `+ 1` that `calc_in_given_out` adds | `make differential` | Fails: `mismatched: calcInGivenOut2, calcInGivenOut3` |
 | In `moonwell/src/registry.fe`, declare ETH/USD with 18 decimals | `make moonwell` | Fails: the oracle's constructor checks the real feed's decimals and reverts, so it never deploys ("the Fe oracle must bind the real feeds") |

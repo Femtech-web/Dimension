@@ -1,0 +1,6 @@
+kind = "compile_fail"
+expect_code = "6-0003"
+layer = "compile-time"
+mechanism = "A deposit is credited to a raw USDC balance in internal 18-decimal units, overstating it by 10^12: only amounts in token units can be credited"
+twin = "fixed"
+twin_run = "test"

@@ -20,7 +20,7 @@ cli/                         the command line: `new`, `check`, `feeds` (standard
 tests/
   core/  oracle/  explorer/  vault/  unit tests; core, explorer and vault run on the EVM and natively
   unsafe_root/               the one forgery the compiler allows, which `dimension check` fails
-  compile_fail/              17 rejected constructions, each with a corrected twin
+  compile_fail/              19 rejected constructions, each with a corrected twin
   zero_cost/                 typed code next to the same code by hand, measured by `make evm`
   feeds/                     wrong feed declarations that compile, for `make feeds`
   compiler_findings/         the reproducer filed as argotorg/fe#2043
@@ -48,8 +48,8 @@ be one more ingot depending on `dimension`, with no change to the core.
 |---|---|
 | `asset` | `Asset { const DECIMALS }`, implemented once per token type |
 | `rounding` | sealed `Rounding` with `Floor` and `Ceil`, the only two |
-| `flow` | sealed `Flow` (`In`, `Out`) with associated `Admission` and `Obligation` roundings; sealed `Stage` (`Given`, `Admitted`, `Owed`, `Settled`); sealed `Valuation` (`Collateral` rounds down, `Debt` up) |
-| `value` | `Amount<T>`, `Quantity<T, F, S>`, `Rate<T>`, `ScalingFactor<T>`, `Price<B, Q>`, `Value<Q, V>`, and the only functions that construct the trusted ones |
+| `flow` | sealed `Flow` (`In`, `Out`) with associated `Admission` and `Obligation` roundings; sealed `Stage` (`Given`, `Admitted`, `Owed`, `Settled`), and `TokenUnits` for the two in token units; sealed `Valuation` (`Collateral` rounds down, `Debt` up) |
+| `value` | `Amount<T>`, `Quantity<T, F, S>`, `Rate<T>`, `ScalingFactor<T>`, `Price<B, Q>`, `Value<Q, V>`, the only functions that construct the trusted ones, and `credit`, `debit`, `issue`, `retire`, which move a balance or a supply only in the direction an amount is labelled |
 | `value::oracle` | EVM only: `Feed<B, Q>` and `RateSource<T>` declarations, `verify`, `read`, `read_rate` |
 | `value::testing` | `unsafe fn assume_price`, `assume_rate` for tests and simulations |
 | `policy` | `RiskPolicy` constants checked by `where` predicates |
@@ -284,6 +284,6 @@ whether it holds, and the evidence.
 Golden files never regenerate silently: `make update` rewrites them, and the
 diff is reviewed before it is kept. The differential test clears Foundry's
 failure cache so its counts are deterministic. CI runs `make ci` and
-`make mutants` on Linux, and the fork targets, with all 17 mutants, in a
+`make mutants` on Linux, and the fork targets, with all 19 mutants, in a
 separate job. The same goldens pass on macOS and Linux,
 so diagnostics and bytecode hashes do not depend on the platform.

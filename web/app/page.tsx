@@ -216,7 +216,8 @@ export default function Home() {
             <p className="ink2">
               A direction is a sealed trait whose associated types name its roundings. Only <code>admit</code> produces
               an admitted amount, and it takes its rounding from the direction. A call site never names one, so it cannot
-              name the wrong one.
+              name the wrong one. And the direction an amount is labelled with is checked against the money: a balance is
+              credited only with value arriving, and debited only with value leaving.
             </p>
             <p className="ink2">
               The direction is resolved statically: on the library itself, the typed code compiles to the same bytes as

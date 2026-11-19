@@ -118,12 +118,14 @@ impl Asset for USDC {
 ## Move amounts in and out
 
 The pattern from the Balancer kernel
-([`pool/typed.fe`](../ingots/balancer_v2/src/pool/typed.fe)) has four steps:
+([`pool/typed.fe`](../ingots/balancer_v2/src/pool/typed.fe)) has five steps:
 
 1. Label what the caller names with its direction.
 2. Bring it into internal units with `admit`.
 3. Let your math return an owed result.
 4. Leave through `settle`.
+5. Move what you hold with `credit` and `debit`, and what you issue with
+   `issue` and `retire`.
 
 The direction, `In` or `Out` of the protocol, decides every rounding. A sketch:
 
@@ -158,6 +160,27 @@ pub fn bpt_in_given_exact_token_out<T, const N: usize>(
 
 Then an amount that skipped `admit` cannot reach the math. Putting Balancer's
 `_upscale` back is a compile error.
+
+Step 5 is what makes a label more than a promise. `credit` adds only an amount
+moving `In`, and `debit` takes only one moving `Out`, both in token units
+(`Given` or `Settled`). So an amount labelled with the wrong direction does
+not compile where it changes a balance, and internal 18-decimal units never
+reach one. The vault ([`vault.fe`](../ingots/vault/src/vault.fe)) does this:
+
+```fe
+pub fn withdraw<A>(_ v: mut Vault<A>, _ assets: Quantity<A, Out, Given>) -> Quantity<Shares<A>, In, Settled> {
+    let shares = preview_withdraw(v, assets)
+    v.total_assets = debit(v.total_assets, assets)   // assets leave
+    v.total_shares = retire(v.total_shares, shares)  // shares come back
+    shares
+}
+```
+
+Write `credit(v.total_assets, assets)` there, and the withdrawal's own label
+refuses it: `expected Quantity<_, In, _>, but Quantity<A, Out, Given> is
+given`. A deposit labelled, consistently, as leaving, which would round its
+shares up, is refused the same way
+([`vault_deposit_labeled_as_leaving`](../tests/compile_fail/vault_deposit_labeled_as_leaving)).
 
 Rates come in through `ScalingFactor<T>::with_rate`, and a `Rate<T>` exists
 only from a checked read (below). For a fee added to a charge or taken from a
@@ -274,15 +297,18 @@ The method used for Balancer, in order:
 
 A checklist for a team shipping a protocol built on Dimension.
 `python3 cli/dimension.py check <project> --network base` runs items 1, 2 and
-5, finds any `unsafe` code, and confirms the project compiles. Items 3, 4, 6
-and 7 need your judgment.
+5, finds any `unsafe` code, and confirms the project compiles. It also lists
+every label, each place a raw number gets its direction: read each one. Items
+3, 4, 6 and 7 need your judgment.
 
 1. **Pin a release commit**, and read the changelog before moving to another.
 2. **Never set `allow_unsafe` on Dimension in an ingot you deploy.** Keep
    `assume_price` and `assume_rate` in test roots. `dimension check` fails a
    project that sets it, or that contains `unsafe` code.
 3. **Make your math's signatures demand admitted amounts**, as
-   `typed/math.fe` does. A raw `u256` can then never reach it unrounded.
+   `typed/math.fe` does. A raw `u256` can then never reach it unrounded. And
+   move every balance and supply with `credit`, `debit`, `issue` and
+   `retire`, so each label is checked against the money it moves.
 4. **Declare each feed once.** Set `max_age` from the feed's measured
    heartbeat plus a margin, and a band no honest answer leaves. Call `verify`
    in the constructor.
@@ -304,6 +330,9 @@ and 7 need your judgment.
 | `Given`, `Admitted`, `Owed`, `Settled` | stages | where an amount is in its life |
 | `Quantity<T, F, S>` | type | an amount of `T` moving in `F` at stage `S` |
 | `given`, `owed` | functions | label a raw number |
+| `credit`, `debit` | functions | move a held balance: only `In` can be credited, only `Out` debited, in token units |
+| `issue`, `retire` | functions | move a supply the protocol issues: only `Out` can be issued, only `In` retired |
+| `TokenUnits` | sealed trait | the stages in token units, `Given` and `Settled` |
 | `admit`, `settle` | functions | the only ways to reach `Admitted` and `Settled` |
 | `ScalingFactor<T>`, `scaling_factor`, `with_rate` | type, functions | decimals and rate scaling |
 | `Price<B, Q>` | type | `B` priced in `Q`; `*` composes through a shared asset |

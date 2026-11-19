@@ -1,0 +1,12 @@
+use dimension::{Asset, In, credit, given}
+
+pub struct USDC {}
+
+impl Asset for USDC {
+    const DECIMALS: u256 = 6
+}
+
+// The deposit credited in USDC's own units, as it arrived.
+pub fn deposit(_ held: u256, _ raw: u256) -> u256 {
+    credit(held, given<USDC, In>(raw))
+}
