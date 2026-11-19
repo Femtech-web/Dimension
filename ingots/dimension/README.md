@@ -54,10 +54,11 @@ version = "0.3.0"
 - A local checkout works as a path dependency, relative to your project (Fe
   rejects absolute paths): `dimension = { path = "../Dimension/ingots/dimension" }`.
 
-Or let the command line write it: from a clone of the repository,
+Or let the command line write it: from a clone of the repository on `main`,
 `python3 cli/dimension.py new ../my-protocol` creates the quickstart with this
-dependency, and `python3 cli/dimension.py check ../my-protocol` runs the
-checklist before deploying ([`cli`](../../cli)).
+dependency, and `python3 cli/dimension.py check ../my-protocol --strict` runs
+the checklist before deploying ([`cli`](../../cli)). The command line is newer
+than the release tags; the library it pins is not.
 
 CI checks this exact setup on every change (`make consumer`). The
 [quickstart](../../examples/quickstart) is built as a fresh project taking

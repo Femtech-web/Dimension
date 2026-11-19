@@ -201,7 +201,7 @@ def main() -> int:
             f"with a feed built where feed-check cannot read it, it fails {', '.join(sorted(failures(unread_feed))) or 'nothing'}",
         },
         {
-            "question": "Does `dimension check` list exactly the label calls the compiler finds, however they are written?",
+            "question": "In each project compared, does `dimension check` list exactly the label calls a second compiler method finds?",
             "holds": agree,
             "evidence": "identical to the compiler's list in each of the projects compared: "
             + ", ".join(f"{ingot} {len(cli)}" + ("" if cli == compiler else f" (compiler {len(compiler)})") for ingot, (cli, compiler) in compared.items())

@@ -26,7 +26,8 @@ This guide covers three things:
 
 ## Getting started
 
-With the command line, from a clone of Dimension,
+With the command line, from a clone of Dimension on `main` (the command line
+is newer than the release tags; the library it pins is not),
 `python3 cli/dimension.py new ../my_protocol` does steps 1 to 3: it creates
 the quickstart project with Dimension pinned to the latest release. By hand:
 
@@ -301,8 +302,12 @@ The method used for Balancer, in order:
 A checklist for a team shipping a protocol built on Dimension.
 `python3 cli/dimension.py check <project> --network base` runs items 1, 2 and
 5, finds any `unsafe` code, and confirms the project compiles. It also lists
-every label, each place a raw number gets its direction: read each one. Items
-3, 4, 6 and 7 need your judgment.
+every label the compiler finds, each place a raw number gets its meaning: read
+each one. Items 3, 4, 6 and 7 need your judgment.
+
+A check that cannot run, because `fe` is missing or the project does not
+compile, is a warning, not a failure. In CI, add `--strict`, so that any
+warning fails the build too.
 
 1. **Pin a release commit**, and read the changelog before moving to another.
 2. **Never set `allow_unsafe` on Dimension in an ingot you deploy.** Keep

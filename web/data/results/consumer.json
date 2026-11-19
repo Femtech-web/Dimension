@@ -3,7 +3,7 @@
   "question": "Does Dimension work as a dependency of someone else's project?",
   "dependency": {
     "source": "this repository's git history",
-    "rev": "3a91e80d167e14c1d1d629682ee5d465ef8056ae",
+    "rev": "3a8f37cf4db3ec8cbbd88dea2f4132a4c2e922d4",
     "name": "dimension",
     "version": "0.3.0"
   },
@@ -176,7 +176,7 @@
     {
       "question": "Can a new project depend on Dimension from git, and does it get Dimension's checks?",
       "holds": true,
-      "evidence": "`dimension new` creates the quickstart taking Dimension at 3a91e80 by git source; it builds and passes its 3 tests; an incoming amount used as an outgoing one is rejected with 8-0000"
+      "evidence": "`dimension new` creates the quickstart taking Dimension at 3a8f37c by git source; it builds and passes its 3 tests; an incoming amount used as an outgoing one is rejected with 8-0000"
     },
     {
       "question": "Does `dimension check` pass that project, list its labels for review, and fail it once it can forge values Dimension trusts?",
@@ -184,7 +184,7 @@
       "evidence": "the new project: 5 of 6 checks ok, warnings on pinned; its 3 labels listed for review (given<USDC, In>, owed<USDC, Out>, owed<USDC, In>); with allow_unsafe set on Dimension it fails allow_unsafe; with a price forged by a pointer cast, which compiles, it fails unsafe code; with the forgery between the strings \"/*\" and \"*/\", it fails unsafe code; with a feed built where feed-check cannot read it, it fails feeds"
     },
     {
-      "question": "Does `dimension check` list exactly the label calls the compiler finds, however they are written?",
+      "question": "In each project compared, does `dimension check` list exactly the label calls a second compiler method finds?",
       "holds": true,
       "evidence": "identical to the compiler's list in each of the projects compared: tests/labels 11, examples/quickstart 3, ingots/vault 6, ingots/balancer_v2 18, ingots/balancer_explorer 24, ingots/moonwell 0. tests/labels writes them in every form found so far: type inferred, aliased, re-exported and renamed in another file, through an aliased module and a module path, generic in the direction, a holding and a supply, and decoys: a comment, a string, a local function sharing a label's name, and an unrelated function sharing a re-exported one"
     }

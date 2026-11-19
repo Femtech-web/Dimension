@@ -272,7 +272,7 @@ rev = "1171eb8339b8fc5bb6f594807f0696fde736ecaf"   # v0.3.0
 name = "dimension"
 version = "0.3.0"`}
             </Code>
-            <Code title="from a clone of Dimension" lang="shell">
+            <Code title="from a clone of Dimension, on main" lang="shell">
               {`python3 cli/dimension.py new ../my-protocol
 (cd ../my-protocol && fe test)        # 3 tests, on the EVM
 python3 cli/dimension.py check ../my-protocol --network base`}
