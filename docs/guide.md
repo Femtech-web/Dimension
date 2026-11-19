@@ -165,7 +165,7 @@ assert!(preserves_share_value(before, after), "share value decreased")
 ```
 
 The comparison is an exact 512-bit cross-multiplication. In the Balancer
-kernel it rejects exactly the operations that would lose value, at +5.7% gas on
+kernel it rejects exactly the operations that would lose value, at +6.9% gas on
 exits.
 
 ## Testing

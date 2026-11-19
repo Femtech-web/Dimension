@@ -49,6 +49,7 @@ From Balancer's monorepo at commit `e91a2b6` (pinned in
 | `FixedPoint`, `Math` | [`stable/fixed_point.fe`](../ingots/balancer_v2/src/stable/fixed_point.fe), [`stable/math.fe`](../ingots/balancer_v2/src/stable/math.fe) | line by line, with Solidity 0.7's wrapping arithmetic and Balancer's own checks |
 | `StableMath` | [`stable/stable_math.fe`](../ingots/balancer_v2/src/stable/stable_math.fe) | line by line, generic over 2 to 5 tokens (`const N: usize where N >= 2, N <= 5`) |
 | `ComposableStablePool` swap, join and exit paths, `BaseGeneralPool`, scaling helpers | [`pool/faithful.fe`](../ingots/balancer_v2/src/pool/faithful.fe) | the operations a two-token pool performs, including `_upscale`'s rounding |
+| `ComposableStablePoolProtocolFees`, `ExternalFees` | [`pool/fees.fe`](../ingots/balancer_v2/src/pool/fees.fe) | the protocol fees minted as BPT before and after every join and exit |
 
 Balancer's checks are kept as checks, with Balancer's error codes, so even a
 revert can be compared byte for byte. Every arithmetic function declares
@@ -63,9 +64,9 @@ lets one revert end one operation, not the whole run.
 | L0, isolated rounding | `mulDown(17, rate)` is 17 where 18 leaves | in the probes; not novel |
 | L1, a simplified pool | the per-swap gap in a toy pool | not used: this is what earlier demonstrations did |
 | **L2, the faithful kernel** | Balancer's own math and pool paths, matching the Solidity and the deployed pool exactly | **verified** |
-| L3, the attacker's transaction | the real batch replayed | not done |
+| **L3, the attack itself** | the attacker's three transactions replayed step by step, every amount and every end state equal | **verified** |
 
-Two independent checks establish L2:
+Three independent checks establish them:
 
 - **Against Balancer's Solidity** (`make differential`).
   [`StableMathDifferential.t.sol`](../contracts/reference/test/StableMathDifferential.t.sol)
@@ -79,15 +80,75 @@ Two independent checks establish L2:
   - **Sensitivity:** dropping the `+ 1` in `calc_in_given_out` makes it fail.
 - **Against the deployed pool** (`make fidelity`).
   [`PoolFidelity.t.sol`](../contracts/reference/test/PoolFidelity.t.sol) forks
-  Ethereum at block 23,717,399, the block before the osETH/wETH pool
-  (`0xDACf5Fa1…2850c`) was drained.
+  Ethereum at block 23,717,396, the last block before the first attack
+  transaction on the osETH/wETH pool (`0xDACf5Fa1…2850c`), which then held
+  4,922 WETH and 6,851 osETH.
   - It loads the pool's real state into the Fe contract: Vault balances,
-    amplification, swap fee, actual supply (including protocol fees due), the
-    last stored invariant and the rate the pool would use.
-  - It then requires every quote to equal what Balancer's Vault returns for the
-    same operation (`queryBatchSwap`).
-  - **Result:** 330 swaps in both directions (303 values, 27 identical
-    reverts) and 165 exact-out BPT exits: 495 quotes, 0 mismatches.
+    amplification, swap fee, the 50% protocol swap fee, the actual supply (the
+    protocol fees due, paid), and the osETH rate after refreshing its expired
+    cache, as the pool's next swap would.
+  - It then requires every quote, for amounts from 1 wei to a fifth of the
+    pool, to equal what Balancer's Vault returns for the same operation
+    (`queryBatchSwap`).
+  - **Result:** 446 swaps in both directions (404 values, 42 identical
+    reverts) and 223 exact-out BPT exits: 669 quotes, 0 mismatches.
+- **Against the attack** (`make replay`): see [below](#the-attack-replayed).
+
+## The attack, replayed
+
+The attacker drained the pool in three transactions, in blocks 23,717,397 to
+23,717,399. Each was a batch of about 120 exact-out swaps on this pool:
+
+1. exits that bring the balances down to a few dozen wei;
+2. swaps at those dust balances, where `_upscale`'s rounding is a large share
+   of every amount;
+3. joins that buy the pool's shares back at the deflated price.
+
+[`extract-attack.py`](../scripts/reference/extract-attack.py) reads every swap
+the Vault executed on this pool from each transaction's `Swap` events, in
+order, into [`fixtures/balancer-v2-exploit`](../fixtures/balancer-v2-exploit).
+
+[`AttackReplay.t.sol`](../contracts/reference/test/AttackReplay.t.sol) then
+does the following for each transaction:
+
+1. It forks Ethereum at that transaction.
+2. It loads the pool's real state into the three Fe kernels.
+3. It runs every step, naming the same amount out the attacker named.
+4. It executes the real transaction on the same fork and compares the end
+   states.
+
+| Transaction | Steps | Faithful: amounts equal to Balancer's | Faithful: end state | Value per share | Typed | Guarded |
+|---|---|---|---|---|---|---|
+| 1, block 23,717,397 | 121 | 121 | equal | 1.0273 → 0.0202 | reverts at step 25 | reverts at step 25 |
+| 2, block 23,717,398 | 121 | 121 | equal | 0.0202 → 0.000412 | reverts at step 25 | reverts at step 25 |
+| 3, block 23,717,399 | 118 | 118 | equal | 0.000412 → 0.0000092 | reverts at step 22 | reverts at step 22 |
+
+Steps are numbered from 0. "End state" means the WETH and osETH balances and the BPT supply. They are
+equal to the real pool's after the real transaction, to the wei.
+
+**On the typed kernels,** the first transaction runs like this:
+
+1. **Steps 0 to 3** are identical to Balancer's.
+2. **Steps 4 to 15**, the large exits, differ by exactly 1 wei of BPT each, in
+   alternating directions. Rounding each osETH amount up shifts the invariant
+   the pool stores, and with it the protocol fee on the next exit.
+3. **At dust balances** the differences become large:
+   - step 21 charges 73 BPT instead of 72;
+   - the first two swaps charge 315,795 and 1,071,109 wei of WETH instead of
+     307,353 and 625,492. 17 wei of osETH out now costs 1,071,109 wei of WETH.
+4. **The plan stops fitting the pool.** The pool's balances have drifted from
+   the ones the attacker computed against. Step 24 now costs the attacker 10
+   wei of osETH instead of 5,182, and step 25 asks for osETH the pool does not
+   hold. Balancer's own subtraction check fails (`BAL#001`), which reverts the
+   batch.
+
+Up to that point the value per share on the typed kernel had risen from 1.0273
+to 1.1856: the attack was paying the pool.
+
+What this shows, and what it does not: the attacker's own sequence cannot run
+against the typed kernels. An attacker who knew the pool rounds correctly would
+search for another sequence. The search and the greedy attacker below are the
+evidence that none pays.
 
 ## Three kernels, one change
 
@@ -174,27 +235,41 @@ the faithful one reads it raw, as Balancer does.
   rate 1.21, over 51 exits:
   - faithful: value per share −3.38%;
   - typed and guarded: +19.51%.
-- **The cost.** On a pool the size of the osETH/wETH pool before the exploit,
-  10 tokens out:
+- **The cost.** Every operation, on a pool with the osETH/wETH pool's balances
+  and parameters before the exploit, including its 50% protocol fee, 10 tokens
+  or 10 BPT:
 
-| Contract | swapGivenOut gas | exitGivenOut gas | Runtime bytecode |
+| Operation (gas) | Faithful | Typed | Guarded |
 |---|---|---|---|
-| Faithful | 15,669 | 21,116 | 7,414 B |
-| Typed | 16,695 (+6.5%) | 21,478 (+1.7%) | 9,233 B |
-| Guarded | 23,130 (+47.6%) | 22,313 (+5.7%) | 9,675 B |
+| swapGivenIn | 15,164 | 16,104 (+6.2%) | 22,644 (+49.3%) |
+| swapGivenOut | 15,981 | 17,000 (+6.4%) | 23,553 (+47.4%) |
+| exitGivenIn | 23,240 | 24,259 (+4.4%) | 25,075 (+7.9%) |
+| exitGivenOut | 24,493 | 25,338 (+3.4%) | 26,154 (+6.8%) |
+| joinGivenIn | 25,585 | 26,386 (+3.1%) | 27,202 (+6.3%) |
+| joinGivenOut | 23,453 | 24,360 (+3.9%) | 25,176 (+7.3%) |
+
+| Runtime bytecode | Faithful | Typed | Guarded |
+|---|---|---|---|
+| `-O0` | 19,423 B | 28,562 B | 28,568 B |
+| `-O1` (default) | 8,014 B | 9,693 B | 10,144 B |
+| `-O2` | 7,992 B | 9,675 B | 10,126 B |
+| `-Os` | 9,139 B | 10,232 B | 10,616 B |
 
 The type machinery itself compiles away: typed and raw code produce
 byte-identical bytecode at `-O1`, `-O2` and `-Os` in the probes. The typed
-contract's extra cost is real work the faithful one skips: rounding up, and
-checking its rate is in band on every operation.
+contract's extra cost, a nearly constant 800 to 1,000 gas, is real work the
+faithful one skips: reading its rate through the banded boundary and checking
+its factors on every operation.
 
 ## Limits
 
-- One two-token pool. There are no protocol fees in the operations, and no
-  Vault batching, rate cache or amplification ramp.
-- The attacker's actual transaction has not been replayed (L3).
+- One two-token pool. Its operations include protocol fees, but not an
+  amplification ramp, or rate changes between joins and exits. Within a
+  transaction, rates cannot change after the first join or exit.
+- The replay covers the attack's steps on this pool, not those on the other
+  pools in the same batches.
 - The 288 exact-out swaps that the typed kernel refuses and Balancer accepts
   are all 1 wei out of a 2-wei rated balance. Rounded up, that wei is the whole
   scaled balance.
 
-Reproduce: `make differential explore evm fidelity`.
+Reproduce: `make differential explore evm fidelity replay`.

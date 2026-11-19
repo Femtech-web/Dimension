@@ -1,0 +1,7 @@
+[ingot]
+name = "vault_tests"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../ingots/dimension" }
+vault = { path = "../../ingots/vault" }

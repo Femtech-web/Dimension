@@ -1,0 +1,15 @@
+use dimension::{Given, In, Out, Quantity, Settled, exchange, given}
+use vault::vault::{Shares, Vault}
+
+// Shares computed as if the deposited assets were leaving the vault.
+pub fn preview_deposit<A>(_ v: Vault<A>, _ assets: Quantity<A, In, Given>) -> Quantity<
+    Shares<A>,
+    Out,
+    Settled,
+> {
+    exchange(
+        given<A, Out>(assets.value()),
+        numerator: v.total_shares + 1,
+        denominator: v.total_assets + 1,
+    )
+}

@@ -1,0 +1,273 @@
+{
+  "schema": "dimension.mutants/v1",
+  "question": "Would the checks notice if the code they protect were wrong?",
+  "fe": {
+    "version": "26.6.0",
+    "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110"
+  },
+  "platform": "mac_arm64",
+  "fork_mutants_included": true,
+  "mutants": [
+    {
+      "id": "balancer-upscale-in-typed-pool",
+      "layer": "compile time",
+      "bug": "Balancer's _upscale put back into the typed pool's exit",
+      "files": [
+        "ingots/balancer_v2/src/pool/typed.fe"
+      ],
+      "check": "fe check ingots/balancer_v2",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "error[8-0000]: type mismatch",
+        "error[2-0010]: no method named `value` found for u256 `u256`"
+      ]
+    },
+    {
+      "id": "out-admits-down",
+      "layer": "types",
+      "bug": "An amount leaving the protocol is admitted rounded down, as Balancer did",
+      "files": [
+        "ingots/dimension/src/flow.fe"
+      ],
+      "check": "make unit",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "FAIL core",
+        "output differs from tests/core/expected.sonatina.txt"
+      ]
+    },
+    {
+      "id": "in-settles-down",
+      "layer": "types",
+      "bug": "A charge is settled rounded down, in the caller's favour",
+      "files": [
+        "ingots/dimension/src/flow.fe"
+      ],
+      "check": "make unit",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "FAIL core",
+        "output differs from tests/core/expected.sonatina.txt"
+      ]
+    },
+    {
+      "id": "exchange-keeps-direction",
+      "layer": "types",
+      "bug": "An exchange gives back value moving the same way as what it received",
+      "files": [
+        "ingots/dimension/src/flow.fe"
+      ],
+      "check": "fe check ingots/vault",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "error[8-0000]: type mismatch",
+        "error[8-0000]: type mismatch"
+      ]
+    },
+    {
+      "id": "feed-band-unchecked",
+      "layer": "read time",
+      "bug": "A feed's answer is not checked against its band",
+      "files": [
+        "ingots/dimension/src/value/oracle.fe"
+      ],
+      "check": "make unit",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "FAIL oracle",
+        "output differs from tests/oracle/expected.sonatina.txt"
+      ]
+    },
+    {
+      "id": "feed-age-unchecked",
+      "layer": "read time",
+      "bug": "A feed's answer is not checked for staleness",
+      "files": [
+        "ingots/dimension/src/value/oracle.fe"
+      ],
+      "check": "make unit",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "FAIL oracle",
+        "output differs from tests/oracle/expected.sonatina.txt"
+      ]
+    },
+    {
+      "id": "feed-decimals-unchecked",
+      "layer": "bind time",
+      "bug": "A feed's reported decimals are not checked when it is bound",
+      "files": [
+        "ingots/dimension/src/value/oracle.fe"
+      ],
+      "check": "make unit",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "FAIL oracle",
+        "output differs from tests/oracle/expected.sonatina.txt"
+      ]
+    },
+    {
+      "id": "rate-band-unchecked",
+      "layer": "read time",
+      "bug": "A rate provider's answer is not checked against its band",
+      "files": [
+        "ingots/dimension/src/value/oracle.fe"
+      ],
+      "check": "make unit",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "FAIL oracle",
+        "output differs from tests/oracle/expected.sonatina.txt"
+      ]
+    },
+    {
+      "id": "guard-always-passes",
+      "layer": "runtime guard",
+      "bug": "The share-value comparison always passes",
+      "files": [
+        "ingots/dimension/src/invariant.fe"
+      ],
+      "check": "make explore",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "FAILS  With the runtime guard added, does any operation lose value per BPT or store an invariant its balances do not back?",
+        "FAILS  Does the guard reject exactly the operations that would have lost value, and nothing else?"
+      ]
+    },
+    {
+      "id": "guard-off-on-exits",
+      "layer": "runtime guard",
+      "bug": "The guarded pool's exact-out exit runs without its guard",
+      "files": [
+        "ingots/balancer_v2/src/pool/guarded.fe"
+      ],
+      "check": "make explore",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "FAILS  With the runtime guard added, does any operation lose value per BPT or store an invariant its balances do not back?",
+        "FAILS  Does the guard reject exactly the operations that would have lost value, and nothing else?"
+      ]
+    },
+    {
+      "id": "bonus-predicate-dropped",
+      "layer": "compile time",
+      "bug": "A risk policy's bonus no longer has to avoid bad debt at the threshold",
+      "files": [
+        "ingots/dimension/src/policy.fe"
+      ],
+      "check": "make compile-fail",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "FAIL compile_fail/liquidation_bonus_creates_bad_debt",
+        "compiled, but it must be rejected"
+      ]
+    },
+    {
+      "id": "port-drops-plus-one",
+      "layer": "port fidelity",
+      "bug": "The port drops the + 1 Balancer adds in calc_in_given_out",
+      "files": [
+        "ingots/balancer_v2/src/stable/stable_math.fe"
+      ],
+      "check": "make differential",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "22 functions, 200000 vectors: 156219 succeeded identically, 43781 reverted identically, 2 mismatched",
+        "mismatched: calcInGivenOut2, calcInGivenOut3"
+      ]
+    },
+    {
+      "id": "port-mul-up-floors",
+      "layer": "port fidelity",
+      "bug": "The port's mulUp rounds down",
+      "files": [
+        "ingots/balancer_v2/src/stable/fixed_point.fe"
+      ],
+      "check": "make differential",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "22 functions, 150005 vectors: 119597 succeeded identically, 30408 reverted identically, 7 mismatched",
+        "mismatched: calcBptInGivenExactTokensOut2, calcBptInGivenExactTokensOut3, calcTokenInGivenExactBptOut2, calcTokenInGivenExactBptOut3, calcTokenOutGivenExactBptIn2, calcTokenOutGivenExactBptIn3, mulUp"
+      ]
+    },
+    {
+      "id": "vault-extra-virtual-share",
+      "layer": "port fidelity",
+      "bug": "The vault counts two virtual shares on deposit instead of one",
+      "files": [
+        "ingots/vault/src/vault.fe"
+      ],
+      "check": "make vault",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "[FAIL: previewDeposit: 3992760530 != 3962963809; counterexample: calldata=0x7c407e800000000000000000000000000000000000000000000000000000000000003cc800000000000000000000000000000000000000000000000000000000000002110000000000000000000000000000000000000000000000000000000038d52e0e args=[15560 [1.556e4], 529, 953495054 [9.534e8]]] testFuzz_previewDeposit(uint256,uint256,uint256) (runs: 0, \u03bc: 0, ~: 0)",
+        "[FAIL: previewDeposit: 3992760530 != 3962963809; counterexample: calldata=0x7c407e800000000000000000000000000000000000000000000000000000000000003cc800000000000000000000000000000000000000000000000000000000000002110000000000000000000000000000000000000000000000000000000038d52e0e args=[15560 [1.556e4], 529, 953495054 [9.534e8]]] testFuzz_previewDeposit(uint256,uint256,uint256) (runs: 0, \u03bc: 0, ~: 0)"
+      ]
+    },
+    {
+      "id": "unsafe-in-protocol-ingot",
+      "layer": "unsafe policy",
+      "bug": "A protocol ingot gains an unsafe block",
+      "files": [
+        "ingots/moonwell/src/registry.fe"
+      ],
+      "check": "make unsafe-policy",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "unsafe code outside dimension::value::testing"
+      ]
+    },
+    {
+      "id": "protocol-fee-skipped",
+      "layer": "port fidelity",
+      "bug": "Joins and exits stop minting the protocol's fee on their own swap fees",
+      "files": [
+        "ingots/balancer_v2/src/pool/fees.fe"
+      ],
+      "check": "make replay",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "[FAIL: every step must compute what Balancer computed: 94 != 121] test_attack1() (gas: 13808272)",
+        "[FAIL: every step must compute what Balancer computed: 94 != 121] test_attack2() (gas: 13699933)"
+      ]
+    },
+    {
+      "id": "eth-usd-declared-18-decimals",
+      "layer": "bind time",
+      "bug": "The registry declares ETH/USD with 18 decimals",
+      "files": [
+        "ingots/moonwell/src/registry.fe"
+      ],
+      "check": "make moonwell",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "[FAIL: the Fe oracle must bind the real feeds] test_pricesThroughTheWindow() (gas: 133752)",
+        "[FAIL: the Fe oracle must bind the real feeds] test_pricesThroughTheWindow() (gas: 133752)"
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "question": "Is every planted bug in the safety-critical code caught by the check meant to catch it?",
+      "holds": true,
+      "evidence": "17 of 17 mutants caught, each for the reason expected of it, across 7 layers: bind time, compile time, port fidelity, read time, runtime guard, types, unsafe policy"
+    }
+  ]
+}

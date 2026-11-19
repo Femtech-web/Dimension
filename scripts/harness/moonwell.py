@@ -39,9 +39,13 @@ def main() -> int:
     env = dict(os.environ)
     env["BASE_RPC_URL"] = os.environ.get("BASE_RPC_URL") or DEFAULT_RPC
     RESULTS.unlink(missing_ok=True)
-    proc = subprocess.run(
-        ["forge", "test", "--match-contract", "MoonwellFork"], cwd=REFERENCE, env=env, capture_output=True, text=True, timeout=3600
-    )
+    for _ in range(2):
+        proc = subprocess.run(
+            ["forge", "test", "--match-contract", "MoonwellFork"], cwd=REFERENCE, env=env, capture_output=True, text=True, timeout=3600
+        )
+        # Public RPCs drop connections; try again once before reporting a failure.
+        if "could not instantiate forked environment" not in proc.stdout + proc.stderr:
+            break
     if proc.returncode != 0:
         print(proc.stdout[-4000:], proc.stderr[-2000:])
         return 1

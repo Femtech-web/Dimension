@@ -1,0 +1,43 @@
+{
+  "schema": "dimension.vault/v1",
+  "question": "Does an ERC-4626 vault written with Dimension round exactly as EIP-4626 and OpenZeppelin require?",
+  "reference": "OpenZeppelin Contracts v5.1.0 (69c8def5f222ff96f2b5beff05dfba996368aa79), ERC4626 with decimals offset 0",
+  "fe": {
+    "version": "26.6.0",
+    "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110"
+  },
+  "platform": "mac_arm64",
+  "runtime_bytecode_bytes": {
+    "vault": 671
+  },
+  "functions": {
+    "previewDeposit": {
+      "vectors": 10000,
+      "rounding_decides": 8402
+    },
+    "previewMint": {
+      "vectors": 10000,
+      "rounding_decides": 8440
+    },
+    "previewRedeem": {
+      "vectors": 10000,
+      "rounding_decides": 8440
+    },
+    "previewWithdraw": {
+      "vectors": 10000,
+      "rounding_decides": 8402
+    }
+  },
+  "claims": [
+    {
+      "question": "Do the vault's roundings, which no line of it names, give exactly what OpenZeppelin's ERC4626 gives?",
+      "holds": true,
+      "evidence": "40,000 vectors over the four previews, each equal to OpenZeppelin v5.1.0 in the same state"
+    },
+    {
+      "question": "Does the comparison test the rounding direction, not only the formula?",
+      "holds": true,
+      "evidence": "in 33,684 of the vectors the exact result is fractional, so rounding the other way would differ"
+    }
+  ]
+}

@@ -13,6 +13,9 @@ pub trait Flow: Sealed {
     type Admission: Rounding
     /// Rounding for turning an internal result into an amount to transfer.
     type Obligation: Rounding
+    /// The direction of what the protocol gives in exchange for value moving
+    /// this way: an amount coming in is paid for by one going out.
+    type Opposite: Flow
 }
 
 /// Value the protocol receives. Count less than arrives; charge at least
@@ -29,11 +32,13 @@ impl Sealed for Out {}
 impl Flow for In {
     type Admission = Floor
     type Obligation = Ceil
+    type Opposite = Out
 }
 
 impl Flow for Out {
     type Admission = Ceil
     type Obligation = Floor
+    type Opposite = In
 }
 
 /// Where a flow quantity is in its life. Each stage is reachable only through

@@ -20,7 +20,7 @@ established, and what it does not guarantee. Status words:
 | Compile time | An oracle read in code that has not declared it calls out and reads the clock | effects: `read` requires `uses (call: mut Call, ctx: Ctx)` | compile-fail case `oracle_read_without_effects` | tested |
 | Bind time | A feed that reports different decimals than declared | `verify` in the constructor, `WrongDecimals` | oracle unit tests; on a Base fork, cbETH/ETH declared as an 8-decimal USD feed fails to deploy | verified |
 | Read time | Non-positive, future, stale or out-of-band answers; out-of-band rates | `read`, `read_rate` | oracle unit tests; on a Base fork, cbETH/ETH declared as cbETH/USD fails its first read, and a stale ETH/USD leg is refused | verified |
-| Runtime | An operation that lowers the value behind a pool share, whatever its cause | `preserves_share_value`, exact 512-bit comparison; `GuardedPool` | 0 losses over 3.14 million operations per kernel; rejects exactly the 17 that would lose; EVM attack | verified |
+| Runtime | An operation that lowers the value behind a pool share, whatever its cause | `preserves_share_value`, exact 512-bit comparison; `GuardedPool` | 0 losses over 3.14 million operations per kernel; rejects exactly the 17 that would lose; EVM attack; the attacker's own transactions revert | verified |
 | External | That an address is the feed it is declared to be | none: a reviewed declaration | stated here | assumption |
 
 ## What the types establish, precisely
@@ -77,15 +77,31 @@ down and paid it for free.
 
 ## Cost
 
-| Measure | Faithful | Typed | Guarded |
+| Operation (gas) | Faithful | Typed | Guarded |
 |---|---|---|---|
-| swapGivenOut gas | 15,669 | 16,695 (+6.5%) | 23,130 (+47.6%) |
-| exitGivenOut gas | 21,116 | 21,478 (+1.7%) | 22,313 (+5.7%) |
-| runtime bytecode | 7,414 B | 9,233 B | 9,675 B |
+| swapGivenIn | 15,164 | 16,104 (+6.2%) | 22,644 (+49.3%) |
+| swapGivenOut | 15,981 | 17,000 (+6.4%) | 23,553 (+47.4%) |
+| exitGivenIn | 23,240 | 24,259 (+4.4%) | 25,075 (+7.9%) |
+| exitGivenOut | 24,493 | 25,338 (+3.4%) | 26,154 (+6.8%) |
+| joinGivenIn | 25,585 | 26,386 (+3.1%) | 27,202 (+6.3%) |
+| joinGivenOut | 23,453 | 24,360 (+3.9%) | 25,176 (+7.3%) |
 
-Gas is measured on a pool the size of the osETH/wETH pool before the exploit,
-with 10 tokens out (`make evm`). The typed contract also reads its rate through
-the banded boundary on every operation, which the faithful one does not.
+| Runtime bytecode | Faithful | Typed | Guarded |
+|---|---|---|---|
+| `-O0` | 19,423 B | 28,562 B | 28,568 B |
+| `-O1` (default) | 8,014 B | 9,693 B | 10,144 B |
+| `-O2` | 7,992 B | 9,675 B | 10,126 B |
+| `-Os` | 9,139 B | 10,232 B | 10,616 B |
+
+Gas is measured on a pool with the osETH/wETH pool's balances and parameters
+before the exploit, including its 50% protocol swap fee, for 10 tokens or 10
+BPT per operation (`make evm`). The typed contract's overhead is nearly
+constant, 800 to 1,000 gas per operation, including operations the types do
+not change, such as `swapGivenIn`. It is the rate read through the banded
+boundary and the factor checks, which the faithful contract does not do. The
+guard's cost on swaps is one invariant solve. In these contracts `-Os` gives
+larger code than `-O1` and `-O2`: a compiler observation, not a Dimension
+effect.
 
 The type machinery itself is free: typed and raw code compile to byte-identical
 runtime bytecode at `-O1`, `-O2` and `-Os` in the probes (`make probes`). At
@@ -96,9 +112,9 @@ runtime bytecode at `-O1`, `-O2` and `-Os` in the probes (`make probes`). At
 | Claim | Level | Status |
 |---|---|---|
 | FixedPoint, Math, StableMath equal Balancer's Solidity, reverts included | 22 functions, 220,000 vectors | verified |
-| The pool kernel returns what the deployed osETH/wETH pool returned | 330 swap quotes and 165 exact-out BPT exits at block 23,717,399 | verified |
-| The kernel models the whole protocol | one two-token pool, no protocol fees, no Vault batching, rate cache or amplification ramp | not claimed |
-| The attacker's transaction replays against the Fe kernel | | not done |
+| The pool kernel returns what the deployed osETH/wETH pool returned | 446 swap quotes and 223 exact-out BPT exits at block 23,717,396, the last before the attack | verified |
+| The kernel computes the attack exactly as Balancer did | the attacker's three transactions: 360 of 360 steps equal, and every end state equal to the real pool's | verified |
+| The kernel models the whole protocol | one two-token pool with protocol fees; no amplification ramp, no rate change between joins and exits, no other pools | not claimed |
 
 ## The unsafe boundary
 

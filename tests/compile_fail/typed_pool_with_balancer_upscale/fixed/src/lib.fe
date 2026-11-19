@@ -5,7 +5,7 @@ use balancer_v2::pool::typed::{Bpt, math}
 use balancer_v2::stable::check::Check
 use balancer_v2::stable::fixed_point as fp
 
-// The typed pool's exit_given_out, without the share-value guard.
+// The typed pool's exit_given_out, without protocol fees or the share-value guard.
 pub fn exit_given_out<T, const N: usize>(
     _ pool: mut Pool<N>,
     j: usize,

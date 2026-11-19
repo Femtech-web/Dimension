@@ -2,11 +2,12 @@
 
 Usage: python3 -m harness.evm
 
-Builds FaithfulPool, TypedPool and GuardedPool with the pinned compiler, runs
-contracts/reference/test/PoolAttack.t.sol (a greedy attacker repeating the
-November 2025 exit against each deployed contract, and gas per operation on a
-pool the size of the osETH/wETH pool), checks the claims made about them, and
-writes docs/results/evm/<platform>.json.
+Builds FaithfulPool, TypedPool and GuardedPool with the pinned compiler, at each
+optimization level for their sizes, runs contracts/reference/test/PoolAttack.t.sol
+(a greedy attacker repeating the November 2025 exit against each deployed
+contract, and gas for every operation on a pool with the osETH/wETH pool's
+balances and parameters), checks the claims made about them, and writes
+docs/results/evm/<platform>.json.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ REFERENCE = ROOT / "contracts" / "reference"
 INGOT = ROOT / "ingots" / "balancer_v2"
 RESULTS = REFERENCE / "cache" / "pool-attack.csv"
 CONTRACTS = {"faithful": "FaithfulPool", "typed": "TypedPool", "guarded": "GuardedPool"}
+LEVELS = ["0", "1", "2", "s"]
 SCHEMA = "dimension.evm/v1"
 
 
@@ -37,12 +39,28 @@ def build(ingot: Path = INGOT, contracts: dict[str, str] = CONTRACTS) -> dict[st
     return {k: len(bytes.fromhex((ingot / "out" / f"{c}.runtime.bin").read_text().strip())) for k, c in contracts.items()}
 
 
+def sizes_by_level() -> dict[str, dict[str, int]]:
+    """Runtime bytecode bytes of each contract at each optimization level."""
+    fe = resolve()
+    table = {}
+    for level in LEVELS:
+        shutil.rmtree(INGOT / "out", ignore_errors=True)
+        built = fe.run(["build", "-O", level, "--emit", "runtime-bytecode"], INGOT)
+        if built.code != 0:
+            raise SystemExit(f"Fe contracts failed to build at -O{level}:\n{built.output}")
+        table[f"O{level}"] = {
+            k: len(bytes.fromhex((INGOT / "out" / f"{c}.runtime.bin").read_text().strip())) for k, c in CONTRACTS.items()
+        }
+    return table
+
+
 def pct(value: int, base: int) -> str:
     return f"{(value - base) / base * 100:+.1f}%"
 
 
 def main() -> int:
     fe = resolve()
+    levels = sizes_by_level()
     sizes = build()
     RESULTS.unlink(missing_ok=True)
     proc = subprocess.run(
@@ -65,8 +83,8 @@ def main() -> int:
                     "holder_loss_wad": int(loss) // 10**18,
                 }
             else:
-                _, kernel, swap, exit_ = row
-                gas[kernel] = {"swapGivenOut": int(swap), "exitGivenOut": int(exit_)}
+                _, kernel, op, used = row
+                gas.setdefault(kernel, {})[op] = int(used)
 
     base = gas["faithful"]
     claims = [
@@ -89,13 +107,15 @@ def main() -> int:
         "platform": fe.platform,
         "attack": {"setup": "1,000 wei of each token, rate 1.21, amp 200, no fees; greedy GIVEN_OUT exits of the rated token", **attacks},
         "gas": {
-            "setup": "osETH/wETH pool balances before the exploit (4,922.36 WETH, 6,851.58 osETH), amp 200, fee 0.01%, 10 tokens out",
+            "setup": "the osETH/wETH pool's balances before the exploit (4,922.36 WETH, 6,851.58 osETH), amp 200, swap fee 0.01%, "
+            "protocol swap fee 50%; 10 tokens or 10 BPT per operation",
             "per_operation": gas,
             "relative_to_faithful": {
                 k: {op: pct(v[op], base[op]) for op in v} for k, v in gas.items() if k != "faithful"
             },
         },
         "runtime_bytecode_bytes": sizes,
+        "runtime_bytecode_bytes_by_level": levels,
         "claims": claims,
     }
     out = ROOT / "docs" / "results" / "evm"
@@ -106,7 +126,9 @@ def main() -> int:
     for claim in claims:
         print(f"{'holds' if claim['holds'] else 'FAILS'}  {claim['question']}\n       {claim['evidence']}")
     for k, v in gas.items():
-        print(f"gas {k:9s} swapGivenOut {v['swapGivenOut']:6d}  exitGivenOut {v['exitGivenOut']:6d}  bytecode {sizes[k]} B")
+        print(f"gas {k:9s} " + "  ".join(f"{op} {n:6d}" for op, n in v.items()))
+    for level, row in levels.items():
+        print(f"bytecode -{level}: " + ", ".join(f"{k} {n:,} B" for k, n in row.items()))
     print(f"report: {path.relative_to(ROOT)}")
     return 0 if all(c["holds"] for c in claims) else 1
 

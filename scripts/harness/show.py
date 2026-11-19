@@ -18,7 +18,7 @@ from harness.toolchain import ROOT, resolve
 
 CASES = ROOT / "tests" / "compile_fail"
 _HEADLINE = re.compile(r"^error\[[0-9-]+\]: .*$", re.MULTILINE)
-_CARETS = re.compile(r"^[\s│]*\^+\s*")
+_CARETS = re.compile(r"^[\s│╭╰─]*\^+\s*")
 
 
 def bold(text: str) -> str:

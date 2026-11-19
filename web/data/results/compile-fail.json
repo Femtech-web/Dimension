@@ -1,0 +1,452 @@
+{
+  "schema": "dimension.cases/v1",
+  "suite": "compile-fail",
+  "fe": {
+    "version": "26.6.0",
+    "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110",
+    "binary_sha256": "de045cf2ccd5a4052d92cde7745ff052747235b9c98e745a0995a8ad40a0c78e"
+  },
+  "platform": "mac_arm64",
+  "summary": {
+    "cases": 17,
+    "ok": 17,
+    "by_kind": {
+      "compile_fail": 17
+    }
+  },
+  "cases": [
+    {
+      "id": "compile_fail/add_collateral_to_debt",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Adding a debt value to a collateral value, which hides the shortfall a solvency check must see",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "3a89330ad91751cfca961486edc084ddcc453556f35ba01d839c8eeac0cd3e5e",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::{Collateral, Debt, Value}",
+            "+use dimension::{Amount, Collateral, Debt, Price, Value, covers, value_of}",
+            "+use dimension::value::testing::assume_price",
+            "-pub fn net(_ c: Value<USD, Collateral>, _ d: Value<USD, Debt>) -> Value<USD, Collateral> {",
+            "-    c + d",
+            "+// The fix: compare the two sides instead of netting them.",
+            "+pub fn solvent(_ c: Value<USD, Collateral>, _ d: Value<USD, Debt>) -> bool {",
+            "+    covers(c, d)"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/balancer_floor_upscale_as_admitted",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "An amount leaving the pool is scaled with floor rounding and handed to the math as if it had been admitted",
+      "incident": "Balancer V2, 2025-11-03, about 95M to 128M USD",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "b4fda24080b70c71ce5088228a45aea1a7b9fd55918de6e313027a9e5ff06622",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::{Admitted, Out, Quantity, ScalingFactor, WAD, owed}",
+            "-use core::num::mul_div",
+            "+use dimension::{Admitted, Out, Quantity, ScalingFactor, admit, given}",
+            "-// Balancer V2's _upscale: always mulDown, whichever way the amount moves.",
+            "+// The fix: admit the amount leaving the pool; its direction picks the rounding.",
+            "-    calc_in_given_out(owed<WSTETH, Out>(mul_div(raw, factor.value(), WAD)))",
+            "+    calc_in_given_out(admit(given<WSTETH, Out>(raw), factor))"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/compose_prices_without_shared_asset",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Multiplying cbETH/ETH by USD/ETH, which is not a cbETH/USD price",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "8f51ffb3255639ebc8ec97f1f01e114281da6688c5de538f7e9c416239a3d1f2",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-pub fn compose(_ a: Price<CBETH, ETH>, _ b: Price<USD, ETH>) -> Price<CBETH, USD> {",
+            "+pub fn compose(_ a: Price<CBETH, ETH>, _ b: Price<ETH, USD>) -> Price<CBETH, USD> {"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/custom_flow",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Defining a new flow with its own choice of admission and settlement rounding",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "6-0003",
+        "message": "trait bound is not satisfied",
+        "diagnostics_sha256": "18d3986ae4dcdbef0a1f35f565e6bb0bcbcd8a5c08aee06d9d15854d0de9fecd",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::{Ceil, Flow}",
+            "-pub struct Sideways {}",
+            "-impl Flow for Sideways {",
+            "-    type Admission = Ceil",
+            "-    type Obligation = Ceil",
+            "-    type Opposite = Sideways",
+            "+use dimension::{Flow, In, Out}",
+            "+",
+            "+// The fix: say which way the value moves; In and Out carry the rounding.",
+            "+pub fn both_flows<F: Flow>() -> bool {",
+            "+    true"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/custom_rounding_direction",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Adding a third rounding direction that could round in the caller's favour",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "6-0003",
+        "message": "trait bound is not satisfied",
+        "diagnostics_sha256": "a8962a65b72d8a87972c1bcf5d487a3a9dfb07c93994621a0c2cf96a75688779",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::Rounding",
+            "-pub struct Nearest {}",
+            "-impl Rounding for Nearest {",
+            "-    fn mul_div(_ a: u256, _ b: u256, _ d: u256) -> u256 {",
+            "-        (a * b + d / 2) / d",
+            "-    }",
+            "+use dimension::{Ceil, Floor, Rounding}",
+            "+",
+            "+// The fix: use the two directions Dimension defines.",
+            "+pub fn halves(_ x: u256) -> (u256, u256) {",
+            "+    (Floor::mul_div(x, 1, 2), Ceil::mul_div(x, 1, 2))"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/forge_admitted_quantity",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Building an admitted quantity directly, skipping the rounding admission applies",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "2-0003",
+        "message": "`v` is not visible",
+        "diagnostics_sha256": "89f6d9ca3806bd0659ec9eb77f1d790a8e4f7844883173c1c2da81e62c247b51",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::{Admitted, Out, Quantity}",
+            "+use dimension::{Admitted, Out, Quantity, admit, given, scaling_factor}",
+            "-    Quantity { v: 17 }",
+            "+    admit(given<WSTETH, Out>(17), scaling_factor<WSTETH>())"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/forge_price",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Building a trusted price from a raw number outside the verified boundary",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "2-0003",
+        "message": "`wad` is not visible",
+        "diagnostics_sha256": "ba455b10206cfdd42e0594cef5a8f3392a828620498b1d2159bd9b9812197f2b",
+        "twin": {
+          "mode": "check",
+          "fix": [
+            "+use std::evm::{Call, Ctx}",
+            "+use dimension::value::oracle::{Feed, read}",
+            "-pub fn forged() -> Price<CBETH, USD> {",
+            "-    Price { wad: 1_120_000_000_000_000_000 }",
+            "+// The fix: a price comes from a declared feed, through the verified boundary.",
+            "+pub fn verified(_ f: Feed<CBETH, USD>) -> Price<CBETH, USD>",
+            "+uses (call: mut Call, ctx: Ctx)",
+            "+{",
+            "+    read(f)"
+          ],
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/liquidation_bonus_creates_bad_debt",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A liquidation bonus so large that liquidating at the threshold needs more collateral than the position holds",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0093",
+        "message": "const requirement is not satisfied",
+        "diagnostics_sha256": "46ca26247ce80d03a7c6fbd1846fee5badb1957985e49f5d73f8d7eda7deac58",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-    const LIQUIDATION_BONUS_BPS: u256 = 1_000",
+            "+    const LIQUIDATION_BONUS_BPS: u256 = 500"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/ltv_at_liquidation_threshold",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A loan-to-value equal to the liquidation threshold, so a new loan can be liquidated at once",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0093",
+        "message": "const requirement is not satisfied",
+        "diagnostics_sha256": "e2f552792d061a3c84adfc24a51d01d595b8dc85c82a32815d998f08e4162eed",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-    const LTV_BPS: u256 = 8_500",
+            "+    const LTV_BPS: u256 = 8_000"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/moonwell_component_feed_in_usd_market",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "cbETH's USD price is configured as the cbETH/ETH exchange-rate feed alone, written against the real Base feed registry",
+      "incident": "Moonwell MIP-X43, 2026-02-15, about 1.78M USD bad debt",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "6e4de43c7f20447c0753e39c901f5d06e5d24ad9e89617a3fd440e0865a88dbd",
+        "twin": {
+          "mode": "check",
+          "fix": [
+            "-use dimension::value::oracle::Feed",
+            "-use moonwell::registry::{CBETH, CBETH_ETH, USD}",
+            "+use moonwell::pricing::ViaEth",
+            "+use moonwell::registry::{CBETH, CBETH_ETH, ETH_USD}",
+            "-// MIP-X43 listed cbETH with the markets priced by one USD feed, and gave it",
+            "-// the cbETH/ETH exchange rate as that feed.",
+            "-pub const CBETH_USD: Feed<CBETH, USD> = CBETH_ETH",
+            "+// The fix: price cbETH in USD through both legs, as the composite oracle did.",
+            "+pub const CBETH_USD: ViaEth<CBETH> = ViaEth { leg: CBETH_ETH, eth_usd: ETH_USD }"
+          ],
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/oracle_read_without_effects",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Reading a price feed from a function whose signature does not declare the call and clock capabilities it uses",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0036",
+        "message": "missing effect `Call` required by `read`",
+        "diagnostics_sha256": "b2e34593a8b43e533e7282d5fad58fcb5b6cb910b240dbe9f490146630f5f8a2",
+        "twin": {
+          "mode": "check",
+          "fix": [
+            "+use std::evm::{Call, Ctx}",
+            "-pub fn price(_ f: Feed<ETH, USD>) -> Price<ETH, USD> {",
+            "+// The fix: the signature declares the call and clock capabilities it uses.",
+            "+pub fn price(_ f: Feed<ETH, USD>) -> Price<ETH, USD>",
+            "+uses (call: mut Call, ctx: Ctx)",
+            "+{"
+          ],
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/payout_settled_as_charge",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A payout rounded down is used where the amount charged must be rounded up",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "00cfa56f7cefa14c3e7fbd7400a069e6bb62e93bc01e9ef28e0ea3a739e27e3d",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-    settle(owed<WSTETH, Out>(internal), factor)",
+            "+    settle(owed<WSTETH, In>(internal), factor)"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/scale_asset_with_too_many_decimals",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Scaling a 24-decimal asset into 18-decimal internal units, which cannot be done without losing value",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0093",
+        "message": "const requirement is not satisfied",
+        "diagnostics_sha256": "dfa31d998bba16782730409aeba4aadaba2110bf2323ed8b1e5080896f46e03b",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-    const DECIMALS: u256 = 24",
+            "+    const DECIMALS: u256 = 18"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/test_constructor_from_production_root",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A production root reaching Dimension's unsafe test constructors without trusting them in fe.toml",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "16-0015",
+        "message": "call reaches unsafe code in `dimension`, which is not allowed to use it",
+        "diagnostics_sha256": "8480f17aa5bad6155c65daf46dfe8db35a73ac67b3bf2cd9f14869dd0adf9337",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "+fe.toml: dimension = { ..., allow_unsafe = true }"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/typed_pool_with_balancer_upscale",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Inside the typed pool, one line of Balancer V2 is put back: the amount out is scaled with _upscale's floor rounding and handed to StableMath",
+      "incident": "Balancer V2, 2025-11-03, about 95M to 128M USD",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "7e1d1217e0a91aa3b1d73ff2bd570ce07e87d9aa1c7ba8e04a04a742e50ddf2d",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::{Given, In, Out, Quantity, ScalingFactor, Settled, scaling_factor, settle}",
+            "+use dimension::{Given, In, Out, Quantity, ScalingFactor, Settled, admit, scaling_factor, settle}",
+            "-use balancer_v2::pool::faithful::{upscale, upscaled}",
+            "+use balancer_v2::pool::faithful::upscaled",
+            "-    // Balancer V2's _upscale: always mulDown, whichever way the amount moves.",
+            "-    let scaled_out = upscale(amount_out.value(), factor.value())",
+            "+    // The fix: admit the amount leaving the pool; its direction picks the rounding.",
+            "+    let scaled_out = admit(amount_out, factor)"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/value_with_another_assets_price",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Valuing a USDC balance with the cbETH price",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "4c3afa7574878e29bd8a40de926d4f7614ab73369cd4c4e607a17805b352f82e",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-pub fn value(_ a: Amount<USDC>, _ p: Price<CBETH, USD>) -> Value<USD, Collateral> {",
+            "+pub fn value(_ a: Amount<USDC>, _ p: Price<USDC, USD>) -> Value<USD, Collateral> {"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/vault_deposit_rounds_shares_up",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A vault deposit computes the shares to issue as if the deposited assets were leaving, which rounds the shares up, in the caller's favour",
+      "incident": "ERC-4626 share rounding, the class EIP-4626's rounding rules exist to prevent",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "49233cb5b2d0190bde17c25710fcc0c4b7a76b80e0fbf7354030fd04ff58e73f",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::{Given, In, Out, Quantity, Settled, exchange, given}",
+            "+use dimension::{Given, In, Out, Quantity, Settled, exchange}",
+            "-// Shares computed as if the deposited assets were leaving the vault.",
+            "+// The fix: the deposited assets come in; the shares the vault gives back go out.",
+            "-        given<A, Out>(assets.value()),",
+            "+        assets,"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    }
+  ]
+}

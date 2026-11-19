@@ -1,0 +1,4 @@
+PASS a_deposit_too_small_for_one_share_gets_none
+PASS every_preview_rounds_as_eip_4626_requires
+PASS round_trips_never_pay_the_caller
+test result: ok. 3 passed; 0 failed

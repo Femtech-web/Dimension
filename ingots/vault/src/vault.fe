@@ -1,0 +1,107 @@
+use dimension::{Given, In, Out, Quantity, Settled, exchange}
+
+/// The share token of a vault over `A`.
+pub struct Shares<A> {}
+
+/// What a vault over `A` holds and has issued. Conversions count one virtual
+/// asset and one virtual share, as OpenZeppelin's ERC4626 does with a decimals
+/// offset of 0, so a first depositor cannot inflate the share price to nothing.
+pub struct Vault<A> { pub total_assets: u256, pub total_shares: u256 }
+
+impl<A> Copy for Vault<A> {}
+
+/// Shares for depositing `assets`: assets come in, shares go out.
+pub fn preview_deposit<A>(_ v: Vault<A>, _ assets: Quantity<A, In, Given>) -> Quantity<
+    Shares<A>,
+    Out,
+    Settled,
+> {
+    exchange(
+        assets,
+        numerator: v.total_shares + 1,
+        denominator: v.total_assets + 1,
+    )
+}
+
+/// Assets that minting `shares` costs: shares go out, assets come in.
+pub fn preview_mint<A>(_ v: Vault<A>, _ shares: Quantity<Shares<A>, Out, Given>) -> Quantity<
+    A,
+    In,
+    Settled,
+> {
+    exchange(
+        shares,
+        numerator: v.total_assets + 1,
+        denominator: v.total_shares + 1,
+    )
+}
+
+/// Shares that withdrawing `assets` burns: assets go out, shares come in.
+pub fn preview_withdraw<A>(_ v: Vault<A>, _ assets: Quantity<A, Out, Given>) -> Quantity<
+    Shares<A>,
+    In,
+    Settled,
+> {
+    exchange(
+        assets,
+        numerator: v.total_shares + 1,
+        denominator: v.total_assets + 1,
+    )
+}
+
+/// Assets for redeeming `shares`: shares come in, assets go out.
+pub fn preview_redeem<A>(_ v: Vault<A>, _ shares: Quantity<Shares<A>, In, Given>) -> Quantity<
+    A,
+    Out,
+    Settled,
+> {
+    exchange(
+        shares,
+        numerator: v.total_assets + 1,
+        denominator: v.total_shares + 1,
+    )
+}
+
+pub fn deposit<A>(_ v: mut Vault<A>, _ assets: Quantity<A, In, Given>) -> Quantity<
+    Shares<A>,
+    Out,
+    Settled,
+> {
+    let shares = preview_deposit(v, assets)
+    v.total_assets += assets.value()
+    v.total_shares += shares.value()
+    shares
+}
+
+pub fn mint<A>(_ v: mut Vault<A>, _ shares: Quantity<Shares<A>, Out, Given>) -> Quantity<
+    A,
+    In,
+    Settled,
+> {
+    let assets = preview_mint(v, shares)
+    v.total_assets += assets.value()
+    v.total_shares += shares.value()
+    assets
+}
+
+pub fn withdraw<A>(_ v: mut Vault<A>, _ assets: Quantity<A, Out, Given>) -> Quantity<
+    Shares<A>,
+    In,
+    Settled,
+> {
+    let shares = preview_withdraw(v, assets)
+    v.total_assets -= assets.value()
+    v.total_shares -= shares.value()
+    shares
+}
+
+pub fn redeem<A>(_ v: mut Vault<A>, _ shares: Quantity<Shares<A>, In, Given>) -> Quantity<
+    A,
+    Out,
+    Settled,
+> {
+    let assets = preview_redeem(v, shares)
+    v.total_assets -= assets.value()
+    v.total_shares -= shares.value()
+    assets
+}

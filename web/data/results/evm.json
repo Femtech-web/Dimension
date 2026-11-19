@@ -1,0 +1,120 @@
+{
+  "schema": "dimension.evm/v1",
+  "question": "What do Dimension's layers do, and cost, in contracts deployed on a real EVM?",
+  "fe": {
+    "version": "26.6.0",
+    "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110"
+  },
+  "forge": "forge Version: 1.4.4-stable",
+  "platform": "mac_arm64",
+  "attack": {
+    "setup": "1,000 wei of each token, rate 1.21, amp 200, no fees; greedy GIVEN_OUT exits of the rated token",
+    "faithful": {
+      "exits": 51,
+      "value_per_bpt_start_wad": 1000000000000000000,
+      "value_per_bpt_end_wad": 966233766233766233,
+      "value_per_bpt_change": "-3.38%",
+      "holder_loss_wad": 26
+    },
+    "typed": {
+      "exits": 75,
+      "value_per_bpt_start_wad": 1000000000000000000,
+      "value_per_bpt_end_wad": 1195086705202312138,
+      "value_per_bpt_change": "+19.51%",
+      "holder_loss_wad": -135
+    },
+    "guarded": {
+      "exits": 75,
+      "value_per_bpt_start_wad": 1000000000000000000,
+      "value_per_bpt_end_wad": 1195086705202312138,
+      "value_per_bpt_change": "+19.51%",
+      "holder_loss_wad": -135
+    }
+  },
+  "gas": {
+    "setup": "the osETH/wETH pool's balances before the exploit (4,922.36 WETH, 6,851.58 osETH), amp 200, swap fee 0.01%, protocol swap fee 50%; 10 tokens or 10 BPT per operation",
+    "per_operation": {
+      "faithful": {
+        "swapGivenIn": 15164,
+        "swapGivenOut": 15981,
+        "exitGivenIn": 23240,
+        "exitGivenOut": 24493,
+        "joinGivenIn": 25585,
+        "joinGivenOut": 23453
+      },
+      "typed": {
+        "swapGivenIn": 16104,
+        "swapGivenOut": 17000,
+        "exitGivenIn": 24259,
+        "exitGivenOut": 25338,
+        "joinGivenIn": 26386,
+        "joinGivenOut": 24360
+      },
+      "guarded": {
+        "swapGivenIn": 22644,
+        "swapGivenOut": 23553,
+        "exitGivenIn": 25075,
+        "exitGivenOut": 26154,
+        "joinGivenIn": 27202,
+        "joinGivenOut": 25176
+      }
+    },
+    "relative_to_faithful": {
+      "typed": {
+        "swapGivenIn": "+6.2%",
+        "swapGivenOut": "+6.4%",
+        "exitGivenIn": "+4.4%",
+        "exitGivenOut": "+3.4%",
+        "joinGivenIn": "+3.1%",
+        "joinGivenOut": "+3.9%"
+      },
+      "guarded": {
+        "swapGivenIn": "+49.3%",
+        "swapGivenOut": "+47.4%",
+        "exitGivenIn": "+7.9%",
+        "exitGivenOut": "+6.8%",
+        "joinGivenIn": "+6.3%",
+        "joinGivenOut": "+7.3%"
+      }
+    }
+  },
+  "runtime_bytecode_bytes": {
+    "faithful": 8014,
+    "typed": 9693,
+    "guarded": 10144
+  },
+  "runtime_bytecode_bytes_by_level": {
+    "O0": {
+      "faithful": 19423,
+      "typed": 28562,
+      "guarded": 28568
+    },
+    "O1": {
+      "faithful": 8014,
+      "typed": 9693,
+      "guarded": 10144
+    },
+    "O2": {
+      "faithful": 7992,
+      "typed": 9675,
+      "guarded": 10126
+    },
+    "Os": {
+      "faithful": 9139,
+      "typed": 10232,
+      "guarded": 10616
+    }
+  },
+  "claims": [
+    {
+      "question": "Deployed on an EVM, does the faithful pool let a repeated-exit attacker take value from LPs?",
+      "holds": true,
+      "evidence": "value per BPT -3.38% over 51 exits"
+    },
+    {
+      "question": "Do the typed and guarded pools keep the value behind each BPT under the same attack?",
+      "holds": true,
+      "evidence": "typed +19.51%, guarded +19.51%"
+    }
+  ]
+}

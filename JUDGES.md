@@ -59,12 +59,18 @@ This is what CI runs on Linux. Each suite prints its claims as `holds` or
 ## 4. Against the real chains (about 2 minutes each, needs network)
 
 ```sh
-make fidelity   # Ethereum mainnet fork, block 23,717,399
+make replay     # the attacker's three transactions, step by step (mainnet forks)
+make fidelity   # Ethereum mainnet fork, block 23,717,396
 make moonwell   # Base forks from block 42,194,662 to 42,538,949
 ```
 
-- **`fidelity`** loads the real osETH/wETH pool's state, the block before it
-  was drained, into the Fe port. It requires all 495 quotes to equal what
+- **`replay`** forks Ethereum at each of the attacker's three transactions. It
+  replays their 360 swaps on this pool through the three Fe kernels. The
+  faithful kernel must compute every amount Balancer computed, and must end in
+  the state the pool reached once the real transaction runs on the same fork.
+  On the typed and guarded kernels, each transaction's batch reverts.
+- **`fidelity`** loads the real osETH/wETH pool's state, at the last block
+  before the attack, into the Fe port. It requires all 669 quotes to equal what
   Balancer's Vault returns.
 - **`moonwell`** compares Moonwell's deployed oracle with Dimension's on the
   same feeds, at 14 blocks before, during and after the incident. It then tries
@@ -85,7 +91,11 @@ rate-limited.
 
 ## 6. Try to break it
 
-Each change below was made in a scratch copy, and the stated result observed.
+`make mutants` (with `FORKS=1` for the last two) plants 17 realistic bugs, one at
+a time, in a scratch copy, and requires the check meant for each to fail for
+the reason expected of it. Its report is `docs/results/mutants/`. The changes
+below are ones to try by hand; each was made in a scratch copy, and the stated
+result observed.
 
 | Change | Run | What happens |
 |---|---|---|
@@ -101,14 +111,15 @@ Each change below was made in a scratch copy, and the stated result observed.
 |---|---|---|
 | The port equals Balancer's Solidity | `contracts/reference/test/StableMathDifferential.t.sol` | `docs/results/differential/` |
 | The port equals the deployed pool | `contracts/reference/test/PoolFidelity.t.sol` | `docs/results/fidelity/` |
+| The port computes the attack exactly; the typed kernels stop it | `contracts/reference/test/AttackReplay.t.sol`, `fixtures/balancer-v2-exploit/` | `docs/results/replay/` |
 | Types and guard remove the losses | `ingots/balancer_explorer`, pinned by `tests/explorer` on both backends | `docs/results/exploration/` |
 | The attack and gas on a real EVM | `contracts/reference/test/PoolAttack.t.sol` | `docs/results/evm/` |
 | Moonwell, before, during and after MIP-X43 | `contracts/reference/test/MoonwellFork.t.sol` | `docs/results/moonwell/` |
 | Each rejected construction, and its fix | `tests/compile_fail/<case>/` | `docs/results/compile-fail/` |
 | The type machinery is free | `tests/probes/bytecode/` | `docs/results/probes/` |
 
-[`docs/index.html`](docs/index.html) shows all of these on one page, with the Moonwell
-prices charted. `make page` regenerates it from whatever reports your runs saved.
+The site in [`web/`](web) shows all of these, with the replay and the Moonwell
+prices charted. `make web` rebuilds it from whatever reports your runs saved.
 
 What is and is not guaranteed, layer by layer, is in
 [docs/guarantees.md](docs/guarantees.md).

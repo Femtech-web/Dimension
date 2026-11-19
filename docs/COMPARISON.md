@@ -20,10 +20,12 @@ original code and the real chains.
 - **A direction derived from meaning and enforced by the compiler on EVM
   code, at no runtime cost.** The call site never names a rounding. The
   compiled code is byte-identical to the hand-written version.
-- **The incident's own code, typed.** Balancer's StableMath and pool paths were
-  ported faithfully, checked against the Solidity on 220,000 vectors and
-  against the deployed pool on 495 quotes. Then the types were applied to that
-  same kernel, and putting Balancer's line back is a type error.
+- **The incident's own code, typed.** Balancer's StableMath, pool paths and
+  protocol fees were ported faithfully. They were checked against the Solidity
+  on 220,000 vectors, against the deployed pool on 669 quotes, and against the
+  attack itself: all 360 of the attacker's steps compute the amounts Balancer
+  computed. Then the types were applied to that same kernel. Putting Balancer's
+  line back is a type error, and the attacker's own transactions revert.
 - **The incident's own configuration, typed.** Moonwell's MIP-X43 setting,
   written against a registry of the real Base feeds, does not compile. Forks of
   Base across the eight days of the incident show the correct configuration

@@ -1,0 +1,8 @@
+//! An ERC-4626 vault's accounting, written with Dimension.
+//!
+//! EIP-4626 fixes four roundings: deposit and redeem round down, mint and
+//! withdraw round up. Here none of them is written down. Each operation names
+//! the amount the caller gives and which way it moves, and `exchange` rounds
+//! what the vault gives back by the opposite direction, so all four follow from
+//! the operations' meaning. `contracts` deploys the previews for comparison
+//! with OpenZeppelin's ERC4626.

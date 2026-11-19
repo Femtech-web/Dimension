@@ -41,9 +41,23 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: v1.4.4
-      - run: make fidelity moonwell
+      - run: make fidelity replay moonwell
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: results-forks-linux_amd64
           path: docs/results/
+
+  web:
+    # The site renders the reports committed under web/data; this keeps it building.
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build

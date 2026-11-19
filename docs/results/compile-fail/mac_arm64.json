@@ -8,10 +8,10 @@
   },
   "platform": "mac_arm64",
   "summary": {
-    "cases": 16,
-    "ok": 16,
+    "cases": 17,
+    "ok": 17,
     "by_kind": {
-      "compile_fail": 16
+      "compile_fail": 17
     }
   },
   "cases": [
@@ -112,6 +112,7 @@
             "-impl Flow for Sideways {",
             "-    type Admission = Ceil",
             "-    type Obligation = Ceil",
+            "-    type Opposite = Sideways",
             "+use dimension::{Flow, In, Out}",
             "+",
             "+// The fix: say which way the value moves; In and Out carry the rounding.",
@@ -188,7 +189,7 @@
       "observed": {
         "error_code": "2-0003",
         "message": "`wad` is not visible",
-        "diagnostics_sha256": "923a428fe767505a3f0303f6d4f79be60095f803ec57c323d83224ebba3f1d89",
+        "diagnostics_sha256": "ba455b10206cfdd42e0594cef5a8f3392a828620498b1d2159bd9b9812197f2b",
         "twin": {
           "mode": "check",
           "fix": [
@@ -336,7 +337,7 @@
       "observed": {
         "error_code": "8-0093",
         "message": "const requirement is not satisfied",
-        "diagnostics_sha256": "a66b967183f1323d50907eab26816c4fbf7d2607cbc6ee919d4834c140596f9d",
+        "diagnostics_sha256": "dfa31d998bba16782730409aeba4aadaba2110bf2323ed8b1e5080896f46e03b",
         "twin": {
           "mode": "test",
           "fix": [
@@ -414,6 +415,33 @@
           "fix": [
             "-pub fn value(_ a: Amount<USDC>, _ p: Price<CBETH, USD>) -> Value<USD, Collateral> {",
             "+pub fn value(_ a: Amount<USDC>, _ p: Price<USDC, USD>) -> Value<USD, Collateral> {"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/vault_deposit_rounds_shares_up",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A vault deposit computes the shares to issue as if the deposited assets were leaving, which rounds the shares up, in the caller's favour",
+      "incident": "ERC-4626 share rounding, the class EIP-4626's rounding rules exist to prevent",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "49233cb5b2d0190bde17c25710fcc0c4b7a76b80e0fbf7354030fd04ff58e73f",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::{Given, In, Out, Quantity, Settled, exchange, given}",
+            "+use dimension::{Given, In, Out, Quantity, Settled, exchange}",
+            "-// Shares computed as if the deposited assets were leaving the vault.",
+            "+// The fix: the deposited assets come in; the shares the vault gives back go out.",
+            "-        given<A, Out>(assets.value()),",
+            "+        assets,"
           ],
           "passed": 1,
           "ok": true

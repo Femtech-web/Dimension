@@ -1,0 +1,17 @@
+error[8-0000]: type mismatch
+   ┌─ src/lib.fe:10:5
+   │
+10 │ ╭     exchange(
+11 │ │         given<A, Out>(assets.value()),
+12 │ │         numerator: v.total_shares + 1,
+13 │ │         denominator: v.total_assets + 1,
+14 │ │     )
+   │ ╰─────^ expected `Quantity<Shares<A>, Out, Settled>`, but `Quantity<_, In, Settled>` is given
+error[8-0031]: type annotation is needed
+   ┌─ src/lib.fe:10:5
+   │
+10 │     exchange(
+   │     ^^^^^^^^
+   │     │
+   │     type annotation is needed
+   │     consider giving `: fn exchange<A, _, Out>` here

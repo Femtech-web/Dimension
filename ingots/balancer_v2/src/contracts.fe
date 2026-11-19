@@ -39,7 +39,7 @@ const MAX_RATE: u256 = 2 * ONE
 
 pub msg PoolAbi {
     #[selector = sol(
-        "initialize(uint256[2],uint256,uint256,uint256,uint256,address)",
+        "initialize(uint256[2],uint256,uint256,uint256,uint256,uint256,address)",
     )]
     Initialize {
         balances: [u256; 2],
@@ -47,6 +47,7 @@ pub msg PoolAbi {
         fee: u256,
         supply: u256,
         stored_invariant: u256,
+        protocol_swap_fee: u256,
         rate_provider: Address,
     },
     #[selector = sol("swapGivenIn(uint256,uint256)")]
@@ -275,7 +276,15 @@ pub contract FaithfulPool uses (call: mut Call) {
     mut s: PoolStorage,
 
     recv PoolAbi {
-        Initialize { balances, amp, fee, supply, stored_invariant, rate_provider }
+        Initialize {
+            balances,
+            amp,
+            fee,
+            supply,
+            stored_invariant,
+            protocol_swap_fee,
+            rate_provider,
+        }
         uses (call, mut s)
         {
             // Balancer reads its rate provider without bounds.
@@ -286,6 +295,7 @@ pub contract FaithfulPool uses (call: mut Call) {
                 amp,
                 fee,
                 stored_invariant,
+                protocol_swap_fee,
             }
             s.rate_provider = rate_provider
         }
@@ -359,7 +369,15 @@ pub contract TypedPool uses (call: mut Call) {
     mut s: PoolStorage,
 
     recv PoolAbi {
-        Initialize { balances, amp, fee, supply, stored_invariant, rate_provider }
+        Initialize {
+            balances,
+            amp,
+            fee,
+            supply,
+            stored_invariant,
+            protocol_swap_fee,
+            rate_provider,
+        }
         uses (call, mut s)
         {
             let factor = rated_factor(rate_provider)
@@ -370,6 +388,7 @@ pub contract TypedPool uses (call: mut Call) {
                 amp,
                 fee,
                 stored_invariant,
+                protocol_swap_fee,
             }
             s.rate_provider = rate_provider
         }
@@ -437,7 +456,15 @@ pub contract GuardedPool uses (call: mut Call) {
     mut s: PoolStorage,
 
     recv PoolAbi {
-        Initialize { balances, amp, fee, supply, stored_invariant, rate_provider }
+        Initialize {
+            balances,
+            amp,
+            fee,
+            supply,
+            stored_invariant,
+            protocol_swap_fee,
+            rate_provider,
+        }
         uses (call, mut s)
         {
             let factor = rated_factor(rate_provider)
@@ -448,6 +475,7 @@ pub contract GuardedPool uses (call: mut Call) {
                 amp,
                 fee,
                 stored_invariant,
+                protocol_swap_fee,
             }
             s.rate_provider = rate_provider
         }

@@ -14,12 +14,15 @@ ingots/
   balancer_v2/               Balancer V2 port and its contracts (GPL-3.0-or-later)
   balancer_explorer/         native search over the Balancer kernels (GPL-3.0-or-later)
   moonwell/                  Moonwell's cbETH market priced through Dimension (Apache-2.0)
+  vault/                     an ERC-4626 vault's accounting, written with Dimension (Apache-2.0)
 tests/
   core/  oracle/  explorer/  unit tests; core and explorer run on the EVM and natively
   compile_fail/              16 rejected constructions, each with a corrected twin
   probes/                    20 language-feasibility probes with golden outputs
-contracts/reference/         Foundry: Balancer's Solidity and every EVM or fork comparison
+contracts/reference/         Foundry: Balancer's Solidity, OpenZeppelin's ERC4626, every EVM or fork comparison
+fixtures/balancer-v2-exploit the attacker's swaps on the pool, read from the three transactions' events
 third_party/balancer-v2/     the pinned upstream sources the port is compared with
+web/                         the site: renders the reports and the docs (Next.js)
 scripts/
   toolchain/                 pinned, checksum-verified compiler
   reference/                 Foundry dependencies
@@ -28,8 +31,8 @@ docs/results/<suite>/        reports, one per platform
 Makefile                     the only entry point; CI runs the same targets
 ```
 
-Dependencies point one way. `balancer_v2` and `moonwell` depend only on
-`dimension`, `balancer_explorer` depends on `balancer_v2`, and nothing depends
+Dependencies point one way. `balancer_v2`, `moonwell` and `vault` depend only
+on `dimension`, `balancer_explorer` depends on `balancer_v2`, and nothing depends
 on a demonstration. A new protocol module, such as a Uniswap v3 retrofit, would
 be one more ingot depending on `dimension`, with no change to the core.
 
@@ -149,6 +152,7 @@ stable/   fixed_point, math, stable_math    faithful port of Balancer's librarie
           check                             failure as an effect
 pool      Pool<N>                           the state a swap, join or exit reads and writes
 pool/     faithful                          Balancer's operations, rounding as Balancer does
+          fees                              the protocol fees minted on joins and exits
           typed  (+ typed/math)             the same operations with Dimension's types
           guarded                           typed, with the runtime guard on
 contracts                                   FaithfulPool, TypedPool, GuardedPool
@@ -182,12 +186,23 @@ and return `Owed` ones. Putting Balancer's `_upscale` back into the typed
 kernel is therefore a type error (case `typed_pool_with_balancer_upscale`).
 Routing through `math` changed no bytecode.
 
+**Protocol fees** are ported from `ComposableStablePoolProtocolFees` and
+`ExternalFees` into `pool/fees.fe`, and all three kernels pay them on every join
+and exit. Before the operation, the protocol takes its share of the invariant
+growth since the last join or exit. After it, it takes its share of the swap
+fees the operation charged. Both are minted as BPT. Without them the faithful
+kernel could not match the attack step by step: the pool minted fee BPT 33
+times during the first attack transaction alone.
+
 **The guarded kernel** runs the typed operations with `guard: true`. Each
-operation reuses the invariant it already computed for the state before. On
-joins and exits it stores the invariant of the balances the pool actually holds
-and fails with `ShareValueDecreased` if the value per share fell. The extra
-work is one invariant solve on swaps; on joins and exits it replaces a solve
-Balancer already does.
+operation reuses the invariant it already computed for the state before, taken
+after the fees due are paid. On joins and exits it takes the invariant of the
+balances the pool actually holds, both to store and to compute the protocol
+fee, and fails with `ShareValueDecreased` if the value per share fell. The fee
+on the operation itself cannot trip the guard: it is a share of the growth
+beyond the fee-less invariant, so the value per share never falls by it. The
+extra work is one invariant solve on swaps; on joins and exits it replaces a
+solve Balancer already does.
 
 **The contracts** keep `Pool<2>` in storage, with the osETH/wETH token layout.
 `FaithfulPool` reads its rate provider unchecked, as Balancer does.
@@ -224,6 +239,15 @@ behaviour.
   - `DeclaredCbethUsdFeed` deploys a single declaration given at construction,
     so the fork test can try wrong declarations against the real feed.
 
+## The vault: `ingots/vault`
+
+An ERC-4626 vault's accounting, as an example of Dimension in a protocol
+class neither incident belongs to. Each of the four operations states which
+way its given amount moves. `exchange` gives back the other token moving the
+other way, rounded by that direction, so EIP-4626's four roundings need no code.
+`exchange` rests on `Flow`'s associated `type Opposite: Flow`. See
+[vault.md](vault.md).
+
 ## Verification
 
 Each suite is one Python module in `scripts/harness` and one `make` target. It
@@ -239,8 +263,11 @@ whether it holds, and the evidence.
 | `differential` | Fe StableMath | Balancer's Solidity, identical calldata, byte-identical results |
 | `explore` | three kernels | each other, and the two invariants |
 | `evm` | three deployed contracts | a greedy attacker; gas per operation |
+| `vault` | the ERC-4626 vault's previews | OpenZeppelin's ERC4626 in the same states |
 | `fidelity` | the faithful kernel | the deployed pool on a mainnet fork |
+| `replay` | the three kernels | the attacker's own transactions, step by step, and the pool's state after each |
 | `moonwell` | the Fe oracle | Moonwell's deployed oracle and the real feeds on Base forks |
+| `mutants` | the checks themselves | realistic bugs planted one at a time; the check meant for each must fail |
 
 Golden files never regenerate silently: `make update` rewrites them, and the
 diff is reviewed before it is kept. The differential test clears Foundry's

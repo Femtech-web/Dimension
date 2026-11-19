@@ -1,0 +1,174 @@
+.figure {
+  margin: 0;
+}
+
+.caption {
+  font-weight: 500;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin: 8px 0 12px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.keyBug,
+.keyDim {
+  display: inline-block;
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.keyBug {
+  background: var(--bug);
+}
+
+.keyDim {
+  background: var(--dim);
+}
+
+.frame {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.frame svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+}
+
+.frame svg:focus-visible {
+  outline: 2px solid var(--dim);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.grid {
+  stroke: var(--rule);
+  stroke-width: 1;
+}
+
+.axis {
+  stroke: var(--rule-strong);
+  stroke-width: 1;
+}
+
+.band {
+  fill: var(--band);
+}
+
+.tick {
+  fill: var(--muted);
+  font: 12px var(--font-mono), monospace;
+}
+
+.phase {
+  fill: var(--muted);
+  font: 11px var(--font-mono), monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.note {
+  fill: var(--ink-2);
+  font: 12px var(--font-mono), monospace;
+}
+
+.lineBug,
+.lineDim {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.lineBug {
+  stroke: var(--bug);
+}
+
+.lineDim {
+  stroke: var(--dim);
+}
+
+.revert circle {
+  fill: var(--surface);
+  stroke: var(--dim);
+  stroke-width: 2;
+}
+
+.revert path {
+  stroke: var(--dim);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.mark {
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.crosshair {
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+
+.tip {
+  position: absolute;
+  top: 40px;
+  pointer-events: none;
+  min-width: 230px;
+  background: var(--raised);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  box-shadow: var(--shadow);
+}
+
+.tipHead {
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.tipRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tipRow strong {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.tipRow span {
+  color: var(--ink-2);
+}
+
+.details {
+  margin-top: 10px;
+}
+
+.details summary {
+  cursor: pointer;
+  color: var(--ink-2);
+  font-size: 14px;
+  margin-bottom: 8px;
+}

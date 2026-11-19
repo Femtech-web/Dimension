@@ -1,0 +1,16 @@
+{
+  "platform": "mac_arm64",
+  "suites": [
+    "compile-fail",
+    "differential",
+    "evm",
+    "exploration",
+    "fidelity",
+    "moonwell",
+    "mutants",
+    "probes",
+    "replay",
+    "unit",
+    "vault"
+  ]
+}

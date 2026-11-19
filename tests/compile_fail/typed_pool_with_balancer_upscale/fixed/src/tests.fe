@@ -19,7 +19,15 @@ fn pool() -> Pool<2> uses (check: mut Check) {
     let balances = [1_000, 1_000]
     let factors = [RATE, ONE]
     let invariant = sm::calculate_invariant(200_000, upscaled(balances, factors))
-    Pool { balances, factors, supply: invariant, amp: 200_000, fee: 0, stored_invariant: invariant }
+    Pool {
+        balances,
+        factors,
+        supply: invariant,
+        amp: 200_000,
+        fee: 0,
+        stored_invariant: invariant,
+        protocol_swap_fee: 0,
+    }
 }
 
 #[test]

@@ -1,0 +1,235 @@
+{
+  "schema": "dimension.differential/v1",
+  "question": "Does the Fe port compute exactly what Balancer V2's Solidity computes, reverts included?",
+  "comparison": "identical calldata to both; equal success flag and byte-identical return data required",
+  "reference": {
+    "repository": "balancer/balancer-v2-monorepo",
+    "commit": "e91a2b643a49856f51a648d175667c1b48cf3377",
+    "solc": "0.7.6"
+  },
+  "fe": {
+    "version": "26.6.0",
+    "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110"
+  },
+  "forge": "forge Version: 1.4.4-stable",
+  "fuzz": {
+    "seed": "0xd1e5e0",
+    "runs_per_function": 10000
+  },
+  "platform": "mac_arm64",
+  "summary": {
+    "functions": 22,
+    "vectors": 220000,
+    "both_succeeded": 170900,
+    "both_reverted": 49100,
+    "mismatches": 0
+  },
+  "functions": {
+    "calcBptInGivenExactTokensOut2": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 7647,
+      "both_reverted": {
+        "BAL#001": 693,
+        "BAL#003": 1586,
+        "BAL#004": 36,
+        "BAL#321": 38
+      }
+    },
+    "calcBptInGivenExactTokensOut3": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 7436,
+      "both_reverted": {
+        "BAL#001": 788,
+        "BAL#003": 1691,
+        "BAL#004": 23,
+        "BAL#321": 62
+      }
+    },
+    "calcBptOutGivenExactTokensIn2": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 7337,
+      "both_reverted": {
+        "BAL#001": 1633,
+        "BAL#003": 1005,
+        "BAL#321": 25
+      }
+    },
+    "calcBptOutGivenExactTokensIn3": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 7187,
+      "both_reverted": {
+        "BAL#001": 1605,
+        "BAL#003": 1160,
+        "BAL#321": 48
+      }
+    },
+    "calcInGivenOut2": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 7625,
+      "both_reverted": {
+        "BAL#001": 875,
+        "BAL#003": 1480,
+        "BAL#004": 20
+      }
+    },
+    "calcInGivenOut3": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 7378,
+      "both_reverted": {
+        "BAL#001": 886,
+        "BAL#003": 1694,
+        "BAL#004": 42
+      }
+    },
+    "calcOutGivenIn2": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 7359,
+      "both_reverted": {
+        "BAL#001": 1040,
+        "BAL#003": 1595,
+        "BAL#004": 6
+      }
+    },
+    "calcOutGivenIn3": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 7216,
+      "both_reverted": {
+        "BAL#001": 940,
+        "BAL#003": 1809,
+        "BAL#004": 35
+      }
+    },
+    "calcTokenInGivenExactBptOut2": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 8211,
+      "both_reverted": {
+        "BAL#001": 131,
+        "BAL#003": 1653,
+        "BAL#004": 5
+      }
+    },
+    "calcTokenInGivenExactBptOut3": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 8046,
+      "both_reverted": {
+        "BAL#001": 159,
+        "BAL#003": 1755,
+        "BAL#004": 40
+      }
+    },
+    "calcTokenOutGivenExactBptIn2": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 6576,
+      "both_reverted": {
+        "BAL#001": 1564,
+        "BAL#003": 1637,
+        "BAL#004": 223
+      }
+    },
+    "calcTokenOutGivenExactBptIn3": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 6549,
+      "both_reverted": {
+        "BAL#001": 1402,
+        "BAL#003": 1792,
+        "BAL#004": 257
+      }
+    },
+    "calculateInvariant2": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 8216,
+      "both_reverted": {
+        "BAL#003": 1753,
+        "BAL#321": 31
+      }
+    },
+    "calculateInvariant3": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 8075,
+      "both_reverted": {
+        "BAL#003": 1870,
+        "BAL#321": 55
+      }
+    },
+    "complement": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 10000,
+      "both_reverted": {}
+    },
+    "divDown": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 8133,
+      "both_reverted": {
+        "BAL#004": 126,
+        "BAL#005": 1741
+      }
+    },
+    "divUp": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 8133,
+      "both_reverted": {
+        "BAL#004": 126,
+        "BAL#005": 1741
+      }
+    },
+    "getTokenBalance2": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 8398,
+      "both_reverted": {
+        "BAL#003": 1596,
+        "BAL#004": 6
+      }
+    },
+    "getTokenBalance3": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 8218,
+      "both_reverted": {
+        "BAL#003": 1746,
+        "BAL#004": 36
+      }
+    },
+    "mathDivUp": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 9874,
+      "both_reverted": {
+        "BAL#004": 126
+      }
+    },
+    "mulDown": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 6643,
+      "both_reverted": {
+        "BAL#003": 3357
+      }
+    },
+    "mulUp": {
+      "passed": true,
+      "vectors": 10000,
+      "both_succeeded": 6643,
+      "both_reverted": {
+        "BAL#003": 3357
+      }
+    }
+  }
+}

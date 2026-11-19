@@ -1,0 +1,72 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! Protocol fees on joins and exits, as ComposableStablePoolProtocolFees and
+//! ExternalFees compute them, paid by minting BPT to the protocol:
+//!
+//! - before a join or exit, the protocol's share of the invariant growth from
+//!   swap fees since the last one (`_payProtocolFeesBeforeJoinExit`);
+//! - after it, its share of the swap fees the join or exit itself charged
+//!   (`_updateInvariantAfterJoinExit`).
+//!
+//! Rates are taken as constant between joins and exits. That holds within a
+//! transaction once its first join or exit has copied the current rates to the
+//! old ones, so the yield fee is zero here; a pool's state is loaded with the
+//! fees due at that point already paid (its actual supply).
+
+#![arithmetic(unchecked)]
+
+use super::Pool
+use super::super::stable::fixed_point as fp
+use super::super::stable::math
+use super::super::stable::check::Check
+
+/// `ExternalFees.bptForPoolOwnershipPercentage`: the BPT that, minted, gives
+/// its holder `percentage` of the pool.
+pub fn bpt_for_ownership(_ total_supply: u256, _ percentage: u256) -> u256
+uses (check: mut Check)
+{
+    math::div_down(
+        math::mul(total_supply, percentage),
+        fp::complement(percentage),
+    )
+}
+
+/// Pays the fees due before a join or exit. `invariant` is the pool's current
+/// invariant, which Balancer computes with the amplification of the last join
+/// or exit (the same, as amplification is constant here).
+pub fn pay_before_join_exit<const N: usize>(_ pool: mut Pool<N>, invariant: u256)
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    let growth = if invariant > pool.stored_invariant {
+        invariant - pool.stored_invariant
+    } else {
+        0
+    }
+    let percentage = fp::mul_down(fp::div_down(growth, invariant), pool.protocol_swap_fee)
+    pool.supply = pool.supply + bpt_for_ownership(pool.supply, percentage)
+}
+
+/// Pays the fees on the swap fees a join or exit charged, then stores
+/// `post_invariant` as the basis for the next one. `pool.supply` is the supply
+/// after the join or exit.
+pub fn update_after_join_exit<const N: usize>(
+    _ pool: mut Pool<N>,
+    post_invariant: u256,
+    pre_invariant: u256,
+    pre_supply: u256,
+)
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    let feeless = fp::mul_down(pre_invariant, fp::div_down(pool.supply, pre_supply))
+    if post_invariant > feeless {
+        let percentage = math::div_down(
+            math::mul(post_invariant - feeless, pool.protocol_swap_fee),
+            post_invariant,
+        )
+        if percentage > 0 {
+            pool.supply = pool.supply + bpt_for_ownership(pool.supply, percentage)
+        }
+    }
+    pool.stored_invariant = post_invariant
+}

@@ -31,6 +31,7 @@ pub use self::value::{
     WAD,
     admit,
     covers,
+    exchange,
     given,
     haircut,
     owed,

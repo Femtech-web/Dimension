@@ -1,0 +1,101 @@
+//! The vault's roundings, which no line of it names, checked against the exact
+//! rational result on every small vault state, and the round trips EIP-4626
+//! relies on never paying the caller.
+
+use dimension::{In, Out, given}
+use vault::vault::{
+    Shares,
+    Vault,
+    deposit,
+    mint,
+    preview_deposit,
+    preview_mint,
+    preview_redeem,
+    preview_withdraw,
+    redeem,
+    withdraw,
+}
+
+pub struct USDC {}
+
+/// Holdings, supply and amounts from 0 to N - 1: every small vault state.
+const N: u256 = 32
+
+/// `r` is floor(a * b / d), proved by cross-multiplication.
+fn is_floor(_ r: u256, _ a: u256, _ b: u256, _ d: u256) -> bool {
+    r * d <= a * b && a * b < (r + 1) * d
+}
+
+/// `r` is ceil(a * b / d), proved by cross-multiplication.
+fn is_ceil(_ r: u256, _ a: u256, _ b: u256, _ d: u256) -> bool {
+    a * b <= r * d && (r == 0 || (r - 1) * d < a * b)
+}
+
+#[test]
+fn every_preview_rounds_as_eip_4626_requires() {
+    var held: u256 = 0
+    while held < N {
+        var issued: u256 = 0
+        while issued < N {
+            let v = Vault<USDC> { total_assets: held, total_shares: issued }
+            var x: u256 = 0
+            while x < N {
+                // Deposit and redeem round down; mint and withdraw round up.
+                let shares_out = preview_deposit(v, given<USDC, In>(x)).value()
+                let assets_in = preview_mint(v, given<Shares<USDC>, Out>(x)).value()
+                let shares_in = preview_withdraw(v, given<USDC, Out>(x)).value()
+                let assets_out = preview_redeem(v, given<Shares<USDC>, In>(x)).value()
+                assert(is_floor(shares_out, x, issued + 1, held + 1))
+                assert(is_ceil(assets_in, x, held + 1, issued + 1))
+                assert(is_ceil(shares_in, x, issued + 1, held + 1))
+                assert(is_floor(assets_out, x, held + 1, issued + 1))
+                x += 1
+            }
+            issued += 1
+        }
+        held += 1
+    }
+}
+
+#[test]
+fn round_trips_never_pay_the_caller() {
+    var held: u256 = 0
+    while held < N {
+        var issued: u256 = 0
+        while issued < N {
+            var x: u256 = 0
+            while x < N {
+                // Deposit, then redeem every share received.
+                var a = Vault<USDC> { total_assets: held, total_shares: issued }
+                let shares = deposit(mut a, given<USDC, In>(x))
+                assert(
+                    redeem(mut a, given<Shares<USDC>, In>(shares.value())).value() <= x,
+                )
+                // Mint, then redeem the shares minted.
+                var b = Vault<USDC> { total_assets: held, total_shares: issued }
+                let paid = mint(mut b, given<Shares<USDC>, Out>(x))
+                assert(
+                    redeem(mut b, given<Shares<USDC>, In>(x)).value() <= paid.value(),
+                )
+                // Mint, then withdraw what was paid: at least the shares minted are burned.
+                var c = Vault<USDC> { total_assets: held, total_shares: issued }
+                let cost = mint(mut c, given<Shares<USDC>, Out>(x))
+                assert(
+                    withdraw(mut c, given<USDC, Out>(cost.value())).value() >= x,
+                )
+                x += 1
+            }
+            issued += 1
+        }
+        held += 1
+    }
+}
+
+#[test]
+fn a_deposit_too_small_for_one_share_gets_none() {
+    // Holding 2 assets and no shares, 1 asset is worth a third of a share: none is issued.
+    var v = Vault<USDC> { total_assets: 2, total_shares: 0 }
+    assert(deposit(mut v, given<USDC, In>(1)).value() == 0)
+    assert(v.total_assets == 3)
+    assert(v.total_shares == 0)
+}

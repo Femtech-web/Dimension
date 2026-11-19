@@ -9,7 +9,7 @@ FE := .tools/fe-$(shell sed -n 's/^version=//p' scripts/toolchain/fe.lock)/fe
 # The feasibility probes are kept exactly as recorded, so they are not formatted.
 FORMATTED := ingots tests/core tests/oracle tests/explorer tests/compile_fail
 
-.PHONY: help toolchain reference-deps fmt fmt-check test unit compile-fail probes differential explore evm fidelity moonwell unsafe-policy page show demo update ci
+.PHONY: help toolchain reference-deps fmt fmt-check test unit compile-fail probes differential explore evm vault fidelity replay moonwell unsafe-policy mutants web show demo update ci
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -46,14 +46,23 @@ explore: toolchain ## Native search and repeated attacks on the faithful, typed 
 evm: toolchain reference-deps ## The three Fe pool contracts on a real EVM: repeated-exit attack and gas (needs forge)
 	@$(HARNESS)evm
 
+vault: toolchain reference-deps ## The ERC-4626 vault's previews against OpenZeppelin's ERC4626 (needs forge)
+	@$(HARNESS)vault
+
 fidelity: toolchain reference-deps ## The Fe port against the deployed exploited pool on a mainnet fork (needs forge and an archive RPC)
 	@$(HARNESS)fidelity
+
+replay: toolchain reference-deps ## The real exploit's 360 steps through the three Fe kernels (mainnet forks; needs forge and an archive RPC)
+	@$(HARNESS)replay
 
 moonwell: toolchain reference-deps ## Moonwell's cbETH market on Base forks around MIP-X43 (needs forge and a Base RPC)
 	@$(HARNESS)moonwell
 
-page: toolchain ## Render docs/index.html, the verification page, from the saved reports
-	@$(HARNESS)page
+mutants: toolchain reference-deps ## Plant realistic bugs one at a time and require the check meant for each to catch it (FORKS=1 adds fork-only mutants)
+	@$(HARNESS)mutants $(if $(FORKS),--forks)
+
+web: ## Sync the saved reports and docs into web/ and build the site (needs Node 20.9+)
+	cd web && node scripts/sync.mjs && npm ci --no-audit --no-fund && npm run build
 
 show: toolchain ## Show one compile-fail case live: make show CASE=<name> (all cases if omitted)
 	@$(HARNESS)show $(CASE)
@@ -66,11 +75,11 @@ update: toolchain ## Regenerate golden files for every suite (review the diff be
 
 # Ingots that contracts are built from. Only Dimension's own test constructors
 # may be unsafe, and none of these may reach them.
-PROTOCOL := dimension balancer_v2 moonwell
+PROTOCOL := dimension balancer_v2 moonwell vault
 
 unsafe-policy: ## Fail if a protocol ingot could forge a trusted value
 	@if grep -n allow_unsafe $(PROTOCOL:%=ingots/%/fe.toml); then echo "a protocol ingot sets allow_unsafe"; exit 1; fi
 	@if grep -rnE '\bunsafe\b' $(PROTOCOL:%=ingots/%/src) | grep -v ingots/dimension/src/value/testing.fe | grep -vE ':[0-9]+:\s*//'; then \
 		echo "unsafe code outside dimension::value::testing"; exit 1; fi
 
-ci: fmt-check unsafe-policy test differential explore evm ## Everything CI runs
+ci: fmt-check unsafe-policy test differential explore evm vault ## Everything CI runs

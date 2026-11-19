@@ -1,0 +1,80 @@
+{
+  "schema": "dimension.cases/v1",
+  "suite": "unit",
+  "fe": {
+    "version": "26.6.0",
+    "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110",
+    "binary_sha256": "de045cf2ccd5a4052d92cde7745ff052747235b9c98e745a0995a8ad40a0c78e"
+  },
+  "platform": "mac_arm64",
+  "summary": {
+    "cases": 4,
+    "ok": 4,
+    "by_kind": {
+      "test": 4
+    }
+  },
+  "cases": [
+    {
+      "id": "core",
+      "kind": "test",
+      "layer": "compile-time and runtime",
+      "mechanism": "The public Dimension API: rounding by flow against exact rational results, decimal scaling, price composition, valuation sides, and risk policies",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "sonatina": {
+          "passed": 14
+        },
+        "native": {
+          "passed": 14
+        }
+      }
+    },
+    {
+      "id": "explorer",
+      "kind": "test",
+      "layer": "testing",
+      "mechanism": "The exploration code computes identical results on the EVM and native backends: a small grid and a repeated-exit attack pinned to exact integers",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "sonatina": {
+          "passed": 2
+        },
+        "native": {
+          "passed": 2
+        }
+      }
+    },
+    {
+      "id": "oracle",
+      "kind": "test",
+      "layer": "bind-time and runtime",
+      "mechanism": "The boundaries against a mock Chainlink feed and a mock rate provider: declared decimals, positive, fresh and in-band answers, banded rates, and composite pricing",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "sonatina": {
+          "passed": 9
+        }
+      }
+    },
+    {
+      "id": "vault",
+      "kind": "test",
+      "layer": "compile-time and runtime",
+      "mechanism": "An ERC-4626 vault's four roundings, derived from the direction of each operation's given amount, checked against the exact rational result on every small state, and its round trips never paying the caller",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "sonatina": {
+          "passed": 3
+        },
+        "native": {
+          "passed": 3
+        }
+      }
+    }
+  ]
+}

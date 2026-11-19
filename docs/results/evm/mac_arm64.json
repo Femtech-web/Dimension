@@ -32,36 +32,78 @@
     }
   },
   "gas": {
-    "setup": "osETH/wETH pool balances before the exploit (4,922.36 WETH, 6,851.58 osETH), amp 200, fee 0.01%, 10 tokens out",
+    "setup": "the osETH/wETH pool's balances before the exploit (4,922.36 WETH, 6,851.58 osETH), amp 200, swap fee 0.01%, protocol swap fee 50%; 10 tokens or 10 BPT per operation",
     "per_operation": {
       "faithful": {
-        "swapGivenOut": 15669,
-        "exitGivenOut": 21116
+        "swapGivenIn": 15164,
+        "swapGivenOut": 15981,
+        "exitGivenIn": 23240,
+        "exitGivenOut": 24493,
+        "joinGivenIn": 25585,
+        "joinGivenOut": 23453
       },
       "typed": {
-        "swapGivenOut": 16695,
-        "exitGivenOut": 21478
+        "swapGivenIn": 16104,
+        "swapGivenOut": 17000,
+        "exitGivenIn": 24259,
+        "exitGivenOut": 25338,
+        "joinGivenIn": 26386,
+        "joinGivenOut": 24360
       },
       "guarded": {
-        "swapGivenOut": 23130,
-        "exitGivenOut": 22313
+        "swapGivenIn": 22644,
+        "swapGivenOut": 23553,
+        "exitGivenIn": 25075,
+        "exitGivenOut": 26154,
+        "joinGivenIn": 27202,
+        "joinGivenOut": 25176
       }
     },
     "relative_to_faithful": {
       "typed": {
-        "swapGivenOut": "+6.5%",
-        "exitGivenOut": "+1.7%"
+        "swapGivenIn": "+6.2%",
+        "swapGivenOut": "+6.4%",
+        "exitGivenIn": "+4.4%",
+        "exitGivenOut": "+3.4%",
+        "joinGivenIn": "+3.1%",
+        "joinGivenOut": "+3.9%"
       },
       "guarded": {
-        "swapGivenOut": "+47.6%",
-        "exitGivenOut": "+5.7%"
+        "swapGivenIn": "+49.3%",
+        "swapGivenOut": "+47.4%",
+        "exitGivenIn": "+7.9%",
+        "exitGivenOut": "+6.8%",
+        "joinGivenIn": "+6.3%",
+        "joinGivenOut": "+7.3%"
       }
     }
   },
   "runtime_bytecode_bytes": {
-    "faithful": 7414,
-    "typed": 9233,
-    "guarded": 9675
+    "faithful": 8014,
+    "typed": 9693,
+    "guarded": 10144
+  },
+  "runtime_bytecode_bytes_by_level": {
+    "O0": {
+      "faithful": 19423,
+      "typed": 28562,
+      "guarded": 28568
+    },
+    "O1": {
+      "faithful": 8014,
+      "typed": 9693,
+      "guarded": 10144
+    },
+    "O2": {
+      "faithful": 7992,
+      "typed": 9675,
+      "guarded": 10126
+    },
+    "Os": {
+      "faithful": 9139,
+      "typed": 10232,
+      "guarded": 10616
+    }
   },
   "claims": [
     {

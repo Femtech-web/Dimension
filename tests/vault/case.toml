@@ -1,0 +1,4 @@
+kind = "test"
+backends = ["sonatina", "native"]
+layer = "compile-time and runtime"
+mechanism = "An ERC-4626 vault's four roundings, derived from the direction of each operation's given amount, checked against the exact rational result on every small state, and its round trips never paying the caller"

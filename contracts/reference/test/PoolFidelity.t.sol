@@ -31,34 +31,31 @@ interface IComposableStablePool {
     function getSwapFeePercentage() external view returns (uint256);
     function getScalingFactors() external view returns (uint256[] memory);
     function getActualSupply() external view returns (uint256);
-    function getLastJoinExitData() external view returns (uint256 amp, uint256 invariant);
-    function getRateProviders() external view returns (address[] memory);
-    function getTokenRateCache(address token) external view returns (uint256 rate, uint256 oldRate, uint256 duration, uint256 expires);
-}
-
-interface IRateProvider {
-    function getRate() external view returns (uint256);
+    function getProtocolFeePercentageCache(uint256 feeType) external view returns (uint256);
+    function updateTokenRateCache(address token) external;
 }
 
 interface IFePool {
-    function initialize(uint256[2] calldata balances, uint256 amp, uint256 fee, uint256 supply, uint256 storedInvariant, address rateProvider) external;
+    function initialize(uint256[2] calldata balances, uint256 amp, uint256 fee, uint256 supply, uint256 storedInvariant, uint256 protocolSwapFee, address rateProvider) external;
     function swapGivenIn(uint256 i, uint256 amount) external returns (uint256);
     function swapGivenOut(uint256 i, uint256 amount) external returns (uint256);
     function exitGivenOut(uint256 j, uint256 amount) external returns (uint256);
+    function getRate() external view returns (uint256);
     function getState() external view returns (uint256[2] memory, uint256[2] memory, uint256, uint256);
 }
 
 /// The Fe faithful kernel against the deployed Balancer V2 pool that was drained
-/// on 2025-11-03, on a mainnet fork at the block before the exploit. The Fe pool
-/// is loaded with the real pool's state and every quote must equal what the real
-/// Vault returns for the same swap. Results go to cache/pool-fidelity.csv.
+/// on 2025-11-03, on a mainnet fork at the last block before the first attack
+/// transaction (23,717,397). The Fe pool is loaded with the real pool's state
+/// and every quote must equal what the real Vault returns for the same swap.
+/// Results go to cache/pool-fidelity.csv.
 contract PoolFidelity is Test {
     IVault internal constant VAULT = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
     IComposableStablePool internal constant POOL = IComposableStablePool(0xDACf5Fa19b1f720111609043ac67A9818262850c);
     bytes32 internal constant POOL_ID = 0xdacf5fa19b1f720111609043ac67a9818262850c000000000000000000000635;
     address internal constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address internal constant OSETH = 0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38;
-    uint256 internal constant BLOCK_BEFORE_EXPLOIT = 23_717_399;
+    uint256 internal constant BLOCK_BEFORE_EXPLOIT = 23_717_396;
     uint8 internal constant GIVEN_IN = 0;
     uint8 internal constant GIVEN_OUT = 1;
     string internal constant OUT = "cache/pool-fidelity.csv";
@@ -68,14 +65,16 @@ contract PoolFidelity is Test {
 
     function setUp() public {
         vm.createSelectFork(vm.envString("MAINNET_RPC_URL"), BLOCK_BEFORE_EXPLOIT);
+        // osETH's cached rate has expired; the pool refreshes it on its next swap, so do that first.
+        POOL.updateTokenRateCache(OSETH);
 
         (address[] memory tokens, uint256[] memory registered,) = VAULT.getPoolTokens(POOL_ID);
         require(tokens[0] == WETH && tokens[2] == OSETH, "unexpected token order");
         balances = [registered[0], registered[2]];
 
         (uint256 amp,,) = POOL.getAmplificationParameter();
-        (, uint256 storedInvariant) = POOL.getLastJoinExitData();
-        uint256 rate = _rateThePoolWillUse();
+        uint256 protocolFee = POOL.getProtocolFeePercentageCache(0);
+        MockRateProvider provider = new MockRateProvider(POOL.getScalingFactors()[2]);
 
         bytes memory code = vm.parseBytes(string.concat("0x", vm.readFile("../../ingots/balancer_v2/out/FaithfulPool.bin")));
         address deployed;
@@ -83,15 +82,12 @@ contract PoolFidelity is Test {
             deployed := create(0, add(code, 0x20), mload(code))
         }
         fe = IFePool(deployed);
-        fe.initialize(balances, amp, POOL.getSwapFeePercentage(), POOL.getActualSupply(), storedInvariant, address(new MockRateProvider(rate)));
-    }
-
-    /// osETH's rate as a swap will use it: the cached rate, or the provider's
-    /// current one if the cache has expired (the pool refreshes it first).
-    function _rateThePoolWillUse() internal view returns (uint256) {
-        (uint256 cached,,, uint256 expires) = POOL.getTokenRateCache(OSETH);
-        if (block.timestamp <= expires) return cached;
-        return IRateProvider(POOL.getRateProviders()[2]).getRate();
+        // The actual supply includes the protocol fees due now, as if paid; the
+        // stored invariant is then the current one. With a supply of 1e18,
+        // getRate() is that invariant.
+        fe.initialize(balances, amp, POOL.getSwapFeePercentage(), 1e18, 0, protocolFee, address(provider));
+        uint256 invariant = fe.getRate();
+        fe.initialize(balances, amp, POOL.getSwapFeePercentage(), POOL.getActualSupply(), invariant, protocolFee, address(provider));
     }
 
     function _real(uint8 kind, uint256 inIdx, uint256 outIdx, uint256 amount) internal returns (bool ok, uint256 result) {

@@ -4,10 +4,11 @@
 //!
 //! What is kept, operation for operation: fee handling, scaling of balances and
 //! amounts, the StableMath calls, the invariant stored after joins and exits,
-//! and the Vault's balance and BPT supply updates. What is left out: protocol
-//! fees (zero here), amplification changes, the rate cache, recovery mode and
-//! pausing. Two kernels share this state: `faithful` rounds as Balancer V2 does,
-//! `typed` brings amounts in and out through Dimension.
+//! the Vault's balance and BPT supply updates, and the protocol fees minted on
+//! joins and exits. What is left out: amplification changes, rate changes
+//! between joins and exits, recovery mode and pausing. Two kernels share this
+//! state: `faithful` rounds as Balancer V2 does, `typed` brings amounts in and
+//! out through Dimension.
 
 /// Pool state as the Vault and the pool hold it. Token balances are raw, in each
 /// token's smallest unit; BPT is tracked as the virtual supply.
@@ -20,6 +21,8 @@ pub struct Pool<const N: usize> {
     pub fee: u256,
     /// The invariant stored after the last join or exit.
     pub stored_invariant: u256,
+    /// The protocol's share of swap fees, minted as BPT on joins and exits.
+    pub protocol_swap_fee: u256,
 }
 
 impl<const N: usize> Copy for Pool<N> {}

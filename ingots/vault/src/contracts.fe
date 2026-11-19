@@ -1,0 +1,59 @@
+//! The vault's four previews as a contract, taking the vault's state with each
+//! call, so a test can compare them with OpenZeppelin's ERC4626 in any state.
+
+#![cfg(target = "evm")]
+
+use std::abi::sol
+use dimension::{In, Out, given}
+use super::vault::{Shares, Vault, preview_deposit, preview_mint, preview_redeem, preview_withdraw}
+
+/// The vault's underlying token.
+pub struct Underlying {}
+
+pub msg VaultPreviews {
+    #[selector = sol("previewDeposit(uint256,uint256,uint256)")]
+    PreviewDeposit { total_assets: u256, total_shares: u256, assets: u256 } -> u256,
+    #[selector = sol("previewMint(uint256,uint256,uint256)")]
+    PreviewMint { total_assets: u256, total_shares: u256, shares: u256 } -> u256,
+    #[selector = sol("previewWithdraw(uint256,uint256,uint256)")]
+    PreviewWithdraw { total_assets: u256, total_shares: u256, assets: u256 } -> u256,
+    #[selector = sol("previewRedeem(uint256,uint256,uint256)")]
+    PreviewRedeem { total_assets: u256, total_shares: u256, shares: u256 } -> u256,
+}
+
+fn state(_ total_assets: u256, _ total_shares: u256) -> Vault<Underlying> {
+    Vault { total_assets, total_shares }
+}
+
+pub contract TypedVault {
+    recv VaultPreviews {
+        PreviewDeposit { total_assets, total_shares, assets } -> u256 {
+            preview_deposit(
+                state(total_assets, total_shares),
+                given<Underlying, In>(assets),
+            )
+                .value()
+        }
+        PreviewMint { total_assets, total_shares, shares } -> u256 {
+            preview_mint(
+                state(total_assets, total_shares),
+                given<Shares<Underlying>, Out>(shares),
+            )
+                .value()
+        }
+        PreviewWithdraw { total_assets, total_shares, assets } -> u256 {
+            preview_withdraw(
+                state(total_assets, total_shares),
+                given<Underlying, Out>(assets),
+            )
+                .value()
+        }
+        PreviewRedeem { total_assets, total_shares, shares } -> u256 {
+            preview_redeem(
+                state(total_assets, total_shares),
+                given<Shares<Underlying>, In>(shares),
+            )
+                .value()
+        }
+    }
+}

@@ -1,0 +1,97 @@
+.figure {
+  margin: 0;
+  padding: 20px 22px 18px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.head {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.figure svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  margin: 6px 0 4px;
+}
+
+.figure figcaption {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.axis {
+  stroke: var(--rule-strong);
+  stroke-width: 1.4;
+}
+
+.whole {
+  fill: var(--ink);
+  font: 500 22px var(--font-mono), monospace;
+}
+
+.exact {
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.exactDot {
+  fill: var(--ink);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.exactLabel {
+  fill: var(--ink);
+  font: 500 15px var(--font-mono), monospace;
+}
+
+.bug,
+.fix {
+  fill: none;
+  stroke-width: 2;
+}
+
+.bug {
+  stroke: var(--bug);
+}
+
+.fix {
+  stroke: var(--dim);
+}
+
+.bug text,
+.fix text {
+  stroke: none;
+  fill: var(--ink-2);
+  font: 14px var(--font-mono), monospace;
+}
+
+.strong {
+  fill: var(--ink);
+  font-weight: 600;
+}
+
+.dim {
+  stroke-dasharray: var(--len);
+  animation: draw 1.2s 0.5s cubic-bezier(0.3, 0.6, 0.2, 1) both;
+}
+
+@media (max-width: 520px) {
+  .exactLabel {
+    font-size: 17px;
+  }
+  .bug text,
+  .fix text {
+    font-size: 15px;
+  }
+}

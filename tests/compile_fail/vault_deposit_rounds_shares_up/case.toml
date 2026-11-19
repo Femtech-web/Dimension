@@ -1,0 +1,8 @@
+kind = "compile_fail"
+expect_code = "8-0000"
+consequential_codes = ["8-0031"]
+layer = "compile-time"
+mechanism = "A vault deposit computes the shares to issue as if the deposited assets were leaving, which rounds the shares up, in the caller's favour"
+incident = "ERC-4626 share rounding, the class EIP-4626's rounding rules exist to prevent"
+twin = "fixed"
+twin_run = "test"

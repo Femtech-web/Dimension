@@ -1,0 +1,12 @@
+use dimension::{In, given}
+use vault::vault::Vault
+use super::preview_deposit
+
+pub struct USDC {}
+
+#[test]
+fn a_third_of_a_share_is_not_issued() {
+    // Holding 2 assets and no shares, 1 asset is worth a third of a share.
+    let v = Vault<USDC> { total_assets: 2, total_shares: 0 }
+    assert(preview_deposit(v, given<USDC, In>(1)).value() == 0)
+}

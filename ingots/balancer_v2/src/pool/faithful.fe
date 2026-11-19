@@ -3,10 +3,13 @@
 //! `_upscale` rounds every given amount down, whichever way it moves.
 //! Sources: BaseGeneralPool `_swapGivenIn`/`_swapGivenOut`, ComposableStablePool
 //! `_swapWithBpt` and the join/exit-swap helpers, BasePool swap fee helpers.
+//! Joins and exits pay protocol fees around the operation, as `_swapWithBpt`
+//! does through `_beforeJoinExit` and `_updateInvariantAfterJoinExit`.
 
 #![arithmetic(unchecked)]
 
 use super::Pool
+use super::fees
 use super::super::stable::fixed_point as fp
 use super::super::stable::stable_math as sm
 use super::super::stable::check::Check
@@ -95,19 +98,22 @@ where N >= 2, N <= 5
     var balances = upscaled(pool.balances, pool.factors)
     let scaled_out = upscale(amount_out, pool.factors[j])
     let pre_invariant = sm::calculate_invariant(pool.amp, balances)
+    fees::pay_before_join_exit(mut pool, invariant: pre_invariant)
+    let pre_supply = pool.supply
     var amounts: [u256; N] = [0; N]
     amounts[j] = scaled_out
     let bpt_in = sm::calc_bpt_in_given_exact_tokens_out(
         pool.amp,
         balances,
         amounts_out: amounts,
-        bpt_total_supply: pool.supply,
+        bpt_total_supply: pre_supply,
         current_invariant: pre_invariant,
         swap_fee: pool.fee,
     )
     balances[j] = fp::sub(balances[j], scaled_out)
-    pool.supply = fp::sub(pool.supply, bpt_in)
-    pool.stored_invariant = sm::calculate_invariant(pool.amp, balances)
+    pool.supply = fp::sub(pre_supply, bpt_in)
+    let post_invariant = sm::calculate_invariant(pool.amp, balances)
+    fees::update_after_join_exit(mut pool, post_invariant, pre_invariant, pre_supply)
     pool.balances[j] = fp::sub(pool.balances[j], amount_out)
     fp::div_up(bpt_in, BPT_FACTOR)
 }
@@ -119,18 +125,21 @@ where N >= 2, N <= 5
 {
     var balances = upscaled(pool.balances, pool.factors)
     let pre_invariant = sm::calculate_invariant(pool.amp, balances)
+    fees::pay_before_join_exit(mut pool, invariant: pre_invariant)
+    let pre_supply = pool.supply
     let scaled_out = sm::calc_token_out_given_exact_bpt_in(
         pool.amp,
         balances,
         index: j,
         bpt_amount_in: upscale(bpt_in, BPT_FACTOR),
-        bpt_total_supply: pool.supply,
+        bpt_total_supply: pre_supply,
         current_invariant: pre_invariant,
         swap_fee: pool.fee,
     )
     balances[j] = fp::sub(balances[j], scaled_out)
-    pool.supply = fp::sub(pool.supply, bpt_in)
-    pool.stored_invariant = sm::calculate_invariant(pool.amp, balances)
+    pool.supply = fp::sub(pre_supply, bpt_in)
+    let post_invariant = sm::calculate_invariant(pool.amp, balances)
+    fees::update_after_join_exit(mut pool, post_invariant, pre_invariant, pre_supply)
     let amount_out = fp::div_down(scaled_out, pool.factors[j])
     pool.balances[j] = fp::sub(pool.balances[j], amount_out)
     amount_out
@@ -144,19 +153,22 @@ where N >= 2, N <= 5
     var balances = upscaled(pool.balances, pool.factors)
     let scaled_in = upscale(amount_in, pool.factors[i])
     let pre_invariant = sm::calculate_invariant(pool.amp, balances)
+    fees::pay_before_join_exit(mut pool, invariant: pre_invariant)
+    let pre_supply = pool.supply
     var amounts: [u256; N] = [0; N]
     amounts[i] = scaled_in
     let bpt_out = sm::calc_bpt_out_given_exact_tokens_in(
         pool.amp,
         balances,
         amounts_in: amounts,
-        bpt_total_supply: pool.supply,
+        bpt_total_supply: pre_supply,
         current_invariant: pre_invariant,
         swap_fee: pool.fee,
     )
     balances[i] = fp::add(balances[i], scaled_in)
-    pool.supply = fp::add(pool.supply, bpt_out)
-    pool.stored_invariant = sm::calculate_invariant(pool.amp, balances)
+    pool.supply = fp::add(pre_supply, bpt_out)
+    let post_invariant = sm::calculate_invariant(pool.amp, balances)
+    fees::update_after_join_exit(mut pool, post_invariant, pre_invariant, pre_supply)
     pool.balances[i] = fp::add(pool.balances[i], amount_in)
     fp::div_down(bpt_out, BPT_FACTOR)
 }
@@ -168,18 +180,21 @@ where N >= 2, N <= 5
 {
     var balances = upscaled(pool.balances, pool.factors)
     let pre_invariant = sm::calculate_invariant(pool.amp, balances)
+    fees::pay_before_join_exit(mut pool, invariant: pre_invariant)
+    let pre_supply = pool.supply
     let scaled_in = sm::calc_token_in_given_exact_bpt_out(
         pool.amp,
         balances,
         index: i,
         bpt_amount_out: upscale(bpt_out, BPT_FACTOR),
-        bpt_total_supply: pool.supply,
+        bpt_total_supply: pre_supply,
         current_invariant: pre_invariant,
         swap_fee: pool.fee,
     )
     balances[i] = fp::add(balances[i], scaled_in)
-    pool.supply = fp::add(pool.supply, bpt_out)
-    pool.stored_invariant = sm::calculate_invariant(pool.amp, balances)
+    pool.supply = fp::add(pre_supply, bpt_out)
+    let post_invariant = sm::calculate_invariant(pool.amp, balances)
+    fees::update_after_join_exit(mut pool, post_invariant, pre_invariant, pre_supply)
     let amount_in = fp::div_up(scaled_in, pool.factors[i])
     pool.balances[i] = fp::add(pool.balances[i], amount_in)
     amount_in

@@ -25,7 +25,7 @@ from harness.toolchain import ROOT, Fe, resolve
 SUITES = {
     "probes": [ROOT / "tests" / "probes"],
     "compile-fail": [ROOT / "tests" / "compile_fail"],
-    "unit": [ROOT / "tests" / "core", ROOT / "tests" / "oracle", ROOT / "tests" / "explorer"],
+    "unit": [ROOT / "tests" / "core", ROOT / "tests" / "oracle", ROOT / "tests" / "explorer", ROOT / "tests" / "vault"],
 }
 TESTS = ROOT / "tests"
 SCHEMA = "dimension.cases/v1"

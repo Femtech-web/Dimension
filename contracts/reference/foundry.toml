@@ -15,6 +15,8 @@ allow_paths = ["../../third_party"]
 fs_permissions = [
   { access = "read", path = "../../ingots/balancer_v2/out" },
   { access = "read", path = "../../ingots/moonwell/out" },
+  { access = "read", path = "../../ingots/vault/out" },
+  { access = "read", path = "../../fixtures" },
   { access = "read-write", path = "cache" },
 ]
 remappings = [
@@ -22,6 +24,7 @@ remappings = [
   "@balancer-labs/v2-interfaces/=../../third_party/balancer-v2/pkg/interfaces/",
   "@balancer-labs/v2-pool-stable/=../../third_party/balancer-v2/pkg/pool-stable/",
   "forge-std/=lib/forge-std/src/",
+  "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
 ]
 
 [fuzz]

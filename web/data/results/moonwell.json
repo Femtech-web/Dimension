@@ -1,0 +1,182 @@
+{
+  "schema": "dimension.moonwell/v1",
+  "question": "Would Dimension have priced Moonwell's cbETH market correctly through MIP-X43, and where does it stop the mistake?",
+  "reference": {
+    "chain": "base",
+    "last_correct_block": 42194662,
+    "mip_x43_block": 42194663,
+    "mip_x43_tx": "0xd26baf29dcba7bf66db4be17b46a49bb4dacca41ace968c98c8a5b09a03ae812",
+    "fixed_block": 42538949,
+    "fix_tx": "0xd1c363dec8e159b5db38799fed885ad5a157aa1e237ccc74b312df7fad8043c5",
+    "moonwell_oracle": "0xEC942bE8A8114bFD0396A5052c36027f2cA6a9d0",
+    "cbeth_market": "0x3bf93770f2d4a794c3d9EBEfBAeBAE2a8f09A5E5",
+    "feeds": {
+      "cbETH/ETH": "0x806b4Ac04501c29769051e42783cF04dCE41440b",
+      "ETH/USD": "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70"
+    }
+  },
+  "fe": {
+    "version": "26.6.0",
+    "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110"
+  },
+  "platform": "mac_arm64",
+  "runtime_bytecode_bytes": {
+    "oracle": 1169,
+    "declared": 610
+  },
+  "prices": [
+    {
+      "block": 42194662,
+      "timestamp": 1771178671,
+      "moonwell_oracle": "composite",
+      "moonwell_wad": 2206683650838065175827,
+      "fe_wad": 2206683650838065175827
+    },
+    {
+      "block": 42194663,
+      "timestamp": 1771178673,
+      "moonwell_oracle": "mip-x43",
+      "moonwell_wad": 1122662744874806300,
+      "fe_wad": 2206683650838065175827
+    },
+    {
+      "block": 42225961,
+      "timestamp": 1771241269,
+      "moonwell_oracle": "mip-x43",
+      "moonwell_wad": 1122662744874806300,
+      "fe_wad": 2209556702895567538419
+    },
+    {
+      "block": 42257260,
+      "timestamp": 1771303867,
+      "moonwell_oracle": "mip-x43",
+      "moonwell_wad": 1122402706504572300,
+      "fe_wad": 2232637616692493896139
+    },
+    {
+      "block": 42288558,
+      "timestamp": 1771366463,
+      "moonwell_oracle": "mip-x43",
+      "moonwell_wad": 1122507393443854300,
+      "fe_wad": 2243158063123316628816
+    },
+    {
+      "block": 42319857,
+      "timestamp": 1771429061,
+      "moonwell_oracle": "mip-x43",
+      "moonwell_wad": 1122471169004777300,
+      "fe_wad": 2234066283958834955186
+    },
+    {
+      "block": 42351156,
+      "timestamp": 1771491659,
+      "moonwell_oracle": "mip-x43",
+      "moonwell_wad": 1122471169004777300,
+      "fe_wad": 2213220814981183679095
+    },
+    {
+      "block": 42382454,
+      "timestamp": 1771554255,
+      "moonwell_oracle": "mip-x43",
+      "moonwell_wad": 1122882700888888000,
+      "fe_wad": 2190973329793471910040
+    },
+    {
+      "block": 42413753,
+      "timestamp": 1771616853,
+      "moonwell_oracle": "mip-x43",
+      "moonwell_wad": 1122919000000000000,
+      "fe_wad": 2203508930656675040000
+    },
+    {
+      "block": 42445052,
+      "timestamp": 1771679451,
+      "moonwell_oracle": "mip-x43",
+      "moonwell_wad": 1122919000000000000,
+      "fe_wad": 2217922383008227000000
+    },
+    {
+      "block": 42476350,
+      "timestamp": 1771742047,
+      "moonwell_oracle": "mip-x43",
+      "moonwell_wad": 1122918628426344000,
+      "fe_wad": 2217972131028046203584
+    },
+    {
+      "block": 42507649,
+      "timestamp": 1771804645,
+      "moonwell_oracle": "mip-x43",
+      "moonwell_wad": 1122882243688086800,
+      "fe_wad": 2196356096618756617478
+    },
+    {
+      "block": 42538948,
+      "timestamp": 1771867243,
+      "moonwell_oracle": "mip-x43",
+      "moonwell_wad": 1122910000000000000,
+      "fe_wad": 2091161605700000000000
+    },
+    {
+      "block": 42538949,
+      "timestamp": 1771867245,
+      "moonwell_oracle": "composite",
+      "moonwell_wad": 2091161605700000000000,
+      "fe_wad": 2091161605700000000000
+    }
+  ],
+  "layers": [
+    {
+      "layer": "compile",
+      "case": "the cbETH/ETH feed used as cbETH's USD feed",
+      "error": "8-0000 type mismatch",
+      "rejected": true
+    },
+    {
+      "layer": "bind",
+      "case": "cbETH/ETH declared as cbETH/USD with 8 decimals",
+      "error": "WrongDecimals",
+      "rejected": true
+    },
+    {
+      "layer": "read",
+      "case": "cbETH/ETH declared as cbETH/USD with 18 decimals",
+      "error": "AnswerOutOfBand",
+      "rejected": true
+    },
+    {
+      "layer": "external assumption",
+      "case": "a wrong feed declared with the decimals it reports and a band its answer falls in",
+      "rejected": false,
+      "note": "passes every check; a registry entry is a reviewed declaration"
+    }
+  ],
+  "boundary_checks": [
+    {
+      "layer": "read",
+      "case": "ETH/USD older than its declared 1800 s",
+      "error": "StaleAnswer"
+    }
+  ],
+  "claims": [
+    {
+      "question": "Did Moonwell's deployed oracle price cbETH at the bare exchange rate throughout MIP-X43's window?",
+      "holds": true,
+      "evidence": "12 blocks from 42,194,663 to 42,538,948: 1.1224 USD to 1.1229 USD"
+    },
+    {
+      "question": "At the same blocks, does the Fe oracle price cbETH as cbETH/ETH times ETH/USD from the same feeds?",
+      "holds": true,
+      "evidence": "2,091.1616 USD to 2,243.1581 USD, asserted equal at every block to the product of the two feeds' answers"
+    },
+    {
+      "question": "Where Moonwell's oracle was right, is the Fe price identical to it?",
+      "holds": true,
+      "evidence": "block 42,194,662: 2206683650838065175827 wad, block 42,538,949: 2091161605700000000000 wad, identical"
+    },
+    {
+      "question": "Is MIP-X43's misconfiguration rejected in each form it can take, and at which layer?",
+      "holds": true,
+      "evidence": "compile: 8-0000 type mismatch; bind: WrongDecimals; read: AnswerOutOfBand"
+    }
+  ]
+}

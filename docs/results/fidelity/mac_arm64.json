@@ -3,57 +3,57 @@
   "question": "Does the Fe port compute what the deployed Balancer V2 pool computed, on its real state before the exploit?",
   "reference": {
     "chain": "ethereum mainnet",
-    "block": 23717399,
+    "block": 23717396,
     "pool": "0xDACf5Fa19b1f720111609043ac67A9818262850c (osETH/wETH ComposableStablePool v5)",
     "pool_id": "0xdacf5fa19b1f720111609043ac67a9818262850c000000000000000000000635",
-    "drained_at_block": 23717400,
+    "first_attack_block": 23717397,
     "compared_with": "Vault.queryBatchSwap on the same fork"
   },
-  "state_loaded": "Vault balances, amplification, swap fee, actual supply (including protocol fees due), last join/exit invariant, and the osETH rate the pool would use (cached, or refreshed if expired)",
+  "state_loaded": "Vault balances, amplification, swap fee, protocol swap fee, actual supply (protocol fees due paid), the current invariant as the stored one, and the osETH rate after refreshing its expired cache",
   "fe": {
     "version": "26.6.0",
     "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110"
   },
   "platform": "mac_arm64",
   "summary": {
-    "compared": 495,
-    "identical_values": 468,
-    "identical_reverts": 27,
+    "compared": 669,
+    "identical_values": 627,
+    "identical_reverts": 42,
     "mismatches": 0
   },
   "operations": {
     "exitGivenOut WETH out": {
-      "compared": 90,
-      "identical_values": 90
+      "compared": 110,
+      "identical_values": 110
     },
     "exitGivenOut osETH out": {
-      "compared": 75,
-      "identical_values": 75
+      "compared": 113,
+      "identical_values": 113
     },
     "swapGivenIn WETH in": {
-      "compared": 75,
-      "identical_reverts": 20,
-      "identical_values": 55
+      "compared": 113,
+      "identical_reverts": 21,
+      "identical_values": 92
     },
     "swapGivenIn osETH in": {
-      "compared": 90,
-      "identical_reverts": 7,
-      "identical_values": 83
+      "compared": 110,
+      "identical_reverts": 21,
+      "identical_values": 89
     },
     "swapGivenOut WETH in": {
-      "compared": 75,
-      "identical_values": 75
+      "compared": 113,
+      "identical_values": 113
     },
     "swapGivenOut osETH in": {
-      "compared": 90,
-      "identical_values": 90
+      "compared": 110,
+      "identical_values": 110
     }
   },
   "claims": [
     {
       "question": "Does the Fe port return exactly what the deployed pool returned, on its state the block before the exploit?",
       "holds": true,
-      "evidence": "495 quotes against Vault.queryBatchSwap at block 23,717,399: 468 identical values, 27 identical reverts, 0 mismatches"
+      "evidence": "669 quotes against Vault.queryBatchSwap at block 23,717,396: 627 identical values, 42 identical reverts, 0 mismatches"
     }
   ]
 }

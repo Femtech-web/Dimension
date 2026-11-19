@@ -8,11 +8,14 @@
 //! go through `math`, whose signatures take admitted amounts and return owed
 //! ones, so the kernel cannot hand the math an amount that skipped `admit`.
 //!
+//! Joins and exits pay protocol fees exactly as in `faithful`.
+//!
 //! With `guard`, each operation also enforces Dimension's runtime share-value
 //! check (see `pool::guarded`). It reuses the invariant the operation already
-//! computes for the state before, and on joins and exits it stores the invariant
-//! of the balances the Vault actually holds in place of the one Balancer derives
-//! from its internal balances, so the guard costs one extra solve on swaps only.
+//! computes for the state before. On joins and exits it takes the invariant of
+//! the balances the Vault actually holds, in place of the one Balancer derives
+//! from its internal balances, both to store and to compute the protocol fee,
+//! so the guard costs one extra solve on swaps only.
 
 #![arithmetic(unchecked)]
 
@@ -32,6 +35,7 @@ use dimension::{
 }
 use super::Pool
 use super::faithful::upscaled
+use super::fees
 use super::super::stable::fixed_point as fp
 use super::super::stable::check::{Check, Failure}
 use self::math::invariant
@@ -54,21 +58,51 @@ uses (check: mut Check)
     )
 }
 
-/// After an operation, checks that the value behind each BPT did not fall, and
-/// for joins and exits stores the invariant the actual balances support.
-fn enforce<const N: usize>(_ pool: mut Pool<N>, before: Backing, joins_or_exits: bool)
+/// The invariant of the balances the pool actually holds.
+fn held<const N: usize>(_ pool: Pool<N>) -> u256
+uses (check: mut Check) where N >= 2, N <= 5
+{
+    invariant(pool.amp, upscaled(pool.balances, pool.factors))
+}
+
+/// Fails the operation if the value behind each BPT fell.
+fn enforce<const N: usize>(_ pool: Pool<N>, before: Backing, after_value: u256)
+uses (check: mut Check)
+{
+    if !preserves_share_value(
+        before,
+        Backing { value: after_value, shares: pool.supply },
+    ) {
+        check.fail(Failure::ShareValueDecreased)
+    }
+}
+
+/// Ends a join or exit: pays the protocol's fee on it and stores the invariant
+/// after it, `before` holding the invariant and supply it started from. With
+/// `guard`, that invariant is of the balances the pool actually holds, and the
+/// value behind each BPT must not have fallen.
+fn finish_join_exit<const N: usize>(
+    _ pool: mut Pool<N>,
+    balances: [u256; N],
+    before: Backing,
+    guard: bool,
+)
 uses (check: mut Check)
 where N >= 2, N <= 5
 {
-    let after = Backing {
-        value: invariant(pool.amp, upscaled(pool.balances, pool.factors)),
-        shares: pool.supply,
+    let post_invariant = if guard {
+        held(pool)
+    } else {
+        invariant(pool.amp, balances)
     }
-    if joins_or_exits {
-        pool.stored_invariant = after.value
-    }
-    if !preserves_share_value(before, after) {
-        check.fail(Failure::ShareValueDecreased)
+    fees::update_after_join_exit(
+        mut pool,
+        post_invariant,
+        pre_invariant: before.value,
+        pre_supply: before.shares,
+    )
+    if guard {
+        enforce(pool, before, after_value: post_invariant)
     }
 }
 
@@ -103,7 +137,7 @@ where N >= 2, N <= 5
     pool.balances[i] = fp::add(pool.balances[i], raw_in)
     pool.balances[j] = fp::sub(pool.balances[j], amount_out.value())
     if guard {
-        enforce(mut pool, before, joins_or_exits: false)
+        enforce(pool, before, after_value: held(pool))
     }
     amount_out
 }
@@ -138,7 +172,7 @@ where N >= 2, N <= 5
     pool.balances[i] = fp::add(pool.balances[i], amount_in.value())
     pool.balances[j] = fp::sub(pool.balances[j], amount_out.value())
     if guard {
-        enforce(mut pool, before, joins_or_exits: false)
+        enforce(pool, before, after_value: held(pool))
     }
     amount_in
 }
@@ -157,6 +191,7 @@ where N >= 2, N <= 5
     var balances = upscaled(pool.balances, pool.factors)
     let scaled_out = admit(amount_out, factor)
     let pre_invariant = invariant(pool.amp, balances)
+    fees::pay_before_join_exit(mut pool, invariant: pre_invariant)
     let before = Backing { value: pre_invariant, shares: pool.supply }
     let bpt_in = math::bpt_in_given_exact_token_out(
         pool,
@@ -166,14 +201,9 @@ where N >= 2, N <= 5
         invariant: pre_invariant,
     )
     balances[j] = fp::sub(balances[j], scaled_out.value())
-    pool.supply = fp::sub(pool.supply, bpt_in.value())
-    if !guard {
-        pool.stored_invariant = invariant(pool.amp, balances)
-    }
+    pool.supply = fp::sub(before.shares, bpt_in.value())
     pool.balances[j] = fp::sub(pool.balances[j], amount_out.value())
-    if guard {
-        enforce(mut pool, before, joins_or_exits: true)
-    }
+    finish_join_exit(mut pool, balances, before, guard)
     settle(bpt_in, scaling_factor<Bpt>())
 }
 
@@ -190,6 +220,7 @@ where N >= 2, N <= 5
     check_factor(pool, index: j, factor)
     var balances = upscaled(pool.balances, pool.factors)
     let pre_invariant = invariant(pool.amp, balances)
+    fees::pay_before_join_exit(mut pool, invariant: pre_invariant)
     let before = Backing { value: pre_invariant, shares: pool.supply }
     let scaled_out = math::token_out_given_exact_bpt_in(
         pool,
@@ -199,15 +230,10 @@ where N >= 2, N <= 5
         invariant: pre_invariant,
     )
     balances[j] = fp::sub(balances[j], scaled_out.value())
-    pool.supply = fp::sub(pool.supply, bpt_in.value())
-    if !guard {
-        pool.stored_invariant = invariant(pool.amp, balances)
-    }
+    pool.supply = fp::sub(before.shares, bpt_in.value())
     let amount_out = settle(scaled_out, factor)
     pool.balances[j] = fp::sub(pool.balances[j], amount_out.value())
-    if guard {
-        enforce(mut pool, before, joins_or_exits: true)
-    }
+    finish_join_exit(mut pool, balances, before, guard)
     amount_out
 }
 
@@ -225,6 +251,7 @@ where N >= 2, N <= 5
     var balances = upscaled(pool.balances, pool.factors)
     let scaled_in = admit(amount_in, factor)
     let pre_invariant = invariant(pool.amp, balances)
+    fees::pay_before_join_exit(mut pool, invariant: pre_invariant)
     let before = Backing { value: pre_invariant, shares: pool.supply }
     let bpt_out = math::bpt_out_given_exact_token_in(
         pool,
@@ -234,14 +261,9 @@ where N >= 2, N <= 5
         invariant: pre_invariant,
     )
     balances[i] = fp::add(balances[i], scaled_in.value())
-    pool.supply = fp::add(pool.supply, bpt_out.value())
-    if !guard {
-        pool.stored_invariant = invariant(pool.amp, balances)
-    }
+    pool.supply = fp::add(before.shares, bpt_out.value())
     pool.balances[i] = fp::add(pool.balances[i], amount_in.value())
-    if guard {
-        enforce(mut pool, before, joins_or_exits: true)
-    }
+    finish_join_exit(mut pool, balances, before, guard)
     settle(bpt_out, scaling_factor<Bpt>())
 }
 
@@ -258,6 +280,7 @@ where N >= 2, N <= 5
     check_factor(pool, index: i, factor)
     var balances = upscaled(pool.balances, pool.factors)
     let pre_invariant = invariant(pool.amp, balances)
+    fees::pay_before_join_exit(mut pool, invariant: pre_invariant)
     let before = Backing { value: pre_invariant, shares: pool.supply }
     let scaled_in = math::token_in_given_exact_bpt_out(
         pool,
@@ -267,14 +290,9 @@ where N >= 2, N <= 5
         invariant: pre_invariant,
     )
     balances[i] = fp::add(balances[i], scaled_in.value())
-    pool.supply = fp::add(pool.supply, bpt_out.value())
-    if !guard {
-        pool.stored_invariant = invariant(pool.amp, balances)
-    }
+    pool.supply = fp::add(before.shares, bpt_out.value())
     let amount_in = settle(scaled_in, factor)
     pool.balances[i] = fp::add(pool.balances[i], amount_in.value())
-    if guard {
-        enforce(mut pool, before, joins_or_exits: true)
-    }
+    finish_join_exit(mut pool, balances, before, guard)
     amount_in
 }

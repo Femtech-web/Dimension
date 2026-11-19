@@ -1,0 +1,6 @@
+[ingot]
+name = "vault"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../dimension" }

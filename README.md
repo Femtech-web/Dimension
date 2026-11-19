@@ -4,7 +4,7 @@
 
 **Fe types that know which way value moves.**
 
-[For judges](JUDGES.md) · [Verification page](docs/index.html) · [Documentation](docs/README.md) · [Results](docs/results)
+[For judges](JUDGES.md) · [The site](web) · [Documentation](docs/README.md) · [Results](docs/results)
 
 [![CI](https://github.com/Femtech-web/Dimension/actions/workflows/ci.yml/badge.svg)](https://github.com/Femtech-web/Dimension/actions/workflows/ci.yml)
 [![Fe 26.6.0](https://img.shields.io/badge/Fe-26.6.0-orange)](https://github.com/argotorg/fe/releases/tag/v26.6.0)
@@ -41,13 +41,18 @@ on their real code and chain state, and both are stopped.
 
 ### Balancer V2: Balancer's own line, rejected by the compiler
 
-**First, the port is Balancer.** Balancer's math and pool paths were ported to
-Fe line by line:
+**First, the port is Balancer.** Balancer's math, pool paths and protocol fees
+were ported to Fe line by line, then checked three ways:
 
 - **Against Balancer's own Solidity:** 220,000 vectors, 0 mismatches, reverts
   included.
 - **Against the deployed osETH/wETH pool:** its real state, forked at block
-  23,717,399, the block before it was drained. 495 quotes, 0 mismatches.
+  23,717,396, the last block before the attack. 669 quotes, 0 mismatches.
+- **Against the attack itself:** the attacker's three transactions, 360 swaps,
+  replayed step by step from the real chain state. Every amount the Fe port
+  computes equals what Balancer's Vault computed. After each transaction the Fe
+  pool holds exactly what the real pool held, all the way down from 4,922 WETH
+  to 0.14.
 
 **Then, the bug is real in it.** Over 4,608 pool states, 57,990 exact-out
 exits lower the value behind each pool share (worst 14.86%). A greedy attacker
@@ -69,15 +74,20 @@ $ make show CASE=typed_pool_with_balancer_upscale
 
 | Same states, same attacks | Balancer (faithful port) | Typed | Typed + guard |
 |---|---|---|---|
+| **The attacker's own 360 steps, from the real state** | **complete: value per share 1.027 → 0.0000092** | revert at step 25 | revert at step 25 |
 | Exact-out exits that lower value per share | 57,990 | 8 | **0** |
 | Exact-out swaps that lower value per share | 48 | **0** | **0** |
 | Greedy attacker on a 1,000-wei pool, invariant units | **+20.923** | −151.416 | −151.416 |
 | Value per share after the attack, on an EVM | **−3.38%** | +19.51% | +19.51% |
-| Gas per exact-out exit | 21,116 | 21,478 (+1.7%) | 22,313 (+5.7%) |
+| Gas per exact-out exit | 24,493 | 25,338 (+3.4%) | 26,154 (+6.8%) |
 
-The types remove the losses at Balancer's two rounding sites. The 8 that
-remain come from StableMath's own precision, and the guard rejects exactly
-those. [The full account →](docs/balancer.md)
+On the typed kernels, the same steps charge the attacker more once the balances
+reach dust: 17 wei of osETH out costs 1,071,109 wei of WETH instead of 625,492.
+The pool drifts from the state the attacker planned against, and step 25 fails
+Balancer's own `BAL#001` check, which reverts the whole batch.
+In the search, the types remove the losses at Balancer's two rounding sites;
+the 8 that remain come from StableMath's own precision, and the guard rejects
+exactly those. [The full account →](docs/balancer.md)
 
 ### Moonwell MIP-X43: 1.12 USD and 2,206.68 USD, from the same feeds
 
@@ -102,6 +112,35 @@ The mistake is stopped wherever it is made:
 
 [The on-chain record, block by block →](docs/moonwell.md)
 
+### Beyond the incidents: an ERC-4626 vault
+
+A vault's share accounting is where rounding directions are most often chosen
+by hand. EIP-4626 fixes four of them, and OpenZeppelin names one in each
+function. The vault written with Dimension names none. Each operation states
+which way its given amount moves, and `exchange` rounds what the vault gives
+back by the opposite direction:
+
+```fe
+/// Shares for depositing `assets`: assets come in, shares go out.
+pub fn preview_deposit<A>(_ v: Vault<A>, _ assets: Quantity<A, In, Given>) -> Quantity<
+    Shares<A>,
+    Out,
+    Settled,
+> {
+    exchange(
+        assets,
+        numerator: v.total_shares + 1,
+        denominator: v.total_assets + 1,
+    )
+}
+```
+
+All four roundings match OpenZeppelin's ERC4626 v5.1.0 on 40,000 vectors in
+the same states. In 33,684 of them the exact result is fractional, so the
+direction decided the answer. They are also exact against the rational result
+on every small vault state, on both backends.
+[The vault →](docs/vault.md)
+
 ## See it in one minute
 
 ```sh
@@ -109,10 +148,11 @@ make toolchain   # Fe 26.6.0, downloaded and checksum-verified
 make demo        # both incidents: the mistake, the compiler's verdict, the fix, the evidence
 ```
 
-Then `make ci` runs every offline check in about a minute, and `make fidelity`
-and `make moonwell` run the fork comparisons. [JUDGES.md](JUDGES.md) is a
-ten-minute tour with ways to try to break it, and
-[`docs/index.html`](docs/index.html) shows every saved result on one page.
+Then `make ci` runs every offline check in about a minute, and `make replay`,
+`make fidelity` and `make moonwell` run the fork comparisons. [JUDGES.md](JUDGES.md) is a
+ten-minute tour with ways to try to break it, and the site in [`web/`](web)
+(`make web`) shows every saved result: the replay and the Moonwell prices
+charted, every claim, every planted bug.
 
 ## How it works
 
@@ -194,6 +234,7 @@ The rest of Dimension leans on Fe throughout:
 |---|---|
 | Phantom generics, module-scoped privacy | Trusted values have private fields; only their checking functions construct them |
 | Sealed traits with associated types | Exactly two roundings, two flows and two valuation sides; none can be added |
+| A recursive associated type (`type Opposite: Flow`) | An exchange's result moves opposite to what it received, so an ERC-4626 vault's four roundings need no code |
 | `where` predicates on associated constants | Incoherent risk policies and assets over 18 decimals fail to compile |
 | Const generics with bounds | One StableMath for 2 to 5 tokens (`const N: usize where N >= 2, N <= 5`) |
 | Effects | A feed read needs `uses (call: mut Call, ctx: Ctx)`. Failure is an effect too: one kernel reverts with Balancer's `BAL#` codes on the EVM and records failures in a native search |
@@ -206,13 +247,17 @@ The rest of Dimension leans on Fe throughout:
 | Check | Scale | Result | Run |
 |---|---|---|---|
 | Fe StableMath against Balancer's Solidity, on identical calldata | 22 functions, 220,000 vectors | 0 mismatches; 49,100 identical reverts | `make differential` |
-| The Fe pool against the deployed pool, on a mainnet fork | 330 swaps, 165 exact-out exits | 0 mismatches | `make fidelity` |
+| The Fe pool against the deployed pool, on a mainnet fork | 446 swaps, 223 exact-out exits | 0 mismatches | `make fidelity` |
+| The attacker's own transactions, step by step, from the real state | 3 transactions, 360 swaps | every amount equal; every end state equal | `make replay` |
 | Exhaustive search, three kernels, exact integers | 4,608 pool states, about 3.14M operations each | the two invariants hold under the guard in every operation kind | `make explore` |
 | The same kernels on the EVM and natively | pinned grid and attack | identical integers | `make unit` |
 | Admission and settlement against the exact rational result | 20,000 per backend | exact floor and ceil | `make unit` |
 | Constructions the compiler must reject | 16 cases, each with a corrected twin | all rejected with the intended error; all twins pass | `make compile-fail` |
 | Language behaviour the design rests on | 20 probes with golden outputs and bytecode hashes | all as recorded, identical on macOS and Linux | `make probes` |
 | Moonwell's market on Base forks | 14 blocks across the incident | Dimension correct at every block; identical to Moonwell where Moonwell was right | `make moonwell` |
+| The ERC-4626 vault against OpenZeppelin's ERC4626 | 40,000 vectors, 33,684 where the rounding decides | all equal | `make vault` |
+| The vault against the exact rational result | 32,768 states × 4 previews, both backends | exact floor or ceil as EIP-4626 requires | `make unit` |
+| Planted bugs in the safety-critical code | 17 mutants across 7 layers | every one caught, for the reason expected of it | `make mutants FORKS=1` |
 
 Every run writes a report to [`docs/results/`](docs/results). Each claim in it
 is a question, an answer and its evidence, and a claim that fails fails the
@@ -220,15 +265,29 @@ run.
 
 ## Try to break it
 
-Each change below was made in a scratch copy, and the result observed:
+`make mutants` plants realistic bugs, one at a time, in a scratch copy, and runs
+the check meant to catch each. A mutant counts as caught only if that check
+fails for the reason expected of it. A failure for any other reason, such as a
+network error, is reported as inconclusive and fails the run. `FORKS=1` adds
+the two that need a fork. **All 17 are caught:**
 
-| Change | Result |
+| Bug planted | Caught by |
 |---|---|
-| Put Balancer's `upscale` back into the typed pool | rejected by the compiler: `expected Quantity<_, Out, Admitted>` |
-| Make `Out` admit with `Floor` instead of `Ceil` | the typed kernel loses exactly as Balancer did (57,990), and the attacker profits again. **The guard still stops every one:** the layers are independent |
-| Drop the `+ 1` in Balancer's `calc_in_given_out` | the differential test fails on `calcInGivenOut2` and `calcInGivenOut3` |
-| Declare ETH/USD with 18 decimals | the Moonwell oracle no longer deploys against the real feed |
-| Add `unsafe` to a protocol ingot | `make unsafe-policy` fails CI |
+| Balancer's `_upscale` put back into the typed pool | the compiler: `expected Quantity<_, Out, Admitted>` |
+| An outflow admitted rounding down; a charge settled rounding down | unit tests against the exact rational result |
+| An exchange that gives back value moving the same way | the compiler: the vault no longer type-checks |
+| A feed's band, age or decimals unchecked; a rate's band unchecked | the oracle boundary tests |
+| The guard always passing, or switched off on exits | the search: losses reappear |
+| A risk policy's bad-debt predicate dropped | the compile-fail suite: the bad policy compiles |
+| The port's `+ 1` dropped, or its `mulUp` rounding down | the differential test against Balancer's Solidity |
+| An extra virtual share in the vault | the comparison with OpenZeppelin |
+| `unsafe` in a protocol ingot | the unsafe policy |
+| Protocol fees skipped on joins and exits | the replay: 94 of 121 steps match instead of 121 |
+| ETH/USD declared with 18 decimals | the Moonwell fork: the oracle no longer deploys |
+
+One more experiment shows the layers are independent. Make `Out` admit with
+`Floor`, and the typed kernel loses exactly as Balancer did (57,990 exits),
+yet the guard still rejects every one of those losses.
 
 ## How it compares
 
@@ -254,14 +313,16 @@ step, with the method used to port Balancer.
 
 ## Limits
 
-- **The Balancer kernel models one pool, not the protocol:** two tokens, no
-  protocol fees in the operations, and no Vault batching, rate cache or
-  amplification ramp. The attacker's own transaction is not replayed.
+- **The Balancer kernel models one pool, not the protocol:** two tokens, with
+  protocol fees, but no amplification ramp or rate change between joins and
+  exits. The replay runs the attack's steps on this pool, not the other pools
+  in the same batches.
 - **Types cannot prove an address is the feed it is declared to be.** A wrong
   feed that reports the declared decimals, with answers inside the declared
   band, passes every check.
-- **The guard costs gas:** +47.6% on exact-out swaps and +5.7% on exits, so it
-  is opt-in. The types alone cost +6.5% and +1.7%.
+- **The guard costs gas:** about +48% on swaps and +6% to +8% on joins and
+  exits, so it is opt-in. The typed contract costs 800 to 1,000 gas more per
+  operation (+3% to +6%), for its checked rate read.
 - **Rounding up refuses some dust:** 1 wei out of a 2-wei balance, which
   Balancer paid out for free.
 
@@ -280,8 +341,11 @@ Requires `make`, `curl`, Python 3.12 and [Foundry](https://getfoundry.sh)
 | `make ci` | Formatting, unsafe policy, unit, compile-fail, probes, differential, search, EVM: what CI runs |
 | `make demo` | Both incidents, live |
 | `make fidelity` | The Balancer port against the deployed pool (mainnet fork; `MAINNET_RPC_URL` overrides the public RPC) |
+| `make replay` | The attacker's three transactions, step by step, through the three kernels (mainnet forks) |
 | `make moonwell` | Moonwell's market around MIP-X43 (Base forks; `BASE_RPC_URL` overrides the public RPC) |
-| `make page` | Regenerates [`docs/index.html`](docs/index.html) from the saved reports |
+| `make vault` | The ERC-4626 vault against OpenZeppelin's ERC4626 |
+| `make mutants` | Plants realistic bugs one at a time; each must be caught by the check meant for it |
+| `make web` | Syncs the saved reports into [`web/`](web) and builds the site |
 | `make help` | Every target |
 
 CI runs `make ci` on Linux, and the fork comparisons in a separate job.
@@ -296,11 +360,14 @@ elsewhere the native search is skipped.
 | [`ingots/balancer_v2`](ingots/balancer_v2) | Balancer V2 ported: StableMath, the faithful, typed and guarded pools, their contracts |
 | [`ingots/balancer_explorer`](ingots/balancer_explorer) | The native search and greedy attacker |
 | [`ingots/moonwell`](ingots/moonwell) | Moonwell's cbETH market: feed registry, composite pricing, oracle contracts |
-| [`contracts/reference`](contracts/reference) | Foundry: Balancer's Solidity, the differential test, the EVM attack, both fork tests |
+| [`ingots/vault`](ingots/vault) | An ERC-4626 vault's accounting, written with Dimension |
+| [`contracts/reference`](contracts/reference) | Foundry: Balancer's Solidity, the differential test, the EVM attack, the fork tests and the attack replay |
+| [`fixtures/balancer-v2-exploit`](fixtures/balancer-v2-exploit) | The attacker's swaps on the pool, read from the three transactions' events |
 | [`tests`](tests) | Unit tests (EVM and native), compile-fail cases with twins, probes |
 | [`scripts`](scripts) | The pinned toolchain, and one harness module per suite |
 | [`third_party/balancer-v2`](third_party/balancer-v2) | Balancer's sources at the pinned commit |
-| [`docs`](docs/README.md) | The documentation, the verification page and the saved results |
+| [`docs`](docs/README.md) | The documentation and the saved results |
+| [`web`](web) | The site: the incidents charted, every claim, every planted bug, the docs |
 
 ## Declaration
 

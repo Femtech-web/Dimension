@@ -9,5 +9,6 @@
 | [architecture.md](architecture.md) | How the ingots, the type model, the boundaries and the verification fit together |
 | [guarantees.md](guarantees.md) | What each layer guarantees and what it does not; residuals; costs |
 | [comparison.md](comparison.md) | Prior work, and what Dimension adds to it |
-| [index.html](index.html) | Every saved result on one page (`make page`) |
+| [vault.md](vault.md) | An ERC-4626 vault: four roundings derived from meaning, equal to OpenZeppelin's |
+| [../web](../web) | The site: every saved result, charted (`make web`) |
 | [results/](results) | The machine-readable reports, one per suite and platform |

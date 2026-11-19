@@ -5,9 +5,13 @@ import {Test} from "forge-std/Test.sol";
 import {MockRateProvider} from "../src/MockRateProvider.sol";
 
 interface IPool {
-    function initialize(uint256[2] calldata balances, uint256 amp, uint256 fee, uint256 supply, uint256 storedInvariant, address rateProvider) external;
+    function initialize(uint256[2] calldata balances, uint256 amp, uint256 fee, uint256 supply, uint256 storedInvariant, uint256 protocolSwapFee, address rateProvider) external;
+    function swapGivenIn(uint256 i, uint256 amount) external returns (uint256);
     function swapGivenOut(uint256 i, uint256 amount) external returns (uint256);
+    function exitGivenIn(uint256 j, uint256 bpt) external returns (uint256);
     function exitGivenOut(uint256 j, uint256 amount) external returns (uint256);
+    function joinGivenIn(uint256 i, uint256 amount) external returns (uint256);
+    function joinGivenOut(uint256 i, uint256 bpt) external returns (uint256);
     function getRate() external view returns (uint256);
     function getState() external view returns (uint256[2] memory, uint256[2] memory, uint256, uint256);
 }
@@ -19,6 +23,7 @@ interface IPool {
 contract PoolAttack is Test {
     string internal constant OUT = "cache/pool-attack.csv";
     string[3] internal NAMES = ["faithful", "typed", "guarded"];
+    string[6] internal OPS = ["swapGivenIn", "swapGivenOut", "exitGivenIn", "exitGivenOut", "joinGivenIn", "joinGivenOut"];
 
     uint256 internal constant RATED = 1;
     uint256 internal constant STEPS = 200;
@@ -75,10 +80,10 @@ contract PoolAttack is Test {
     function test_repeatedExitsOnEachKernel() public {
         IPool[3] memory pools = _pools();
         // 1,000 wei of each token, with a BPT supply equal to the pool's invariant.
-        pools[0].initialize([uint256(1000), 1000], 200_000, 0, 1e18, 0, address(provider));
+        pools[0].initialize([uint256(1000), 1000], 200_000, 0, 1e18, 0, 0, address(provider));
         uint256 supply = _invariantSupply(pools[0]);
         for (uint256 k = 0; k < 3; k++) {
-            pools[k].initialize([uint256(1000), 1000], 200_000, 0, supply, supply, address(provider));
+            pools[k].initialize([uint256(1000), 1000], 200_000, 0, supply, supply, 0, address(provider));
         }
 
         int256[3] memory change;
@@ -101,24 +106,33 @@ contract PoolAttack is Test {
         return pool.getRate();
     }
 
-    /// Gas for one operation of each kind on a pool the size of the osETH/wETH
-    /// pool before the exploit, identical inputs for all three kernels.
+    function _operate(IPool pool, uint256 op) internal {
+        if (op == 0) pool.swapGivenIn(0, 10e18);
+        else if (op == 1) pool.swapGivenOut(0, 10e18);
+        else if (op == 2) pool.exitGivenIn(RATED, 10e18);
+        else if (op == 3) pool.exitGivenOut(RATED, 10e18);
+        else if (op == 4) pool.joinGivenIn(RATED, 10e18);
+        else pool.joinGivenOut(RATED, 10e18);
+    }
+
+    /// Gas for one operation of each kind, 10 tokens or 10 BPT, on a pool with
+    /// the osETH/wETH pool's balances and parameters before the exploit,
+    /// including its 50% protocol swap fee; identical inputs for all three kernels.
     function test_gasPerOperation() public {
         IPool[3] memory pools = _pools();
         uint256[2] memory balances = [uint256(4_922_356_564_867_078_856_521), 6_851_581_236_039_298_760_900];
-        pools[0].initialize(balances, 200_000, 1e14, 1e18, 0, address(provider));
+        pools[0].initialize(balances, 200_000, 1e14, 1e18, 0, 5e17, address(provider));
         uint256 supply = _invariantSupply(pools[0]);
         for (uint256 k = 0; k < 3; k++) {
-            pools[k].initialize(balances, 200_000, 1e14, supply, supply, address(provider));
-            uint256 snap = vm.snapshotState();
-            uint256 before = gasleft();
-            pools[k].swapGivenOut(0, 10e18);
-            uint256 swapGas = before - gasleft();
-            vm.revertToState(snap);
-            before = gasleft();
-            pools[k].exitGivenOut(RATED, 10e18);
-            uint256 exitGas = before - gasleft();
-            vm.writeLine(OUT, string.concat("gas,", NAMES[k], ",", vm.toString(swapGas), ",", vm.toString(exitGas)));
+            pools[k].initialize(balances, 200_000, 1e14, supply, supply, 5e17, address(provider));
+            for (uint256 op = 0; op < 6; op++) {
+                uint256 snap = vm.snapshotState();
+                uint256 before = gasleft();
+                _operate(pools[k], op);
+                uint256 used = before - gasleft();
+                vm.revertToState(snap);
+                vm.writeLine(OUT, string.concat("gas,", NAMES[k], ",", OPS[op], ",", vm.toString(used)));
+            }
         }
     }
 }
