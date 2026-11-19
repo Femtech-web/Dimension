@@ -41,9 +41,9 @@ fe new my_protocol && cd my_protocol
 ```toml
 [dependencies.dimension]
 source = "https://github.com/Femtech-web/Dimension"
-rev = "468e2c20d405f1dfeaf42273e838884090d293a1"   # v0.2.0
+rev = "1171eb8339b8fc5bb6f594807f0696fde736ecaf"   # v0.3.0
 name = "dimension"
-version = "0.2.0"
+version = "0.3.0"
 ```
 
 - Fe resolves `rev` as a full commit hash. A tag name is rejected, so take the
@@ -321,7 +321,7 @@ every label, each place a raw number gets its direction: read each one. Items
    review address, pair and decimals against the operator's own record.
 6. **Decide where the runtime guard is worth its gas.** It is one invariant
    solve on a swap, and nearly free on joins and exits.
-7. **Audit as usual.** Dimension 0.2.0 is not audited. Its guarantees and
+7. **Audit as usual.** Dimension is not audited. Its guarantees and
    limits are in [guarantees.md](guarantees.md).
 
 ## API at a glance

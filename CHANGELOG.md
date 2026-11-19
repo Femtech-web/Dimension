@@ -6,7 +6,7 @@ a git dependency's `rev` as a full commit hash, so each release lists its commit
 
 ## 0.3.0: 2026-11-19
 
-The commit is recorded here when the release is tagged. Release notes:
+Commit `1171eb8339b8fc5bb6f594807f0696fde736ecaf` (tag `v0.3.0`). Release notes:
 [docs/releases/v0.3.0.md](docs/releases/v0.3.0.md).
 
 ### Changed

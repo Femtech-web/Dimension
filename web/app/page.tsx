@@ -268,9 +268,9 @@ export default function Home() {
             <Code title="fe.toml" lang="toml">
               {`[dependencies.dimension]
 source = "https://github.com/Femtech-web/Dimension"
-rev = "468e2c20d405f1dfeaf42273e838884090d293a1"   # v0.2.0
+rev = "1171eb8339b8fc5bb6f594807f0696fde736ecaf"   # v0.3.0
 name = "dimension"
-version = "0.2.0"`}
+version = "0.3.0"`}
             </Code>
             <Code title="from a clone of Dimension" lang="shell">
               {`python3 cli/dimension.py new ../my-protocol

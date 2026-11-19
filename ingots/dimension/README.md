@@ -44,9 +44,9 @@ Add the dependency to your ingot's `fe.toml`, pinned to a release commit:
 ```toml
 [dependencies.dimension]
 source = "https://github.com/Femtech-web/Dimension"
-rev = "468e2c20d405f1dfeaf42273e838884090d293a1"   # v0.2.0
+rev = "1171eb8339b8fc5bb6f594807f0696fde736ecaf"   # v0.3.0
 name = "dimension"
-version = "0.2.0"
+version = "0.3.0"
 ```
 
 - Fe resolves `rev` as a full commit hash, not a tag. Each release's commit is
@@ -120,10 +120,10 @@ costs the same gas as the hand-written one on every call.
 
 ## Status and versioning
 
-Version 0.2.0, built for the Fe Builders Challenge 2026. It is not audited:
-audit a protocol built on it as you would any other. Versions follow semantic
-versioning; before 1.0, a minor version may change the API, and every change
-is listed in the [changelog](../../CHANGELOG.md). Report vulnerabilities
+Built for the Fe Builders Challenge 2026. It is not audited: audit a protocol
+built on it as you would any other. Versions follow semantic versioning; before
+1.0, a minor version may change the API. Every release, its commit and its
+changes are in the [changelog](../../CHANGELOG.md). Report vulnerabilities
 privately, as described in [SECURITY.md](../../SECURITY.md).
 
 ## License

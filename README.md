@@ -7,7 +7,7 @@
 [For judges](JUDGES.md) · [Documentation](docs/README.md) · [The library](ingots/dimension) · [Results](docs/results) · [The site](web)
 
 [![CI](https://github.com/Femtech-web/Dimension/actions/workflows/ci.yml/badge.svg)](https://github.com/Femtech-web/Dimension/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.2.0-2a78d6)](https://github.com/Femtech-web/Dimension/releases/tag/v0.2.0)
+[![Release](https://img.shields.io/github/v/release/Femtech-web/Dimension?label=release&color=2a78d6)](https://github.com/Femtech-web/Dimension/releases/latest)
 [![Fe](https://img.shields.io/badge/Fe-26.6.0%20%7C%2026.7.0-orange)](https://github.com/argotorg/fe/releases)
 [![License](https://img.shields.io/badge/license-Apache--2.0%20%7C%20GPL--3.0-blue)](#license)
 
@@ -355,9 +355,9 @@ it from this repository, pinned to a commit:
 ```toml
 [dependencies.dimension]
 source = "https://github.com/Femtech-web/Dimension"
-rev = "468e2c20d405f1dfeaf42273e838884090d293a1"   # v0.2.0
+rev = "1171eb8339b8fc5bb6f594807f0696fde736ecaf"   # v0.3.0
 name = "dimension"
-version = "0.2.0"
+version = "0.3.0"
 ```
 
 Fe resolves `rev` as a full commit hash, so each release's commit is listed in
