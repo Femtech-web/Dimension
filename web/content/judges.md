@@ -37,7 +37,7 @@ For each incident this shows:
 
 `make show` with no argument runs all 17 compile-fail cases the same way.
 
-## 3. Run everything offline (about 1 minute)
+## 3. Run everything offline (about 2 minutes)
 
 ```sh
 make ci
@@ -101,7 +101,8 @@ rate-limited.
 
 `make mutants` (with `FORKS=1` for the last two) plants 17 realistic bugs, one at
 a time, in a scratch copy, and requires the check meant for each to fail for
-the reason expected of it. Its report is `docs/results/mutants/`. The changes
+the reason expected of it. CI runs it on every change. Its report is
+`docs/results/mutants/`. The changes
 below are ones to try by hand; each was made in a scratch copy, and the stated
 result observed.
 

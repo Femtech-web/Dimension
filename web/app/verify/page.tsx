@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Verify" };
 const STEPS = [
   ["Install", "make toolchain && make reference-deps", "Fe 26.6.0 downloaded and checksum-verified; forge-std and OpenZeppelin pinned by commit."],
   ["See both incidents", "make demo", "Each mistake written in Fe, the compiler's verdict, the fix, and the evidence the fork runs saved."],
-  ["Run everything offline", "make ci", "Formatting, unsafe policy, unit tests on both backends, compile-fail cases, probes, the differential test, the search, the EVM contracts and the vault. About a minute."],
+  ["Run everything offline", "make ci", "Formatting, unsafe policy, unit tests on both backends, compile-fail cases, probes, the differential test, the search, the EVM contracts with the typed-vs-hand-written pairs, the vault, and a fresh project through the CLI. About two minutes."],
   ["Against the real chains", "make replay fidelity moonwell", "The attacker's own transactions, the deployed pool, and Moonwell's market on Base: public RPCs by default."],
   ["Try to break it", "make mutants", "Plants each bug below in a scratch copy and requires the check meant for it to fail."],
 ];

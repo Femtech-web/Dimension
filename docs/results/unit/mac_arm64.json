@@ -8,10 +8,10 @@
   },
   "platform": "mac_arm64",
   "summary": {
-    "cases": 5,
-    "ok": 5,
+    "cases": 6,
+    "ok": 6,
     "by_kind": {
-      "test": 5
+      "test": 6
     }
   },
   "cases": [
@@ -73,6 +73,22 @@
       "observed": {
         "sonatina": {
           "passed": 9
+        }
+      }
+    },
+    {
+      "id": "unsafe_root",
+      "kind": "test",
+      "layer": "documented limit",
+      "mechanism": "A root ingot's own unsafe code forges a Dimension Price with a pointer cast, without allow_unsafe; dimension check fails any project containing unsafe",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "sonatina": {
+          "passed": 2
+        },
+        "native": {
+          "passed": 2
         }
       }
     },

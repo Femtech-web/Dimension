@@ -1,0 +1,44 @@
+//! The one forgery the compiler allows. `allow_unsafe` gates what a dependency
+//! may do, not the root: a root ingot's own `unsafe` code compiles without it.
+//! Here a pointer cast builds a `Price` that no oracle read produced, and the
+//! types accept it everywhere a checked price goes. `dimension check` fails any
+//! project whose sources contain `unsafe`, and `make unsafe-policy` does the
+//! same for this repository's protocol ingots.
+
+use dimension::{Amount, Asset, Collateral, Price, Value, WAD, value_of}
+
+pub struct CBETH {}
+pub struct USD {}
+
+impl Asset for CBETH {
+    const DECIMALS: u256 = 18
+}
+
+/// A cbETH/USD price of `wad`, written into memory and read back as a `Price`.
+pub fn forge(_ wad: u256) -> Price<CBETH, USD> {
+    let buf = MemArray<u256>::new_zeroed(1)
+    let p: *u256 = buf.ptr()
+    unsafe {
+        *p = wad
+    }
+    let q: *Price<CBETH, USD> = p as *Price<CBETH, USD>
+    unsafe {
+        *q
+    }
+}
+
+#[test]
+fn a_root_forges_a_price_no_read_could_return() {
+    // `read` refuses a zero answer, and any answer outside the feed's band.
+    assert(forge(0).wad() == 0)
+    assert(forge(1_000_000 * WAD).wad() == 1_000_000 * WAD)
+}
+
+#[test]
+fn the_forged_price_values_collateral() {
+    let collateral: Value<USD, Collateral> = value_of(
+        Amount<CBETH>::new(2 * WAD),
+        forge(1_000_000 * WAD),
+    )
+    assert(collateral.wad() == 2_000_000 * WAD)
+}

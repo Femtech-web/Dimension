@@ -28,7 +28,8 @@ Not vulnerabilities, because they are documented limits
 - a feed declared at the wrong address (`cli/feed_check.py` checks
   Chainlink feeds at review time);
 - `given` or `owed` attached to a raw number with the wrong direction;
-- `unsafe` code in an ingot that sets `allow_unsafe`.
+- `unsafe` code in your own ingot, or in a dependency you grant
+  `allow_unsafe` (`dimension check` fails a project with either).
 
 The Balancer V2 and Moonwell code in this repository reproduces past incidents
 for research. It is not deployed and not in scope.

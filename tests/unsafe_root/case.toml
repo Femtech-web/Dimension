@@ -1,0 +1,4 @@
+kind = "test"
+backends = ["sonatina", "native"]
+layer = "documented limit"
+mechanism = "A root ingot's own unsafe code forges a Dimension Price with a pointer cast, without allow_unsafe; dimension check fails any project containing unsafe"

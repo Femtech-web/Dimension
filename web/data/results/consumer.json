@@ -3,7 +3,7 @@
   "question": "Does Dimension work as a dependency of someone else's project?",
   "dependency": {
     "source": "this repository's git history",
-    "rev": "09aacf3f7979a042c55818fdf3607c60309e08a9",
+    "rev": "7b41fc70b4c4b050957008ec4f6bbd7a7bb866bb",
     "name": "dimension",
     "version": "0.1.0"
   },
@@ -16,12 +16,12 @@
     {
       "question": "Can a new project depend on Dimension from git, and does it get Dimension's checks?",
       "holds": true,
-      "evidence": "`dimension new` creates the quickstart taking Dimension at 09aacf3 by git source; it builds and passes its 3 tests; an incoming amount used as an outgoing one is rejected with 8-0000"
+      "evidence": "`dimension new` creates the quickstart taking Dimension at 7b41fc7 by git source; it builds and passes its 3 tests; an incoming amount used as an outgoing one is rejected with 8-0000"
     },
     {
       "question": "Does `dimension check` pass that project, and fail it once it can forge values Dimension trusts?",
       "holds": true,
-      "evidence": "the new project: 5 of 6 checks ok, and a warning on pinned (it pins HEAD, not a release); with allow_unsafe set on Dimension it fails allow_unsafe; with an unsafe block it fails unsafe code"
+      "evidence": "the new project: 5 of 6 checks ok, and a warning on pinned (it pins HEAD, not a release); with allow_unsafe set on Dimension it fails allow_unsafe; with a price forged by a pointer cast, which compiles, it fails unsafe code"
     }
   ]
 }

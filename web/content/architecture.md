@@ -15,10 +15,16 @@ ingots/
   balancer_explorer/         native search over the Balancer kernels (GPL-3.0-or-later)
   moonwell/                  Moonwell's cbETH market priced through Dimension (Apache-2.0)
   vault/                     an ERC-4626 vault's accounting, written with Dimension (Apache-2.0)
+examples/quickstart/         the project a team starts from (what `dimension new` writes)
+cli/                         the command line: `new`, `check`, `feeds` (standard-library Python)
 tests/
-  core/  oracle/  explorer/  unit tests; core and explorer run on the EVM and natively
-  compile_fail/              16 rejected constructions, each with a corrected twin
-  probes/                    20 language-feasibility probes with golden outputs
+  core/  oracle/  explorer/  vault/  unit tests; core, explorer and vault run on the EVM and natively
+  unsafe_root/               the one forgery the compiler allows, which `dimension check` fails
+  compile_fail/              17 rejected constructions, each with a corrected twin
+  zero_cost/                 typed code next to the same code by hand, measured by `make evm`
+  feeds/                     wrong feed declarations that compile, for `make feeds`
+  compiler_findings/         the reproducer filed as argotorg/fe#2043
+  probes/                    20 language-feasibility probes on an early prototype, kept as recorded
 contracts/reference/         Foundry: Balancer's Solidity, OpenZeppelin's ERC4626, every EVM or fork comparison
 fixtures/balancer-v2-exploit the attacker's swaps on the pool, read from the three transactions' events
 third_party/balancer-v2/     the pinned upstream sources the port is compared with
@@ -272,10 +278,12 @@ whether it holds, and the evidence.
 | `replay` | the three kernels | the attacker's own transactions, step by step, and the pool's state after each |
 | `moonwell` | the Fe oracle | Moonwell's deployed oracle and the real feeds on Base forks |
 | `feeds` | each declared feed | Chainlink's directory and Base; wrong declarations must be rejected |
+| `consumer` | a fresh project from `dimension new` | Dimension taken by git; its tests; a misuse; `dimension check` passes it and fails it with `allow_unsafe` or a forged price |
 | `mutants` | the checks themselves | realistic bugs planted one at a time; the check meant for each must fail |
 
 Golden files never regenerate silently: `make update` rewrites them, and the
 diff is reviewed before it is kept. The differential test clears Foundry's
-failure cache so its counts are deterministic. CI runs `make ci` on Linux, and
-the fork targets in a separate job. The same goldens pass on macOS and Linux,
+failure cache so its counts are deterministic. CI runs `make ci` and
+`make mutants` on Linux, and the fork targets, with all 17 mutants, in a
+separate job. The same goldens pass on macOS and Linux,
 so diagnostics and bytecode hashes do not depend on the platform.

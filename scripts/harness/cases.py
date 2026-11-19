@@ -30,6 +30,7 @@ SUITES = {
         ROOT / "tests" / "oracle",
         ROOT / "tests" / "explorer",
         ROOT / "tests" / "vault",
+        ROOT / "tests" / "unsafe_root",
         ROOT / "examples" / "quickstart",
     ],
 }

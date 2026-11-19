@@ -15,7 +15,8 @@ project. It fails on what would let the project forge values Dimension
 trusts, or misprice them, and warns on what to review:
 
 - the Dimension dependency is pinned to a full commit, ideally a release (warn);
-- `allow_unsafe` is not set on it (fail): it lets the ingot forge prices and rates;
+- no dependency is granted `allow_unsafe` (fail): on Dimension it reaches the
+  test constructors, on any other its own `unsafe` code can forge values;
 - no `unsafe` code in the sources (fail): a pointer cast can forge any value;
 - the Fe version is one Dimension is tested on (warn), and the project compiles (fail);
 - every Chainlink feed it declares is the feed it claims to be (fail), with `--network`.
@@ -111,7 +112,8 @@ def checklist(project: Path, network: str | None, rpc: str | None, fe_path: str 
     manifest = project / "fe.toml"
     if not manifest.exists():
         raise SystemExit(f"{project}: no fe.toml")
-    dep = tomllib.loads(manifest.read_text()).get("dependencies", {}).get("dimension")
+    deps = tomllib.loads(manifest.read_text()).get("dependencies", {})
+    dep = deps.get("dimension")
     if not isinstance(dep, dict):
         raise SystemExit(f"{manifest}: no Dimension dependency")
 
@@ -126,10 +128,19 @@ def checklist(project: Path, network: str | None, rpc: str | None, fe_path: str 
     else:
         rows.add("warn", "pinned", f"{rev[:7]} is not a release commit; releases are listed in the changelog")
 
-    if dep.get("allow_unsafe"):
-        rows.add("FAIL", "allow_unsafe", "set on Dimension: this ingot can forge prices and rates. Keep it to test roots")
+    granted = sorted(name for name, d in deps.items() if isinstance(d, dict) and d.get("allow_unsafe"))
+    if granted:
+        rows.add(
+            "FAIL",
+            "allow_unsafe",
+            f"granted to {', '.join(granted)}: "
+            + ("Dimension's test constructors forge prices and rates" if "dimension" in granted else "")
+            + ("; " if "dimension" in granted and len(granted) > 1 else "")
+            + ("a dependency's own unsafe code can forge any value" if set(granted) - {"dimension"} else "")
+            + ". Keep it to test roots",
+        )
     else:
-        rows.add("ok  ", "allow_unsafe", "not set on Dimension")
+        rows.add("ok  ", "allow_unsafe", "granted to none of the dependencies")
 
     sources = sorted((project / "src").rglob("*.fe"))
     unsafe = [

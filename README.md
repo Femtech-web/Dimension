@@ -333,6 +333,7 @@ yet the guard still rejects every one of those losses.
 | Balancer V3 `ScalingHelpers` | `...RoundDown` and `...RoundUp` variants, picked by the caller | the call site does not pick |
 | [roundme](https://github.com/crytic/roundme), [ScType](https://conf.researchr.org/details/icse-2024/icse-2024-research-track/127/Towards-Finding-Accounting-Errors-in-Smart-Contracts) | advise on, or detect, rounding and accounting errors in Solidity | prevention at compile time, plus checked boundaries and a runtime guard |
 | [Remix workshop](https://github.com/remix-project-org/remix-workshops/tree/master/RoundingDirectionExploit), [Quint model](https://github.com/informalsystems/quint-balancer-v2-rounding-bug) | teach, or model, the Balancer bug on a simplified pool | the real kernel, verified against Balancer and the deployed pool, then made unable to express the bug |
+| On-chain oracle checks (staleness, decimals, bounds) | catch a stale, mis-scaled or absurd answer | the pair is in the type, and `dimension check` matches each declared feed to Chainlink's directory before deploying: it catches a wrong feed that every on-chain check accepts |
 
 [The full comparison →](docs/comparison.md)
 
@@ -396,6 +397,10 @@ pass it, and fail it once `allow_unsafe` or `unsafe` code is added.
   or another oracle network has no directory to check against, and stays a
   reviewed declaration. The trust moves to Chainlink's own record, at review
   time; nothing enforces it on chain.
+- **`unsafe` code in your own ingot can forge any value.** `allow_unsafe`
+  gates dependencies, not the root, so a pointer cast in a deployed ingot can
+  build a `Price` no read produced; [`tests/unsafe_root`](tests/unsafe_root)
+  does exactly that. `dimension check` fails any project containing `unsafe`.
 - **The guard costs gas:** about +48% on swaps and +6% to +8% on joins and
   exits at the default `-O1`, within two points of that at `-O2` and `-Os`,
   so it is opt-in. On swaps that is one more invariant solve, which
@@ -437,7 +442,8 @@ type-checks, and every test suite passes, on Fe 26.7.0. The manifest is
 | `make web` | Syncs the saved reports into [`web/`](web) and builds the site |
 | `make help` | Every target |
 
-CI runs `make ci` on Linux, and the fork comparisons in a separate job.
+CI runs `make ci` and `make mutants` on Linux, and the fork comparisons, with
+all 17 mutants, in a separate job.
 Native executables exist for `linux_amd64` and `mac_arm64` in Fe 26.6.0;
 elsewhere the native search is skipped.
 

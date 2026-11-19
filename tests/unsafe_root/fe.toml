@@ -1,0 +1,6 @@
+[ingot]
+name = "unsafe_root"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../ingots/dimension" }

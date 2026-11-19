@@ -1,0 +1,3 @@
+PASS a_root_forges_a_price_no_read_could_return
+PASS the_forged_price_values_collateral
+test result: ok. 2 passed; 0 failed

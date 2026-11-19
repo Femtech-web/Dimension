@@ -43,9 +43,18 @@ pub fn wrong(_ raw: u256) -> Quantity<USDC, Out, Admitted> {
 }
 """
 
-FORGE = """
-pub fn forged(_ x: u256) -> u256 {
-    unsafe { x }
+# A price no oracle read produced, forged by the root's own unsafe code (tests/unsafe_root).
+FORGE = """use dimension::Price
+
+pub struct ETH {}
+pub struct USD {}
+
+pub fn forged(_ wad: u256) -> Price<ETH, USD> {
+    let buf = MemArray<u256>::new_zeroed(1)
+    let p: *u256 = buf.ptr()
+    unsafe { *p = wad }
+    let q: *Price<ETH, USD> = p as *Price<ETH, USD>
+    unsafe { *q }
 }
 """
 
@@ -82,9 +91,8 @@ def main() -> int:
             None,
             str(fe.binary),
         )
-        lib = (quickstart / "src" / "lib.fe").read_text()
         unsafe_code = dimension.checklist(
-            variant(quickstart, Path(tmp) / "unsafe-code", source=("lib.fe", lib + FORGE)), None, None, str(fe.binary)
+            variant(quickstart, Path(tmp) / "unsafe-code", source=("forge.fe", FORGE)), None, None, str(fe.binary)
         )
     passed = re.search(r"test result: ok\. (\d+) passed; 0 failed", tested.output)
     ok_code = 0 if built.code == 0 and tested.code == 0 and passed else 1
@@ -106,7 +114,7 @@ def main() -> int:
             "evidence": f"the new project: {sum(s.strip() == 'ok' for s, _, _ in checked.rows)} of {len(checked.rows)} checks ok, "
             f"and a warning on {', '.join(n for s, n, _ in checked.rows if s == 'warn') or 'nothing'} (it pins HEAD, not a release); "
             f"with allow_unsafe set on Dimension it fails {', '.join(sorted(failures(unsafe_dep))) or 'nothing'}; "
-            f"with an unsafe block it fails {', '.join(sorted(failures(unsafe_code))) or 'nothing'}",
+            f"with a price forged by a pointer cast, which compiles, it fails {', '.join(sorted(failures(unsafe_code))) or 'nothing'}",
         },
     ]
     report = {

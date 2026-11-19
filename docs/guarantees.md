@@ -156,7 +156,12 @@ Dimension's trust rests on protocol code living in ingots that cannot reach
   `value::testing`.
 - `make unsafe-policy` enforces both rules in CI.
 
-A root ingot with `allow_unsafe` can still forge any value with a pointer cast.
-The probe `bypass_unsafe_in_root` documents this. `balancer_explorer` is such a
-root, because it feeds rates to the typed kernel in simulation. It builds no
-contract.
+`allow_unsafe` gates what a dependency may do, not the root: a root ingot's own
+`unsafe` code always compiles, and a pointer cast there can forge any value.
+[`tests/unsafe_root`](../tests/unsafe_root/src/lib.fe) does it against
+Dimension's own `Price`, and values collateral with the forged price, on both
+backends. So `dimension check` fails any project whose sources contain `unsafe`
+(`make consumer` requires it to catch exactly this forgery), and
+`make unsafe-policy` does the same for this repository's protocol ingots.
+`balancer_explorer` sets `allow_unsafe` on Dimension, because it feeds rates to
+the typed kernel in simulation. It builds no contract.

@@ -13,13 +13,16 @@ original code and the real chains.
 | [ScType](https://conf.researchr.org/details/icse-2024/icse-2024-research-track/127/Towards-Finding-Accounting-Errors-in-Smart-Contracts) (ICSE 2024) | Abstract type inference over Solidity, through Slither, that finds accounting errors (mixing units, scales and assets) after the fact | ScType detects these errors in existing Solidity; Dimension makes them unwritable in new Fe code. They suit different stages of a codebase's life. |
 | [Remix workshop `RoundingDirectionExploit`](https://github.com/remix-project-org/remix-workshops/tree/master/RoundingDirectionExploit) (May 2026, no license) | A LearnEth tutorial on the rounding-direction bug class (three categories, nine incidents) with a hands-on reproduction of the Balancer V2 case in a simplified Solidity pool | Teaches the bug class and how to spot it in review. Dimension's kernel is a faithful port, verified against Balancer's code and the deployed pool, and the types make the bug unwritable. Nothing was copied. |
 | [Quint model of the bug](https://github.com/informalsystems/quint-balancer-v2-rounding-bug) (Informal Systems, June 2026, no license) | A minimal model reproducing the bug. Its invariant is that the stored invariant must not exceed what the scaled balances support. | Dimension checks the same invariant on the executable kernel, on both backends, and prevents the violation by type and by a runtime guard. Nothing was copied. |
-| Units of measure (F#), `uom` (Rust), `Coin<T>` (Move) | Phantom types for units or token identity | The same technique, applied to prices, scales and rounding direction on the EVM, with its cost measured: zero. |
+| Units of measure (F#), `uom` (Rust), `Coin<T>` (Move) | Phantom types for units or token identity | The same technique, applied to prices, scales and rounding direction on the EVM, with its cost measured on the library itself: zero gas at every optimizing level. |
+| On-chain oracle checks (staleness, decimals, bounds), common in lending protocols | Reject a stale, mis-scaled or absurd answer when it is read | Dimension makes the same checks on every read, and adds the two they cannot: the pair is part of the feed's type, and before deployment `dimension check` matches each declared feed to Chainlink's own directory. A wrong feed with plausible answers passes the on-chain checks, and fails this one. |
 
 ## What is new
 
 - **A direction derived from meaning and enforced by the compiler on EVM
-  code, at no runtime cost.** The call site never names a rounding. The
-  compiled code is byte-identical to the hand-written version.
+  code, at no runtime cost.** The call site never names a rounding. Measured on
+  the library itself, at `-O1`, `-O2` and `-Os`: its roundings compile to the
+  same bytes as the hand-written calls, and an ERC-4626 vault built on it costs
+  the same gas on every call, with identical results.
 - **The incident's own code, typed.** Balancer's StableMath, pool paths and
   protocol fees were ported faithfully. They were checked against the Solidity
   on 220,000 vectors, against the deployed pool on 669 quotes, and against the
@@ -31,6 +34,14 @@ original code and the real chains.
   Base across the eight days of the incident show the correct configuration
   pricing cbETH at the same value Moonwell's own oracle gave whenever it was
   right.
+- **The fact no type and no chain check can see, checked before deployment.**
+  Whether a feed's address is the feed it is declared to be. `dimension check`
+  matches each declaration to Chainlink's directory and the chain, and rejects
+  the cbETH/USD feed declared as ETH/USD, which compiles, passes every check on
+  chain, and prices ETH 14% high.
+- **The tools to adopt it safely.** `dimension new` starts a project pinned to
+  a release; `dimension check` fails one that could forge or misprice what
+  Dimension trusts. CI runs both on a fresh project at every change.
 
 ## What is not new
 
