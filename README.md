@@ -4,17 +4,18 @@
 
 **Fe types that know which way value moves.**
 
-[For judges](JUDGES.md) · [The site](web) · [Documentation](docs/README.md) · [Results](docs/results)
+[For judges](JUDGES.md) · [Documentation](docs/README.md) · [The library](ingots/dimension) · [Results](docs/results) · [The site](web)
 
 [![CI](https://github.com/Femtech-web/Dimension/actions/workflows/ci.yml/badge.svg)](https://github.com/Femtech-web/Dimension/actions/workflows/ci.yml)
-[![Fe 26.6.0](https://img.shields.io/badge/Fe-26.6.0-orange)](https://github.com/argotorg/fe/releases/tag/v26.6.0)
+[![Release](https://img.shields.io/badge/release-v0.1.0-2a78d6)](https://github.com/Femtech-web/Dimension/releases/tag/v0.1.0)
+[![Fe](https://img.shields.io/badge/Fe-26.6.0%20%7C%2026.7.0-orange)](https://github.com/argotorg/fe/releases)
 [![License](https://img.shields.io/badge/license-Apache--2.0%20%7C%20GPL--3.0-blue)](#license)
 
 </div>
 
-**Pitch:** Dimension is a Fe library in which the arithmetic behind two of
-DeFi's costliest recent failures does not compile. Every claim it makes is
-checked against the original code and the real chains.
+**Dimension is a Fe library in which the arithmetic behind two of DeFi's
+costliest recent failures does not compile. Every claim it makes is checked
+against the original code and the real chains.**
 
 > *"This is the only place where we round in the same direction for all
 > amounts, as the impact of this rounding is expected to be minimal."*
@@ -36,6 +37,21 @@ Dimension puts that meaning into Fe's types:
 
 What types cannot see, a runtime guard catches. Both incidents are reproduced
 on their real code and chain state, and both are stopped.
+
+## Contents
+
+- **The work:** [Two incidents, replayed](#two-incidents-replayed):
+  [Balancer V2](#balancer-v2-balancers-own-line-rejected-by-the-compiler),
+  [Moonwell](#moonwell-mip-x43-112-usd-and-220668-usd-from-the-same-feeds),
+  [an ERC-4626 vault](#beyond-the-incidents-an-erc-4626-vault) ·
+  [How it works](#how-it-works) · [Fe highlight](#fe-highlight)
+- **The evidence:** [See it in one minute](#see-it-in-one-minute) ·
+  [Checked and attacked](#checked-and-attacked) · [Try to break it](#try-to-break-it) ·
+  [How it compares](#how-it-compares) · [Limits](#limits)
+- **Using it:** [Use it in your protocol](#use-it-in-your-protocol) ·
+  [Build and test](#build-and-test) · [Repository layout](#repository-layout)
+- **About:** [Found along the way](#found-along-the-way) · [Declaration](#declaration) ·
+  [License](#license)
 
 ## Two incidents, replayed
 
@@ -257,12 +273,13 @@ The rest of Dimension leans on Fe throughout:
 | Exhaustive search, three kernels, exact integers | 4,608 pool states, about 3.14M operations each | the two invariants hold under the guard in every operation kind | `make explore` |
 | The same kernels on the EVM and natively | pinned grid and attack | identical integers | `make unit` |
 | Admission and settlement against the exact rational result | 20,000 per backend | exact floor and ceil | `make unit` |
-| Constructions the compiler must reject | 16 cases, each with a corrected twin | all rejected with the intended error; all twins pass | `make compile-fail` |
+| Constructions the compiler must reject | 17 cases, each with a corrected twin | all rejected with the intended error; all twins pass | `make compile-fail` |
 | Language behaviour the design rests on | 20 probes with golden outputs and bytecode hashes | all as recorded, identical on macOS and Linux | `make probes` |
 | Moonwell's market on Base forks | 14 blocks across the incident | Dimension correct at every block; identical to Moonwell where Moonwell was right | `make moonwell` |
 | The ERC-4626 vault against OpenZeppelin's ERC4626 | 40,000 vectors, 33,684 where the rounding decides | all equal | `make vault` |
 | The vault against the exact rational result | 32,768 states × 4 previews, both backends | exact floor or ceil as EIP-4626 requires | `make unit` |
 | Planted bugs in the safety-critical code | 17 mutants across 7 layers | every one caught, for the reason expected of it | `make mutants FORKS=1` |
+| A fresh project taking Dimension by git | the quickstart, plus a misuse | builds, passes its tests; the misuse is rejected | `make consumer` |
 
 Every run writes a report to [`docs/results/`](docs/results). Each claim in it
 is a question, an answer and its evidence, and a claim that fails fails the
@@ -359,18 +376,21 @@ All of them, with their evidence: [docs/guarantees.md](docs/guarantees.md).
 Requires `make`, `curl`, Python 3.12 and [Foundry](https://getfoundry.sh)
 1.4.4. The compiler is pinned to Fe 26.6.0
 (`5b3f96af2ab10df11bf847551f4b81d1fe481110`) and checksum-verified into
-`.tools/`; nothing uses a globally installed `fe`. The manifest is
+`.tools/`; nothing uses a globally installed `fe`. Every ingot also
+type-checks, and every test suite passes, on Fe 26.7.0. The manifest is
 [`fe.toml`](fe.toml), a workspace of the ingots in [`ingots/`](ingots).
 
 | Command | What it does |
 |---|---|
-| `make ci` | Formatting, unsafe policy, unit, compile-fail, probes, differential, search, EVM: what CI runs |
+| `make ci` | Formatting, unsafe policy, unit, compile-fail, probes, differential, search, EVM, vault, consumer: what CI runs |
 | `make demo` | Both incidents, live |
 | `make fidelity` | The Balancer port against the deployed pool (mainnet fork; `MAINNET_RPC_URL` overrides the public RPC) |
 | `make replay` | The attacker's three transactions, step by step, through the three kernels (mainnet forks) |
 | `make moonwell` | Moonwell's market around MIP-X43 (Base forks; `BASE_RPC_URL` overrides the public RPC) |
 | `make vault` | The ERC-4626 vault against OpenZeppelin's ERC4626 |
 | `make mutants` | Plants realistic bugs one at a time; each must be caught by the check meant for it |
+| `make consumer` | Builds the quickstart as a fresh project taking Dimension by git |
+| `make apidoc` | Generates the API reference from the library's doc comments |
 | `make web` | Syncs the saved reports into [`web/`](web) and builds the site |
 | `make help` | Every target |
 
@@ -415,7 +435,8 @@ reproducer kept in
     the differential reference and translated into `ingots/balancer_v2`. Both
     keep Balancer's license; see the
     [provenance](third_party/balancer-v2/PROVENANCE.md).
-  - forge-std v1.9.7 is installed at build time.
+  - forge-std v1.9.7, and OpenZeppelin Contracts v5.1.0 for the vault
+    comparison, are installed at build time, pinned by commit.
   - From Moonwell, only public deployment addresses.
   - The Remix workshop and the Quint model carry no license. They are cited,
     and nothing was copied from them.

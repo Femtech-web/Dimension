@@ -29,6 +29,27 @@
   color: var(--dim);
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.version {
+  font-family: var(--font-mono), monospace;
+  font-size: 11.5px;
+  padding: 2px 7px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+
+.version:hover {
+  border-color: var(--dim);
+  color: var(--ink);
+}
+
 .links {
   display: flex;
   align-items: center;
@@ -80,5 +101,13 @@
   .links a {
     padding: 6px 7px;
     font-size: 13.5px;
+  }
+}
+
+/* Phones: the release badge and the API link stay reachable from the footer. */
+@media (max-width: 480px) {
+  .version,
+  .links a[href="/api/index.html"] {
+    display: none;
   }
 }

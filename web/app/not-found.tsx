@@ -7,7 +7,7 @@ export default function NotFound() {
         <div className="eyebrow">404</div>
         <h1 style={{ margin: "16px 0" }}>Nothing measured here.</h1>
         <p className="lede">
-          <Link href="/">Back to the start</Link>, or <Link href="/verify">verify every claim</Link>.
+          <Link href="/">Back to the start</Link>, or <Link href="/judges">verify every claim</Link>.
         </p>
       </div>
     </section>

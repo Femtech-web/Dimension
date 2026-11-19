@@ -6,7 +6,7 @@ import { PageHead, Section } from "@/components/PageHead";
 import { allClaims, compileFail, differential, meta, mutants, probes, unit } from "@/lib/results";
 import { BLOB } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Verify" };
+export const metadata: Metadata = { title: "For judges" };
 
 const STEPS = [
   ["Install", "make toolchain && make reference-deps", "Fe 26.6.0 downloaded and checksum-verified; forge-std and OpenZeppelin pinned by commit."],

@@ -58,13 +58,34 @@ export default function Home() {
               from a run you can repeat.
             </p>
             <div className={`rise ${styles.ctas}`} style={{ animationDelay: "0.18s" }}>
-              <Link href="/verify" className="button">
-                Verify every claim
+              <Link href="/judges" className="button">
+                For judges
+              </Link>
+              <Link href="/docs/guide" className="button ghost">
+                Use the library
               </Link>
               <a href={REPO} className="button ghost">
-                Read the code ↗
+                Source ↗
               </a>
             </div>
+            <dl className={`rise ${styles.proof}`} style={{ animationDelay: "0.24s" }}>
+              <div>
+                <dt>{n(headline.vectors)}</dt>
+                <dd>vectors against Balancer&apos;s Solidity, 0 mismatches</dd>
+              </div>
+              <div>
+                <dt>
+                  {headline.stepsEqual}/{headline.steps}
+                </dt>
+                <dd>real attack steps reproduced exactly</dd>
+              </div>
+              <div>
+                <dt>
+                  {headline.mutantsCaught}/{headline.mutants}
+                </dt>
+                <dd>planted bugs caught</dd>
+              </div>
+            </dl>
           </div>
           <div className="rise" style={{ animationDelay: "0.25s" }}>
             <RoundingFigure />
@@ -271,7 +292,7 @@ make replay      # the attacker's 360 steps, on mainnet forks
 make mutants     # plant bugs; each must be caught`}
           </Code>
           <div className={styles.ctas} style={{ marginTop: 24 }}>
-            <Link href="/verify" className="button">
+            <Link href="/judges" className="button">
               Every claim, with its evidence
             </Link>
             <Link href="/docs/judges" className="button ghost">

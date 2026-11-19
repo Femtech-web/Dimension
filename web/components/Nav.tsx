@@ -10,12 +10,17 @@ export function Nav() {
   return (
     <header className={styles.bar}>
       <div className={`wrap ${styles.inner}`}>
-        <Link href="/" className={styles.mark} aria-label="Dimension, home">
-          <svg width="26" height="14" viewBox="0 0 26 14" aria-hidden="true">
-            <path d="M1 1v12M25 1v12M1 7h24M5 4l-4 3 4 3M21 4l4 3-4 3" fill="none" stroke="currentColor" strokeWidth="1.4" />
-          </svg>
-          <span>Dimension</span>
-        </Link>
+        <div className={styles.brand}>
+          <Link href="/" className={styles.mark} aria-label="Dimension, home">
+            <svg width="26" height="14" viewBox="0 0 26 14" aria-hidden="true">
+              <path d="M1 1v12M25 1v12M1 7h24M5 4l-4 3 4 3M21 4l4 3-4 3" fill="none" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
+            <span>Dimension</span>
+          </Link>
+          <a href={`${REPO}/releases/tag/v0.1.0`} className={styles.version}>
+            v0.1.0
+          </a>
+        </div>
         <nav className={styles.links} aria-label="Main">
           {NAV.map((item) =>
             item.file ? (
