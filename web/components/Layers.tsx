@@ -44,9 +44,12 @@ export function Layers() {
         </div>
       ))}
       <div className={`${styles.layer} ${styles.rest}`}>
-        <div className={styles.when}>What remains</div>
-        <h3>A reviewed declaration</h3>
-        <p>No check can prove an address is the feed it is declared to be. A wrong feed with the right decimals and a plausible answer passes.</p>
+        <div className={styles.when}>The one assumption</div>
+        <h3>Feed identity</h3>
+        <p>
+          No check can prove an address is the feed it is declared to be. Each feed is declared once, with its pair,
+          so that one fact is reviewed in one place.
+        </p>
       </div>
     </div>
   );

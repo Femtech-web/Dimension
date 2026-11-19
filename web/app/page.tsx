@@ -58,8 +58,8 @@ export default function Home() {
               from a run you can repeat.
             </p>
             <div className={`rise ${styles.ctas}`} style={{ animationDelay: "0.18s" }}>
-              <Link href="/judges" className="button">
-                For judges
+              <Link href="/verify" className="button">
+                Verify every claim
               </Link>
               <Link href="/docs/guide" className="button ghost">
                 Use the library
@@ -292,7 +292,7 @@ make replay      # the attacker's 360 steps, on mainnet forks
 make mutants     # plant bugs; each must be caught`}
           </Code>
           <div className={styles.ctas} style={{ marginTop: 24 }}>
-            <Link href="/judges" className="button">
+            <Link href="/verify" className="button">
               Every claim, with its evidence
             </Link>
             <Link href="/docs/judges" className="button ghost">

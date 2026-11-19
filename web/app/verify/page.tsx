@@ -6,7 +6,7 @@ import { PageHead, Section } from "@/components/PageHead";
 import { allClaims, compileFail, differential, meta, mutants, probes, unit } from "@/lib/results";
 import { BLOB } from "@/lib/site";
 
-export const metadata: Metadata = { title: "For judges" };
+export const metadata: Metadata = { title: "Verify" };
 
 const STEPS = [
   ["Install", "make toolchain && make reference-deps", "Fe 26.6.0 downloaded and checksum-verified; forge-std and OpenZeppelin pinned by commit."],
@@ -21,7 +21,7 @@ export default function Verify() {
   return (
     <>
       <PageHead
-        eyebrow="For judges"
+        eyebrow="For judges and auditors"
         title={
           <>
             Don&apos;t take our word for it. <em>Run it.</em>
