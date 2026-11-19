@@ -77,11 +77,11 @@ rate-limited.
 
 | File | Why |
 |---|---|
-| [`ingots/dimension/src/flow.fe`](../ingots/dimension/src/flow.fe) | The whole rounding rule, in about 60 lines |
-| [`ingots/dimension/src/value.fe`](../ingots/dimension/src/value.fe) | `admit` and `settle`, the only ways to produce an admitted or settled amount |
-| [`ingots/balancer_v2/src/pool/typed/math.fe`](../ingots/balancer_v2/src/pool/typed/math.fe) | The typed kernel's only door to StableMath |
-| [`ingots/balancer_v2/src/pool/typed.fe`](../ingots/balancer_v2/src/pool/typed.fe) | Compare with `faithful.fe`: the same operations, two rounding sites changed |
-| [`ingots/moonwell/src/registry.fe`](../ingots/moonwell/src/registry.fe) | The real Base feeds, declared once with their pairs |
+| [`ingots/dimension/src/flow.fe`](ingots/dimension/src/flow.fe) | The whole rounding rule, in about 60 lines |
+| [`ingots/dimension/src/value.fe`](ingots/dimension/src/value.fe) | `admit` and `settle`, the only ways to produce an admitted or settled amount |
+| [`ingots/balancer_v2/src/pool/typed/math.fe`](ingots/balancer_v2/src/pool/typed/math.fe) | The typed kernel's only door to StableMath |
+| [`ingots/balancer_v2/src/pool/typed.fe`](ingots/balancer_v2/src/pool/typed.fe) | Compare with `faithful.fe`: the same operations, two rounding sites changed |
+| [`ingots/moonwell/src/registry.fe`](ingots/moonwell/src/registry.fe) | The real Base feeds, declared once with their pairs |
 
 ## 6. Try to break it
 
@@ -107,8 +107,8 @@ Each change below was made in a scratch copy, and the stated result observed.
 | Each rejected construction, and its fix | `tests/compile_fail/<case>/` | `docs/results/compile-fail/` |
 | The type machinery is free | `tests/probes/bytecode/` | `docs/results/probes/` |
 
-[`docs/index.html`](index.html) shows all of these on one page, with the Moonwell
+[`docs/index.html`](docs/index.html) shows all of these on one page, with the Moonwell
 prices charted. `make page` regenerates it from whatever reports your runs saved.
 
 What is and is not guaranteed, layer by layer, is in
-[GUARANTEES.md](GUARANTEES.md).
+[docs/guarantees.md](docs/guarantees.md).

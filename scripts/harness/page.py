@@ -369,7 +369,7 @@ footer {{ margin-top: 48px; color: var(--muted); font-size: 13px; }}
 {rejected}
 
 <footer>Reproduce: <code>make ci</code>, <code>make fidelity</code>, <code>make moonwell</code>, then <code>make page</code>.
-See docs/JUDGES.md for a guided tour.</footer>
+See JUDGES.md for a guided tour.</footer>
 </main>
 <script>
 (() => {{

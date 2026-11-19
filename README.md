@@ -1,85 +1,165 @@
+<div align="center">
+
 # Dimension
 
-**Pitch:** Dimension is a Fe framework that makes the arithmetic behind two of
-DeFi's costliest recent failures (Balancer V2's rounding and Moonwell's oracle
-pairing) impossible to write: it is rejected by the compiler, or else stopped
-at a checked boundary, and every claim is verified against the original code
-and the real chains.
+**Fe types that know which way value moves.**
 
-Fe [26.6.0](https://github.com/argotorg/fe/releases/tag/v26.6.0)
-(`5b3f96af2ab10df11bf847551f4b81d1fe481110`), pinned and checksum-verified.
-Manifest: [`fe.toml`](fe.toml), a workspace of the ingots in [`ingots/`](ingots).
+[For judges](JUDGES.md) · [Verification page](docs/index.html) · [Documentation](docs/README.md) · [Results](docs/results)
 
-## The problem
+[![CI](https://github.com/Femtech-web/Dimension/actions/workflows/ci.yml/badge.svg)](https://github.com/Femtech-web/Dimension/actions/workflows/ci.yml)
+[![Fe 26.6.0](https://img.shields.io/badge/Fe-26.6.0-orange)](https://github.com/argotorg/fe/releases/tag/v26.6.0)
+[![License](https://img.shields.io/badge/license-Apache--2.0%20%7C%20GPL--3.0-blue)](#license)
 
-Financial code mixes numbers that mean different things: amounts of different
-tokens, prices quoted in different currencies, values moving into or out of a
-protocol. To the compiler they are all `u256`, so nothing stops a rounding
-direction or a price pair from being wrong:
+</div>
 
-- **Balancer V2, 2025-11-03, 95M to 128M USD by various estimates.** `_upscale`
-  rounds every amount down, including amounts leaving the pool. An attacker
-  batched exact-out swaps at amounts where that gap was largest, deflating the
-  pool's invariant and with it the price of its shares.
-- **Moonwell MIP-X43, 2026-02-15, 1.78M USD of bad debt.** A governance proposal
-  gave the cbETH market the cbETH/ETH exchange rate as its USD price. For eight
-  days Moonwell valued cbETH at about 1.12 USD instead of about 2,200.
+**Pitch:** Dimension is a Fe library in which the arithmetic behind two of
+DeFi's costliest recent failures does not compile. Every claim it makes is
+checked against the original code and the real chains.
 
-Both passed review. Both are about meaning that the code never stated. Dimension
-is for engineers writing or porting DeFi arithmetic in Fe who want the compiler
-to hold that meaning.
+> *"This is the only place where we round in the same direction for all
+> amounts, as the impact of this rounding is expected to be minimal."*
+> — Balancer V2, [`_upscale`](third_party/balancer-v2/pkg/solidity-utils/contracts/helpers/ScalingHelpers.sol)
 
-## Approach
+In November 2025 that rounding drained Balancer V2's composable stable pools,
+for an estimated 95 to 128 million USD. In February 2026, a Moonwell
+governance proposal priced cbETH with its ETH exchange rate instead of a USD
+price, and for eight days the market valued it at 1.12 USD. Both mistakes were
+visible in review: one in a comment, the other in a feed's name,
+`cbETHETH_ORACLE`. Neither could be enforced, because to the compiler every
+number was a `u256`.
 
-Dimension has three layers. Each one catches what the layer before cannot:
+Dimension puts that meaning into Fe's types:
+
+- an amount knows its token and which way it moves, and its rounding follows;
+- a price knows its pair, and composes only through a shared asset;
+- an external number becomes trusted only at a boundary that checks it.
+
+What types cannot see, a runtime guard catches. Both incidents are reproduced
+on their real code and chain state, and both are stopped.
+
+## Two incidents, replayed
+
+### Balancer V2: Balancer's own line, rejected by the compiler
+
+**First, the port is Balancer.** Balancer's math and pool paths were ported to
+Fe line by line:
+
+- **Against Balancer's own Solidity:** 220,000 vectors, 0 mismatches, reverts
+  included.
+- **Against the deployed osETH/wETH pool:** its real state, forked at block
+  23,717,399, the block before it was drained. 495 quotes, 0 mismatches.
+
+**Then, the bug is real in it.** Over 4,608 pool states, 57,990 exact-out
+exits lower the value behind each pool share (worst 14.86%). A greedy attacker
+takes 20.9 invariant units from a 1,000-wei pool. Deployed on an EVM, the same
+attack cuts the value per share by 3.38%.
+
+**With Dimension, the line does not compile.** The typed pool reaches
+StableMath only through signatures that demand admitted amounts. Putting
+Balancer's line back is a type error:
+
+```
+$ make show CASE=typed_pool_with_balancer_upscale
+  the bug:   rejected by the compiler, error[8-0000]: type mismatch
+             expected `Quantity<_, Out, Admitted>`, but `u256` is given
+  the fix:   -    let scaled_out = upscale(amount_out.value(), factor.value())
+             +    let scaled_out = admit(amount_out, factor)
+  fixed:     compiles; PASS charges_what_the_typed_pool_charges_and_more_than_balancer
+```
+
+| Same states, same attacks | Balancer (faithful port) | Typed | Typed + guard |
+|---|---|---|---|
+| Exact-out exits that lower value per share | 57,990 | 8 | **0** |
+| Exact-out swaps that lower value per share | 48 | **0** | **0** |
+| Greedy attacker on a 1,000-wei pool, invariant units | **+20.923** | −151.416 | −151.416 |
+| Value per share after the attack, on an EVM | **−3.38%** | +19.51% | +19.51% |
+| Gas per exact-out exit | 21,116 | 21,478 (+1.7%) | 22,313 (+5.7%) |
+
+The types remove the losses at Balancer's two rounding sites. The 8 that
+remain come from StableMath's own precision, and the guard rejects exactly
+those. [The full account →](docs/balancer.md)
+
+### Moonwell MIP-X43: 1.12 USD and 2,206.68 USD, from the same feeds
+
+Dimension's oracle, deployed on Base forks, reads the two Chainlink feeds that
+Moonwell's composite oracle combined: cbETH/ETH and ETH/USD. It multiplies
+them, because the types allow nothing else:
+
+| Base block | | Moonwell's oracle | Dimension |
+|---|---|---|---|
+| 42,194,662 | the last block before MIP-X43 | 2,206.68 USD | 2,206.68 USD, **identical to the wei** |
+| 42,194,663 | MIP-X43 executes, 2026-02-15 18:04:33 UTC | **1.12 USD** | 2,206.68 USD |
+| 11 more blocks over the next 8 days | | 1.12 USD | 2,091 to 2,243 USD |
+| 42,538,949 | the fix executes, 2026-02-23 17:20:45 UTC | 2,091.16 USD | 2,091.16 USD, **identical to the wei** |
+
+The mistake is stopped wherever it is made:
+
+| The mistake, made as | Stopped at | By |
+|---|---|---|
+| MIP-X43 wrote it: the cbETH/ETH feed as cbETH's USD price | **compile time** | `expected Feed<CBETH, USD>, but Feed<CBETH, ETH> is given` |
+| A registry entry that lies, with a USD feed's 8 decimals | **deployment** | the constructor checks the real feed: `WrongDecimals(feed, 8, 18)` |
+| A registry entry that lies, with the real 18 decimals | **the first read** | 1.12 is outside the band declared for a USD price: `AnswerOutOfBand` |
+
+[The on-chain record, block by block →](docs/moonwell.md)
+
+## See it in one minute
+
+```sh
+make toolchain   # Fe 26.6.0, downloaded and checksum-verified
+make demo        # both incidents: the mistake, the compiler's verdict, the fix, the evidence
+```
+
+Then `make ci` runs every offline check in about a minute, and `make fidelity`
+and `make moonwell` run the fork comparisons. [JUDGES.md](JUDGES.md) is a
+ten-minute tour with ways to try to break it, and
+[`docs/index.html`](docs/index.html) shows every saved result on one page.
+
+## How it works
+
+Four layers. Each one catches what the one before cannot:
+
+```mermaid
+flowchart LR
+    M["a mistake in<br/>financial arithmetic"] --> C{"compile time<br/>types, sealed traits,<br/>where predicates"}
+    C -- "rejected by<br/>the compiler" --> X1(["never builds"])
+    C -- "a declaration<br/>that lies" --> B{"deployment<br/>decimals checked"}
+    B -- "constructor<br/>reverts" --> X2(["never deploys"])
+    B --> R{"every read<br/>positive, fresh,<br/>in band"}
+    R -- "reverts" --> X3(["no price"])
+    R --> G{"runtime guard<br/>value per share"}
+    G -- "reverts" --> X4(["no loss"])
+    G --> E["what remains:<br/>a reviewed declaration"]
+```
 
 1. **Financial types.**
-   - Amounts carry their asset, their direction (`In` or `Out` of the protocol)
-     and their stage. Rounding is derived from the direction instead of chosen
-     at each call site.
-   - Prices carry their pair and compose only through a shared asset.
-   - Trusted values have private fields, so they can be produced only by the
-     functions that check them.
-   - Risk parameters are checked at compile time by `where` predicates.
-2. **Verified boundaries.**
-   - Each oracle feed or rate provider is declared once, with the pair it prices.
-   - When a contract binds a feed, its decimals are checked.
-   - Every read checks that the answer is positive, fresh and inside a declared
-     band.
-   - An optional runtime guard rejects any operation that lowers the value
-     behind a pool share.
-3. **Independent verification.**
-   - Ports are compared with the original Solidity.
-   - Ports are compared with the deployed contracts on forks.
-   - An exhaustive native search runs the same kernels on both backends.
-   - Every compile-time rejection has a corrected twin that must compile and
-     pass its tests.
+   - `Quantity<T, F, S>` is an amount of token `T`, moving `In` or `Out` of
+     the protocol, at stage `Given`, `Admitted`, `Owed` or `Settled`. Only
+     `admit` and `settle` reach the trusted stages, and they take their
+     rounding from the direction. A call site never names a rounding.
+   - `Price<B, Q>` composes only through a shared asset.
+   - `Value<Q, V>` rounds collateral down and debt up, and the two cannot be
+     added.
+   - Risk policies are checked by `where` predicates. A liquidation bonus that
+     would create bad debt fails to compile.
+2. **Verified boundaries.** Each feed is declared once, as a typed constant
+   with its pair, decimals, maximum age and band. Its decimals are checked when
+   a contract binds it, and every read checks the answer is positive, fresh
+   and in band.
+3. **A runtime guard.** An exact 512-bit check rejects any operation that
+   lowers the value behind a pool share, whatever its cause.
+4. **Independent verification.** Ports are compared with the original code and
+   with deployed contracts on forks. An exhaustive search runs the same kernels
+   natively, and every rejected construction has a corrected twin that must
+   pass.
 
-Built during the contest (2026-11-03 to 24): the core ingot, a faithful Fe port
-of Balancer V2's StableMath and pool paths with a typed and a guarded kernel,
-the Moonwell cbETH market priced through Dimension, and the verification
-harness. Every number below is produced by a `make` target and written to
-[`docs/results/`](docs/results).
-
-| Question | Answer | Reproduce |
-|---|---|---|
-| Does the Fe port compute exactly what Balancer's Solidity computes? | 220,000 vectors over 22 functions: 0 mismatches, reverts included | `make differential` |
-| Does it compute what the deployed pool computed, on its real state the block before the exploit? | 495 quotes against `Vault.queryBatchSwap` at block 23,717,399: 0 mismatches | `make fidelity` |
-| Does the faithful kernel lose value per pool share, as Balancer did? | 57,990 of 437,760 exact-out exits lose (worst 14.86%) across 4,608 pool states | `make explore` |
-| Do the types alone remove the losses at Balancer's two `_upscale` sites? | swapGivenOut 48 → 0, exitGivenOut 57,990 → 8 | `make explore` |
-| With the runtime guard, does any operation lose value? | 0, in every operation kind; it rejects exactly the 17 that would | `make explore` |
-| Deployed on an EVM, under a greedy repeated-exit attacker? | Faithful: value per share −3.38%. Typed and guarded: +19.51% | `make evm` |
-| What does the safety cost? | Typed: +1.7% gas on exits, +6.5% on exact-out swaps. Typed values alone compile to byte-identical code | `make evm`, `make probes` |
-| Would Dimension have priced Moonwell's cbETH market correctly during MIP-X43? | At 12 blocks in the window: Moonwell 1.12 USD, Dimension 2,091 to 2,243 USD from the same feeds; identical to Moonwell's price, to the wei, where Moonwell was right | `make moonwell` |
-| Where is MIP-X43's mistake stopped? | At compile time. If the registry itself lies, at bind time (wrong decimals) or at the first read (out of band) | `make moonwell`, `make demo` |
+What each layer guarantees, and what it does not:
+[docs/guarantees.md](docs/guarantees.md).
 
 ## Fe highlight
 
-Rounding is derived from meaning, by the type system, at zero runtime cost.
-
-A direction is a sealed trait whose associated types name its rounding. Only
-`admit` can produce an `Admitted` amount, and it takes the rounding from the
-direction:
+**Rounding derived from meaning, enforced by the compiler, at zero runtime
+cost.** A direction is a sealed trait whose associated types name its
+roundings, and `admit` is the only producer of an admitted amount:
 
 ```fe
 pub trait Flow: Sealed {
@@ -104,134 +184,140 @@ pub fn admit<T, F: Flow>(_ q: Quantity<T, F, Given>, _ factor: ScalingFactor<T>)
 }
 ```
 
-The typed Balancer kernel reaches StableMath only through signatures that take
-admitted amounts. Putting Balancer's own line back into it is rejected:
+The direction is resolved statically. The typed code compiles to the same
+bytes as hand-written `mul_div_ceil` at `-O1`, `-O2` and `-Os`, with identical
+hashes recorded by the probes.
 
+The rest of Dimension leans on Fe throughout:
+
+| Fe feature | What Dimension does with it |
+|---|---|
+| Phantom generics, module-scoped privacy | Trusted values have private fields; only their checking functions construct them |
+| Sealed traits with associated types | Exactly two roundings, two flows and two valuation sides; none can be added |
+| `where` predicates on associated constants | Incoherent risk policies and assets over 18 decimals fail to compile |
+| Const generics with bounds | One StableMath for 2 to 5 tokens (`const N: usize where N >= 2, N <= 5`) |
+| Effects | A feed read needs `uses (call: mut Call, ctx: Ctx)`. Failure is an effect too: one kernel reverts with Balancer's `BAL#` codes on the EVM and records failures in a native search |
+| `const fn`, `#[error]` | Feed registries are typed constants; boundary failures are typed reverts |
+| The `allow_unsafe` gate | Test constructors exist, and deployable code cannot reach them (`make unsafe-policy`) |
+| One source, two backends | The same kernels run as EVM contracts and as a native search, pinned to identical integers |
+
+## Checked and attacked
+
+| Check | Scale | Result | Run |
+|---|---|---|---|
+| Fe StableMath against Balancer's Solidity, on identical calldata | 22 functions, 220,000 vectors | 0 mismatches; 49,100 identical reverts | `make differential` |
+| The Fe pool against the deployed pool, on a mainnet fork | 330 swaps, 165 exact-out exits | 0 mismatches | `make fidelity` |
+| Exhaustive search, three kernels, exact integers | 4,608 pool states, about 3.14M operations each | the two invariants hold under the guard in every operation kind | `make explore` |
+| The same kernels on the EVM and natively | pinned grid and attack | identical integers | `make unit` |
+| Admission and settlement against the exact rational result | 20,000 per backend | exact floor and ceil | `make unit` |
+| Constructions the compiler must reject | 16 cases, each with a corrected twin | all rejected with the intended error; all twins pass | `make compile-fail` |
+| Language behaviour the design rests on | 20 probes with golden outputs and bytecode hashes | all as recorded, identical on macOS and Linux | `make probes` |
+| Moonwell's market on Base forks | 14 blocks across the incident | Dimension correct at every block; identical to Moonwell where Moonwell was right | `make moonwell` |
+
+Every run writes a report to [`docs/results/`](docs/results). Each claim in it
+is a question, an answer and its evidence, and a claim that fails fails the
+run.
+
+## Try to break it
+
+Each change below was made in a scratch copy, and the result observed:
+
+| Change | Result |
+|---|---|
+| Put Balancer's `upscale` back into the typed pool | rejected by the compiler: `expected Quantity<_, Out, Admitted>` |
+| Make `Out` admit with `Floor` instead of `Ceil` | the typed kernel loses exactly as Balancer did (57,990), and the attacker profits again. **The guard still stops every one:** the layers are independent |
+| Drop the `+ 1` in Balancer's `calc_in_given_out` | the differential test fails on `calcInGivenOut2` and `calcInGivenOut3` |
+| Declare ETH/USD with 18 decimals | the Moonwell oracle no longer deploys against the real feed |
+| Add `unsafe` to a protocol ingot | `make unsafe-policy` fails CI |
+
+## How it compares
+
+| Prior work | What it does | What Dimension adds |
+|---|---|---|
+| [fe-fixedpoint](https://github.com/ridakalam52-design/fe-fixedpoint) | exact fixed-point math for Fe, with a runtime rounding mode | the rounding is decided by the type, and a wrong one does not compile |
+| Balancer V3 `ScalingHelpers` | `...RoundDown` and `...RoundUp` variants, picked by the caller | the call site does not pick |
+| [roundme](https://github.com/crytic/roundme), [ScType](https://conf.researchr.org/details/icse-2024/icse-2024-research-track/127/Towards-Finding-Accounting-Errors-in-Smart-Contracts) | advise on, or detect, rounding and accounting errors in Solidity | prevention at compile time, plus checked boundaries and a runtime guard |
+| [Remix workshop](https://github.com/remix-project-org/remix-workshops/tree/master/RoundingDirectionExploit), [Quint model](https://github.com/informalsystems/quint-balancer-v2-rounding-bug) | teach, or model, the Balancer bug on a simplified pool | the real kernel, verified against Balancer and the deployed pool, then made unable to express the bug |
+
+[The full comparison →](docs/comparison.md)
+
+## Use it in your protocol
+
+```toml
+[dependencies]
+dimension = { path = "../dimension/ingots/dimension" }
 ```
-$ make show CASE=typed_pool_with_balancer_upscale
-  the bug:   rejected by the compiler, error[8-0000]: type mismatch
-             expected `Quantity<_, Out, Admitted>`, but `u256` is given
-  the fix:   -    let scaled_out = upscale(amount_out.value(), factor.value())
-             +    let scaled_out = admit(amount_out, factor)
-  fixed:     compiles; PASS charges_what_the_typed_pool_charges_and_more_than_balancer
-```
 
-The direction parameter is resolved statically, so the typed code compiles to
-the same bytecode as hand-written `mul_div_ceil`: byte-identical at `-O1`,
-`-O2` and `-Os` ([probes](tests/probes)). Fe's effects carry the other
-half: a feed read requires `uses (call: mut Call, ctx: Ctx)`, and the pool math
-declares failure as an effect (`uses (check: mut Check)`). The same kernel
-reverts with Balancer's `BAL#` codes on the EVM and records the failure in the
-native search.
+Declare your assets, type the amounts that move, declare your feeds, and let
+the compiler hold the rest. [docs/guide.md](docs/guide.md) walks through each
+step, with the method used to port Balancer.
 
-## Architecture
+## Limits
 
-```
-ingots/dimension            core: assets, flows, rounding, prices, values, policies, invariants   Apache-2.0
-  value/oracle              EVM boundary: Chainlink feeds and rate providers
-ingots/balancer_v2          Balancer V2 port: StableMath, faithful/typed/guarded pools, contracts  GPL-3.0-or-later
-ingots/balancer_explorer    native exhaustive search and greedy attacker over the three kernels   GPL-3.0-or-later
-ingots/moonwell             the cbETH market's feed registry, composite pricing, oracle contracts  Apache-2.0
-contracts/reference         Foundry: Balancer's Solidity, differential, EVM attack, fork tests
-tests/                      unit (EVM and native), compile_fail (16 cases with twins), probes (20)
-scripts/harness             one Python module per suite; reports in docs/results/<suite>/<platform>.json
-```
+- **The Balancer kernel models one pool, not the protocol:** two tokens, no
+  protocol fees in the operations, and no Vault batching, rate cache or
+  amplification ramp. The attacker's own transaction is not replayed.
+- **Types cannot prove an address is the feed it is declared to be.** A wrong
+  feed that reports the declared decimals, with answers inside the declared
+  band, passes every check.
+- **The guard costs gas:** +47.6% on exact-out swaps and +5.7% on exits, so it
+  is opt-in. The types alone cost +6.5% and +1.7%.
+- **Rounding up refuses some dust:** 1 wei out of a 2-wei balance, which
+  Balancer paid out for free.
 
-The dependency graph points one way: `balancer_v2` and `moonwell` depend on
-`dimension`, and nothing depends on the demos. See
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the type model, the boundaries
-and the verification design, and [docs/GUARANTEES.md](docs/GUARANTEES.md) for
-what each layer guarantees.
+All of them, with their evidence: [docs/guarantees.md](docs/guarantees.md).
 
 ## Build and test
 
 Requires `make`, `curl`, Python 3.12 and [Foundry](https://getfoundry.sh)
-1.4.4. The compiler is downloaded and checksum-verified into `.tools/`. Nothing
-uses a globally installed `fe`.
+1.4.4. The compiler is pinned to Fe 26.6.0
+(`5b3f96af2ab10df11bf847551f4b81d1fe481110`) and checksum-verified into
+`.tools/`; nothing uses a globally installed `fe`. The manifest is
+[`fe.toml`](fe.toml), a workspace of the ingots in [`ingots/`](ingots).
 
-```sh
-make toolchain     # Fe 26.6.0 (5b3f96a), checksum-verified
-make ci            # format, unsafe policy, unit, compile-fail, probes, differential, explore, evm
-make fidelity      # Balancer: the port against the deployed pool on a mainnet fork
-make moonwell      # Moonwell: the cbETH market on Base forks around MIP-X43
-make help          # every target
-```
+| Command | What it does |
+|---|---|
+| `make ci` | Formatting, unsafe policy, unit, compile-fail, probes, differential, search, EVM: what CI runs |
+| `make demo` | Both incidents, live |
+| `make fidelity` | The Balancer port against the deployed pool (mainnet fork; `MAINNET_RPC_URL` overrides the public RPC) |
+| `make moonwell` | Moonwell's market around MIP-X43 (Base forks; `BASE_RPC_URL` overrides the public RPC) |
+| `make page` | Regenerates [`docs/index.html`](docs/index.html) from the saved reports |
+| `make help` | Every target |
 
-The fork targets use public RPCs by default. Set `MAINNET_RPC_URL` or
-`BASE_RPC_URL` to use your own. CI runs `make ci` on Linux, and the fork
-targets in a separate job. Native executables exist for `linux_amd64` and
-`mac_arm64` in Fe 26.6.0; elsewhere the native search is skipped.
+CI runs `make ci` on Linux, and the fork comparisons in a separate job.
+Native executables exist for `linux_amd64` and `mac_arm64` in Fe 26.6.0;
+elsewhere the native search is skipped.
 
-## Demo
+## Repository layout
 
-`make demo` runs both incidents live: the bug, the compiler's verdict, the fix
-and the fixed code's result, then the claims the fork runs saved. For a guided
-ten-minute tour, including ways to try to break it, see
-[docs/JUDGES.md](docs/JUDGES.md). [`docs/index.html`](docs/index.html) renders every claim
-from the saved reports on one page (`make page`). Abridged output:
-
-```
-moonwell_component_feed_in_usd_market
-  incident:  Moonwell MIP-X43, 2026-02-15, about 1.78M USD bad debt
-  the bug:   rejected by the compiler, error[8-0000]: type mismatch
-             expected `Feed<CBETH, USD>`, but `Feed<CBETH, ETH>` is given
-  the fix:   -pub const CBETH_USD: Feed<CBETH, USD> = CBETH_ETH
-             +pub const CBETH_USD: ViaEth<CBETH> = ViaEth { leg: CBETH_ETH, eth_usd: ETH_USD }
-  evidence:  saved by make moonwell
-             holds  Where Moonwell's oracle was right, is the Fe price identical to it?
-                    block 42,194,662: 2206683650838065175827 wad, block 42,538,949: 2091161605700000000000 wad, identical
-```
-
-## Limitations
-
-- **The Balancer kernel is a model of the pool, not the whole protocol.** It is
-  one two-token pool with zero protocol fees and no Vault batching, rate cache
-  or amplification ramp. StableMath is verified against Balancer's Solidity.
-  The pool paths are verified against the deployed pool for swaps and exact-out
-  BPT exits at one block. The attacker's transaction itself is not replayed.
-- **Types cannot establish oracle truth.** A registry entry is a reviewed
-  declaration. A wrong feed that reports the declared decimals, with answers
-  inside the declared band, passes every check.
-- **Residual losses come from StableMath, not from scaling.** With types alone,
-  8 exact-out exits (worst 0.0203%) and 9 exact-in joins (worst 0.0599%, the
-  same in Balancer) still lose value, through StableMath's own precision. The
-  runtime guard rejects exactly those. It costs +47.6% gas on exact-out swaps
-  and +5.7% on exits, so it is opt-in.
-- **Rounding up refuses some dust trades.** In the search, 288 exact-out swaps
-  of 1 wei out of a 2-wei rated balance revert. Rounded up, that wei is the
-  pool's whole scaled balance; Balancer rounded it down and paid it out for
-  free.
-- **`given` and `owed` are labels.** Anyone can label a raw number. What the
-  types prevent is skipping the rounding step: an `Admitted` or `Settled`
-  amount, a `Price` or a `Rate` can only come from the function that checks it.
-- **`unsafe` in the root ingot can forge anything.** Protocol ingots never set
-  `allow_unsafe`, and `make unsafe-policy` enforces it in CI.
-- **The Moonwell demo checks no L2 sequencer uptime feed.**
+| Path | Contents |
+|---|---|
+| [`ingots/dimension`](ingots/dimension) | The library: assets, flows, roundings, prices, values, policies, the guard, the oracle boundary |
+| [`ingots/balancer_v2`](ingots/balancer_v2) | Balancer V2 ported: StableMath, the faithful, typed and guarded pools, their contracts |
+| [`ingots/balancer_explorer`](ingots/balancer_explorer) | The native search and greedy attacker |
+| [`ingots/moonwell`](ingots/moonwell) | Moonwell's cbETH market: feed registry, composite pricing, oracle contracts |
+| [`contracts/reference`](contracts/reference) | Foundry: Balancer's Solidity, the differential test, the EVM attack, both fork tests |
+| [`tests`](tests) | Unit tests (EVM and native), compile-fail cases with twins, probes |
+| [`scripts`](scripts) | The pinned toolchain, and one harness module per suite |
+| [`third_party/balancer-v2`](third_party/balancer-v2) | Balancer's sources at the pinned commit |
+| [`docs`](docs/README.md) | The documentation, the verification page and the saved results |
 
 ## Declaration
 
-- **Pre-existing work:** none. The repository was started on 2026-11-18, inside
-  the build window. The design followed idea research on 2026-11-17.
+- **Pre-existing work:** none. The repository was started on 2026-11-18,
+  inside the build window, after idea research on 2026-11-17.
 - **Third-party code:**
-  - Balancer V2 sources (GPL-3.0-or-later, commit `e91a2b6`) are vendored in
-    [`third_party/balancer-v2`](third_party/balancer-v2) as the differential
-    reference and translated into `ingots/balancer_v2`. Both keep Balancer's
-    license; see its [provenance](third_party/balancer-v2/PROVENANCE.md).
-  - forge-std v1.9.7 is installed at build time for the Foundry tests.
-  - Moonwell: no code is reused, only public addresses from its deployment
-    registry.
-  - The Remix workshop and the Quint model of the Balancer bug carry no
-    license. They are cited in [docs/COMPARISON.md](docs/COMPARISON.md), and
-    nothing was copied from them.
-- **AI assistance:** built with Claude Code (Anthropic) as a coding assistant,
-  under the author's direction. It wrote code, tests, scripts and
-  documentation. The author set the scope and the standards, made the design
-  decisions, and reviewed and ran the results. Every claim here comes from a
-  `make` target that CI runs.
-
-## Team
-
-<!-- TODO(author): names and links. -->
+  - Balancer V2's sources (GPL-3.0-or-later, commit `e91a2b6`) are vendored as
+    the differential reference and translated into `ingots/balancer_v2`. Both
+    keep Balancer's license; see the
+    [provenance](third_party/balancer-v2/PROVENANCE.md).
+  - forge-std v1.9.7 is installed at build time.
+  - From Moonwell, only public deployment addresses.
+  - The Remix workshop and the Quint model carry no license. They are cited,
+    and nothing was copied from them.
+- **AI assistance:** written with Claude Code (Anthropic) under the author's
+  direction. Design, scope and every result were reviewed by the author, and
+  every claim above comes from a `make` target that CI runs.
 
 ## License
 

@@ -2,7 +2,7 @@
 
 Dimension is one core ingot and two protocol demonstrations built on it, with a
 verification harness around all three. This document explains how the parts fit
-together and why each design choice was made. [GUARANTEES.md](GUARANTEES.md)
+together and why each design choice was made. [guarantees.md](guarantees.md)
 states what each part guarantees.
 
 ## Repository
@@ -133,7 +133,7 @@ type. Two checks apply:
   `RateOutOfBand`).
 
 The checks cannot prove an address is the feed it is declared to be. That stays
-a reviewed declaration (see [GUARANTEES.md](GUARANTEES.md)).
+a reviewed declaration (see [guarantees.md](guarantees.md)).
 
 ### The runtime guard: `invariant`
 
