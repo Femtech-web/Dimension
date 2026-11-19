@@ -245,7 +245,7 @@ export default function Home() {
             <Code title="fe.toml" lang="toml">
               {`[dependencies.dimension]
 source = "https://github.com/Femtech-web/Dimension"
-rev = "<commit>"        # a release's full commit hash
+rev = "57ce4106575a173b9fc51ebb44c3c2243e285cd5"   # v0.1.0
 name = "dimension"
 version = "0.1.0"`}
             </Code>

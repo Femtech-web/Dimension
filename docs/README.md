@@ -9,6 +9,7 @@
 | [guide.md](guide.md) | Using Dimension in your own protocol: getting started, each concept, a production checklist |
 | [../examples/quickstart](../examples/quickstart) | A deposit desk contract and its tests, to start from |
 | [../CHANGELOG.md](../CHANGELOG.md), [../SECURITY.md](../SECURITY.md) | Releases and their commits; how to report a vulnerability |
+| [releases/](releases) | Release notes, one file per release, ready to publish on GitHub |
 | [architecture.md](architecture.md) | How the ingots, the type model, the boundaries and the verification fit together |
 | [guarantees.md](guarantees.md) | What each layer guarantees and what it does not; residuals; costs |
 | [comparison.md](comparison.md) | Prior work, and what Dimension adds to it |

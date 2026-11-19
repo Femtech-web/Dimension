@@ -4,9 +4,10 @@ Changes to the `dimension` library ingot (`ingots/dimension`). Versions follow
 semantic versioning; before 1.0, a minor version may change the API. Fe resolves
 a git dependency's `rev` as a full commit hash, so each release lists its commit.
 
-## 0.1.0: unreleased
+## 0.1.0: 2026-11-19
 
-The release commit will be listed here when it is tagged.
+Commit `57ce4106575a173b9fc51ebb44c3c2243e285cd5` (tag `v0.1.0`). Release notes:
+[docs/releases/v0.1.0.md](docs/releases/v0.1.0.md).
 
 ### Added
 
