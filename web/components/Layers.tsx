@@ -44,11 +44,11 @@ export function Layers() {
         </div>
       ))}
       <div className={`${styles.layer} ${styles.rest}`}>
-        <div className={styles.when}>The one assumption</div>
+        <div className={styles.when}>Before deployment</div>
         <h3>Feed identity</h3>
         <p>
-          No check can prove an address is the feed it is declared to be. Each feed is declared once, with its pair,
-          so that one fact is reviewed in one place.
+          No check on chain can prove an address is the feed it is declared to be. <code>make feeds</code> checks each
+          declaration against Chainlink&apos;s own directory, so the one trust left is in that directory.
         </p>
       </div>
     </div>

@@ -6,7 +6,8 @@ import { PageHead, Section } from "@/components/PageHead";
 import { PriceChart } from "@/components/PriceChart";
 import { n, shortHash } from "@/lib/format";
 import { pricePoints } from "@/lib/numbers";
-import { moonwell } from "@/lib/results";
+import { feeds, moonwell } from "@/lib/results";
+import { BLOB } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Moonwell MIP-X43" };
 
@@ -40,6 +41,7 @@ const basescan = (tx: string) => `https://basescan.org/tx/${tx}`;
 
 export default function Moonwell() {
   const ref = moonwell.reference;
+  const swapped = feeds.misdeclared.find((f) => f.name === "SWAPPED_ETH_USD")!;
   const layers = moonwell.layers as { layer: string; case: string; error?: string; note?: string; rejected: boolean }[];
   return (
     <>
@@ -89,12 +91,21 @@ export default function Moonwell() {
                       </span>
                     ) : (
                       <span className="status bad">
-                        <i aria-hidden="true">!</i>passes: {l.note}
+                        <i aria-hidden="true">!</i>every on-chain check accepts it
                       </span>
                     )}
                   </td>
                 </tr>
               ))}
+              <tr>
+                <td className="num">review</td>
+                <td>the same kind of feed, before deployment: Chainlink&apos;s cbETH/USD feed declared as ETH/USD</td>
+                <td>
+                  <span className="status good">
+                    <i aria-hidden="true">✓</i>make feeds: listed as {swapped.listed_as}
+                  </span>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -106,6 +117,30 @@ export default function Moonwell() {
             {MISTAKE}
           </Code>
         </div>
+      </Section>
+
+      <Section eyebrow="Before deployment" title="The one fact no chain check can see, checked against Chainlink.">
+        <p className="ink2">
+          No check on chain can prove an address is the feed it is declared to be. Chainlink&apos;s published directory
+          lists every feed&apos;s address with its pair, decimals and heartbeat.{" "}
+          <a href={`${BLOB}/scripts/feeds/feed_check.py`}>
+            <code>feed_check.py</code>
+          </a>{" "}
+          requires each declaration to match it, and the chain to agree. It runs here on the registry, and on two wrong
+          declarations that both compile. The second passes every check Dimension makes on chain.
+        </p>
+        <div style={{ marginTop: 20 }}>
+          <Claims claims={feeds.claims} />
+        </div>
+        <div style={{ marginTop: 20 }}>
+          <Code title="before deploying your own registry" lang="sh" terminal>
+            {"python3 scripts/feeds/feed_check.py src/registry.fe --network base"}
+          </Code>
+        </div>
+        <p className="muted" style={{ fontSize: 14 }}>
+          Checked at Base block {n(feeds.chain.block)}. The trust that remains is in Chainlink&apos;s own directory, at
+          review time.
+        </p>
       </Section>
 
       <Section eyebrow="The on-chain record" title="Every fact read from Base, and checked again by the fork test.">

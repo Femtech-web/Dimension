@@ -1,0 +1,41 @@
+//! Two wrong feed declarations, both well-typed, for `make feeds`. The types
+//! cannot see that an address is not the feed it is declared to be, and the
+//! second one also passes every check Dimension makes on chain. Review-time
+//! `feed-check` must reject both.
+
+use dimension::Asset
+use dimension::value::oracle::{Feed, feed}
+
+pub struct CBETH {}
+pub struct ETH {}
+pub struct USD {}
+
+impl Asset for CBETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for ETH {
+    const DECIMALS: u256 = 18
+}
+
+const WAD: u256 = 1_000_000_000_000_000_000
+
+/// MIP-X43: Chainlink's cbETH/ETH feed configured as cbETH's USD price. The
+/// decimals are the feed's own, so it binds; its first read is out of band.
+pub const MIP_X43_CBETH_USD: Feed<CBETH, USD> = feed(
+    Address::new(0x806b4Ac04501c29769051e42783cF04dCE41440b),
+    decimals: 18,
+    max_age: 90_000,
+    min_wad: 1_000 * WAD,
+    max_wad: 20_000 * WAD,
+)
+
+/// Chainlink's cbETH/USD feed declared as ETH/USD: the same decimals, frequent
+/// updates and a USD answer inside the ETH/USD band. Every read succeeds, and
+/// prices ETH at cbETH's price.
+pub const SWAPPED_ETH_USD: Feed<ETH, USD> = feed(
+    Address::new(0xd7818272B9e248357d13057AAb0B417aF31E817d),
+    decimals: 8,
+    max_age: 1_800,
+    min_wad: 100 * WAD,
+    max_wad: 100_000 * WAD,
+)

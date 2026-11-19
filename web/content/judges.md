@@ -62,6 +62,7 @@ This is what CI runs on Linux. Each suite prints its claims as `holds` or
 make replay     # the attacker's three transactions, step by step (mainnet forks)
 make fidelity   # Ethereum mainnet fork, block 23,717,396
 make moonwell   # Base forks from block 42,194,662 to 42,538,949
+make feeds      # each declared feed against Chainlink's directory and Base
 ```
 
 - **`replay`** forks Ethereum at each of the attacker's three transactions. It
@@ -78,6 +79,9 @@ make moonwell   # Base forks from block 42,194,662 to 42,538,949
 - **`moonwell`** compares Moonwell's deployed oracle with Dimension's on the
   same feeds, at 14 blocks before, during and after the incident. It then tries
   MIP-X43's mistake at each layer.
+- **`feeds`** checks each declared feed against Chainlink's directory and the
+  chain. Moonwell's registry must pass. Two wrong declarations that compile
+  must be rejected, one of which every on-chain check accepts.
 
 Both use public RPCs. Set `MAINNET_RPC_URL` or `BASE_RPC_URL` if one is
 rate-limited.
@@ -118,6 +122,7 @@ result observed.
 | Types and guard remove the losses | `ingots/balancer_explorer`, pinned by `tests/explorer` on both backends | `docs/results/exploration/` |
 | The attack and gas on a real EVM | `contracts/reference/test/PoolAttack.t.sol` | `docs/results/evm/` |
 | Moonwell, before, during and after MIP-X43 | `contracts/reference/test/MoonwellFork.t.sol` | `docs/results/moonwell/` |
+| Each declared feed is the feed it claims to be | `scripts/feeds/feed_check.py`, `tests/feeds/` | `docs/results/feeds/` |
 | Each rejected construction, and its fix | `tests/compile_fail/<case>/` | `docs/results/compile-fail/` |
 | The type machinery is free | `tests/probes/bytecode/` | `docs/results/probes/` |
 

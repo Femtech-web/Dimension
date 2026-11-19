@@ -54,6 +54,11 @@ effect-generic solver called from three sites is emitted once at both levels.
 It reproduces with `fe build -O s --contract FaithfulPool --emit sizes` in
 `ingots/balancer_v2`.
 
+The larger code is also slower. `make evm` builds the pool contracts at each
+level and runs the same operations on each. `FaithfulPool` averages 21,303 gas
+per operation at `-O 2` and 22,744 at `-O s` (+6.8%); `exitGivenOut` goes from
+24,482 to 27,824 (+13.7%). The results are identical to the wei at every level.
+
 ## Expected
 
 `-O s` at most as large as `-O 2`: the shared tails `-O 2` forms, and one copy

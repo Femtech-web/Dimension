@@ -147,7 +147,7 @@
       "layer": "external assumption",
       "case": "a wrong feed declared with the decimals it reports and a band its answer falls in",
       "rejected": false,
-      "note": "passes every check; a registry entry is a reviewed declaration"
+      "note": "every on-chain check accepts it; make feeds rejects it before deployment"
     }
   ],
   "boundary_checks": [

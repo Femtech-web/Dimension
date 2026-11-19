@@ -1291,9 +1291,9 @@
       "evidence": "yes: transaction 1 reverts at step 25 with BAL#001; transaction 2 reverts at step 25 with BAL#001; transaction 3 reverts at step 22 with BAL#001. Before that, value per BPT on the typed kernel rose from 1.0273 to 1.1856"
     },
     {
-      "question": "From the real dust state, can an attacker who re-plans every swap against the kernel lower the value per share?",
+      "question": "From the real dust state, does an attacker who re-plans every swap find a loss on Balancer's arithmetic, and none on Dimension's?",
       "holds": true,
-      "evidence": "on Balancer's arithmetic, yes: -43.9% in 90 swaps. On the typed and guarded kernels, never below where it started; after 90 swaps it ends +13.1%"
+      "evidence": "on Balancer's arithmetic: -43.9% in 90 swaps. On the typed and guarded kernels, never below where it started; after 90 swaps it ends +13.1%"
     }
   ]
 }

@@ -21,7 +21,9 @@ established, and what it does not guarantee. Status words:
 | Bind time | A feed that reports different decimals than declared | `verify` in the constructor, `WrongDecimals` | oracle unit tests; on a Base fork, cbETH/ETH declared as an 8-decimal USD feed fails to deploy | verified |
 | Read time | Non-positive, future, stale or out-of-band answers; out-of-band rates | `read`, `read_rate` | oracle unit tests; on a Base fork, cbETH/ETH declared as cbETH/USD fails its first read, and a stale ETH/USD leg is refused | verified |
 | Runtime | An operation that lowers the value behind a pool share, whatever its cause | `preserves_share_value`, exact 512-bit comparison; `GuardedPool` | 0 losses over 3.14 million operations per kernel; rejects exactly the 17 that would lose; EVM attack; the attacker's own transactions revert; an attacker re-planning 90 swaps from the real dust state never lowers the value per share | verified |
-| External | That an address is the feed it is declared to be | none: a reviewed declaration | stated here | assumption |
+| Review time | A Chainlink feed declared at an address that is not that pair, even one every on-chain check accepts | `scripts/feeds/feed_check.py`: Chainlink's directory must list the address as the declared pair, with its decimals and a heartbeat within `max_age`, and the chain must agree | `make feeds`: Moonwell's registry passes; MIP-X43's declaration, and the cbETH/USD feed declared as ETH/USD, which every on-chain check accepts, are rejected | tested |
+| External | That Chainlink's directory is right, and that `make feeds` was run before deploying | none: Chainlink's own record, and a review step | stated here | assumption |
+| External | That a rate provider (`RateSource`), or a feed outside Chainlink, is what it is declared to be | none: a reviewed declaration, with no directory to check against | stated here | assumption |
 
 ## What the types establish, precisely
 
@@ -97,6 +99,13 @@ down and paid it for free.
 | `-O2` | 7,992 B | 9,675 B | 10,126 B |
 | `-Os` | 9,139 B | 10,232 B | 10,616 B |
 
+| Mean gas per operation | Faithful | Typed | Guarded |
+|---|---|---|---|
+| `-O0` | 29,850 | 32,399 (+8.5%) | 35,675 (+19.5%) |
+| `-O1` (default) | 21,319 | 22,241 (+4.3%) | 24,967 (+17.1%) |
+| `-O2` | 21,303 | 22,225 (+4.3%) | 24,951 (+17.1%) |
+| `-Os` | 22,744 | 23,730 (+4.3%) | 26,541 (+16.7%) |
+
 Gas is measured on a pool with the osETH/wETH pool's balances and parameters
 before the exploit, including its 50% protocol swap fee, for 10 tokens or 10
 BPT per operation (`make evm`). The typed contract's overhead is nearly
@@ -106,10 +115,13 @@ boundary and the factor checks, which the faithful contract does not do. The
 guard's cost on swaps is one invariant solve. Started from the invariant before
 the operation instead of from the balances' sum, that solve is not equivalent
 at dust balances: in the search it let 13 losing operations through, so the
-guard keeps Balancer's own solve ([details](balancer.md#on-a-real-evm)). In
-these contracts `-Os` gives
-larger code than `-O1` and `-O2`: a compiler observation, not a Dimension
-effect.
+guard keeps Balancer's own solve ([details](balancer.md#on-a-real-evm)).
+
+Gas is the mean over the six operations, with each contract built at that
+level. Every level computes the same attack to the wei (`make evm` checks it),
+so the level changes only the cost. In these contracts `-Os` gives larger code
+than `-O1` and `-O2`, and 6.8% more gas than `-O2`: a compiler observation,
+not a Dimension effect.
 
 The type machinery itself is free: typed and raw code compile to byte-identical
 runtime bytecode at `-O1`, `-O2` and `-Os` in the probes (`make probes`). At

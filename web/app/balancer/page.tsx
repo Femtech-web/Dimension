@@ -39,6 +39,11 @@ export default function Balancer() {
   const rows = search();
   const gasRows = gas();
   const levels = evm.runtime_bytecode_bytes_by_level as Record<string, Record<string, number>>;
+  const gasLevels = evm.gas.per_operation_by_level as Record<string, Record<string, Record<string, number>>>;
+  const mean = (ops: Record<string, number>) => {
+    const v = Object.values(ops);
+    return Math.round(v.reduce((a, b) => a + b, 0) / v.length);
+  };
   return (
     <>
       <PageHead
@@ -249,6 +254,20 @@ export default function Balancer() {
                   </td>
                 </tr>
               ))}
+              {Object.entries(gasLevels).map(([level, kernels]) => (
+                <tr key={`gas-${level}`}>
+                  <td className="num">mean gas, -{level}</td>
+                  <td className="n">{n(mean(kernels.faithful))}</td>
+                  <td className="n">
+                    {n(mean(kernels.typed))}{" "}
+                    <span className="muted">({rel(mean(kernels.typed), mean(kernels.faithful))})</span>
+                  </td>
+                  <td className="n">
+                    {n(mean(kernels.guarded))}{" "}
+                    <span className="muted">({rel(mean(kernels.guarded), mean(kernels.faithful))})</span>
+                  </td>
+                </tr>
+              ))}
               {Object.entries(levels).map(([level, sizes]) => (
                 <tr key={level}>
                   <td className="num">bytecode, -{level}</td>
@@ -265,7 +284,8 @@ export default function Balancer() {
           its rate through the banded boundary and checking its factors on every operation. The guard costs one invariant
           solve on swaps. Starting that solve from the invariant before the swap would be cheaper, but at dust balances
           Newton&apos;s integer iteration then settles on a different value: tried in the search, it let 13 losing
-          operations through, so the guard keeps Balancer&apos;s own solve. Value per share under the EVM attack: {evm.attack.faithful.value_per_bpt_change} on
+          operations through, so the guard keeps Balancer&apos;s own solve. Every optimization level computes the same
+          attack to the wei; <code>-Os</code> costs more gas than <code>-O2</code> as well as more bytes. Value per share under the EVM attack: {evm.attack.faithful.value_per_bpt_change} on
           Balancer&apos;s arithmetic, {evm.attack.typed.value_per_bpt_change} typed, starting from{" "}
           {wad(evm.attack.faithful.value_per_bpt_start_wad, 2)}.
         </p>

@@ -105,7 +105,9 @@ produce byte-identical bytecode at `-O1`, `-O2` and `-Os`.
   `make unsafe-policy` is a CI check you can copy.
 - **Boundaries check what the chain can show, not what it cannot.** A feed's
   decimals, freshness and band are checked. That an address is the feed it is
-  declared to be is a reviewed declaration.
+  declared to be, the chain cannot show. For Chainlink feeds,
+  [`feed_check.py`](../../scripts/feeds/feed_check.py) checks it against
+  Chainlink's directory before you deploy.
 - **What each layer guarantees, and what it does not:**
   [docs/guarantees.md](../../docs/guarantees.md).
 

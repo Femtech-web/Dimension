@@ -76,6 +76,112 @@
         "joinGivenIn": "+6.3%",
         "joinGivenOut": "+7.3%"
       }
+    },
+    "per_operation_by_level": {
+      "O0": {
+        "faithful": {
+          "swapGivenIn": 22763,
+          "swapGivenOut": 23631,
+          "exitGivenIn": 31630,
+          "exitGivenOut": 34912,
+          "joinGivenIn": 34413,
+          "joinGivenOut": 31748
+        },
+        "typed": {
+          "swapGivenIn": 24851,
+          "swapGivenOut": 26469,
+          "exitGivenIn": 34032,
+          "exitGivenOut": 37663,
+          "joinGivenIn": 36896,
+          "joinGivenOut": 34482
+        },
+        "guarded": {
+          "swapGivenIn": 32560,
+          "swapGivenOut": 34187,
+          "exitGivenIn": 35090,
+          "exitGivenOut": 38721,
+          "joinGivenIn": 37954,
+          "joinGivenOut": 35540
+        }
+      },
+      "O1": {
+        "faithful": {
+          "swapGivenIn": 15164,
+          "swapGivenOut": 15981,
+          "exitGivenIn": 23240,
+          "exitGivenOut": 24493,
+          "joinGivenIn": 25585,
+          "joinGivenOut": 23453
+        },
+        "typed": {
+          "swapGivenIn": 16104,
+          "swapGivenOut": 17000,
+          "exitGivenIn": 24259,
+          "exitGivenOut": 25338,
+          "joinGivenIn": 26386,
+          "joinGivenOut": 24360
+        },
+        "guarded": {
+          "swapGivenIn": 22644,
+          "swapGivenOut": 23553,
+          "exitGivenIn": 25075,
+          "exitGivenOut": 26154,
+          "joinGivenIn": 27202,
+          "joinGivenOut": 25176
+        }
+      },
+      "O2": {
+        "faithful": {
+          "swapGivenIn": 15153,
+          "swapGivenOut": 15973,
+          "exitGivenIn": 23211,
+          "exitGivenOut": 24482,
+          "joinGivenIn": 25574,
+          "joinGivenOut": 23424
+        },
+        "typed": {
+          "swapGivenIn": 16095,
+          "swapGivenOut": 16991,
+          "exitGivenIn": 24241,
+          "exitGivenOut": 25314,
+          "joinGivenIn": 26362,
+          "joinGivenOut": 24345
+        },
+        "guarded": {
+          "swapGivenIn": 22635,
+          "swapGivenOut": 23544,
+          "exitGivenIn": 25057,
+          "exitGivenOut": 26130,
+          "joinGivenIn": 27178,
+          "joinGivenOut": 25161
+        }
+      },
+      "Os": {
+        "faithful": {
+          "swapGivenIn": 15497,
+          "swapGivenOut": 16385,
+          "exitGivenIn": 24673,
+          "exitGivenOut": 27824,
+          "joinGivenIn": 27468,
+          "joinGivenOut": 24615
+        },
+        "typed": {
+          "swapGivenIn": 16611,
+          "swapGivenOut": 17657,
+          "exitGivenIn": 25575,
+          "exitGivenOut": 28711,
+          "joinGivenIn": 28292,
+          "joinGivenOut": 25536
+        },
+        "guarded": {
+          "swapGivenIn": 23390,
+          "swapGivenOut": 24440,
+          "exitGivenIn": 26401,
+          "exitGivenOut": 29537,
+          "joinGivenIn": 29118,
+          "joinGivenOut": 26362
+        }
+      }
     }
   },
   "runtime_bytecode_bytes": {
@@ -115,6 +221,11 @@
       "question": "Do the typed and guarded pools keep the value behind each BPT under the same attack?",
       "holds": true,
       "evidence": "typed +19.51%, guarded +19.51%"
+    },
+    {
+      "question": "Does every optimization level compute the same attack, to the wei?",
+      "holds": true,
+      "evidence": "the attack's exits and value per BPT on each kernel are identical at -O0, -O1, -O2 and -Os"
     }
   ]
 }

@@ -77,10 +77,40 @@ pub fn read(self) -> Price<T, USD> uses (call: mut Call, ctx: Ctx) {
 | MIP-X43 as written: the cbETH/ETH feed used as cbETH's USD price | compile time | `error[8-0000]`: expected `Feed<CBETH, USD>`, but `Feed<CBETH, ETH>` is given |
 | The registry itself lies: cbETH/ETH declared as cbETH/USD, with a USD feed's 8 decimals | bind time | the contract's constructor reverts: `WrongDecimals(feed, 8, 18)` |
 | The registry lies with the feed's real decimals | read time | the first read reverts: `AnswerOutOfBand(feed, 1.1227e18, 100e18, 100000e18)` |
-| A wrong feed with the declared decimals and an answer inside the declared band | none | passes. A registry entry is a reviewed declaration, and no check can prove an address is the feed it claims to be |
+| A wrong feed with the declared decimals and an answer inside the declared band | review, before deployment | every on-chain check passes it. `make feeds` rejects it: see below |
 
 A stale leg is refused as well. Past ETH/USD's declared 1,800 s, the read
 reverts with `StaleAnswer`.
+
+## Before deployment: `make feeds`
+
+No check on chain can prove an address is the feed it is declared to be.
+Chainlink can: its published directory lists every feed's address with its
+pair, decimals and heartbeat. [`feed_check.py`](../scripts/feeds/feed_check.py)
+reads each `Feed<B, Q>` declaration from Fe source and requires, for each:
+
+- **in Chainlink's directory:** the address is listed, as the pair `B/Q`,
+  with the declared decimals and a heartbeat no longer than `max_age`;
+- **on chain, at one block:** the feed reports those decimals and the listed
+  description, points to the listed aggregator, and its answer is positive,
+  fresh and inside the declared band.
+
+`make feeds` runs it on Moonwell's registry, which passes all 10 checks for
+both feeds. Then it runs it on [`tests/feeds`](../tests/feeds/src/lib.fe), two
+wrong declarations that both compile:
+
+| Declaration | On chain | feed-check |
+|---|---|---|
+| MIP-X43: the cbETH/ETH feed as `Feed<CBETH, USD>`, with its real 18 decimals | the first read is out of band | rejected: listed as CBETH / ETH. Chainlink's CBETH / USD feed is `0xd7818272…817d` |
+| The cbETH/USD feed as `Feed<ETH, USD>` | **every check passes**: 8 decimals, fresh, about 2,036 USD, inside the band | rejected: listed as CBETH / USD |
+
+The second is the case no type and no on-chain check can see: it prices ETH at
+cbETH's price, about 14% high. The trust that remains is in Chainlink's own
+directory, at review time.
+
+```sh
+python3 scripts/feeds/feed_check.py src/registry.fe --network base   # your registry
+```
 
 ## The fork runs
 

@@ -275,6 +275,19 @@ the faithful one reads it raw, as Balancer does.
 | `-O2` | 7,992 B | 9,675 B | 10,126 B |
 | `-Os` | 9,139 B | 10,232 B | 10,616 B |
 
+Each contract is built, attacked and measured at every level. The attack's
+results are identical to the wei at all four, so the level changes only the
+cost. Above `-O0`, the overhead of the types and the guard does not depend on
+it. `-O2` is the cheapest, by 16 gas over `-O1`; `-Os` costs 6.8% more gas than
+`-O2`, as well as more bytes ([argotorg/fe#2043](https://github.com/argotorg/fe/issues/2043)).
+
+| Mean gas per operation | Faithful | Typed | Guarded |
+|---|---|---|---|
+| `-O0` | 29,850 | 32,399 (+8.5%) | 35,675 (+19.5%) |
+| `-O1` (default) | 21,319 | 22,241 (+4.3%) | 24,967 (+17.1%) |
+| `-O2` | 21,303 | 22,225 (+4.3%) | 24,951 (+17.1%) |
+| `-Os` | 22,744 | 23,730 (+4.3%) | 26,541 (+16.7%) |
+
 The type machinery itself compiles away: typed and raw code produce
 byte-identical bytecode at `-O1`, `-O2` and `-Os` in the probes. The typed
 contract's extra cost, a nearly constant 800 to 1,000 gas, is real work the

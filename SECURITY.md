@@ -25,7 +25,8 @@ In scope:
 Not vulnerabilities, because they are documented limits
 ([docs/guarantees.md](docs/guarantees.md)):
 
-- a feed declared at the wrong address;
+- a feed declared at the wrong address (`scripts/feeds/feed_check.py` checks
+  Chainlink feeds at review time);
 - `given` or `owed` attached to a raw number with the wrong direction;
 - `unsafe` code in an ingot that sets `allow_unsafe`.
 

@@ -1,0 +1,285 @@
+{
+  "schema": "dimension.feeds/v1",
+  "question": "Is each declared feed the feed it is declared to be?",
+  "fe": {
+    "version": "26.6.0",
+    "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110"
+  },
+  "platform": "mac_arm64",
+  "directory": {
+    "url": "https://reference-data-directory.vercel.app/feeds-ethereum-mainnet-base-1.json",
+    "sha256": "b0e1124ea56b41e8ef29a20b145b6b198a8724e191f64c7db9660ce8ce8494e6",
+    "entries": 196
+  },
+  "chain": {
+    "rpc": "https://mainnet.base.org",
+    "block": 59619354,
+    "timestamp": 1795114246
+  },
+  "checked_at": "2026-11-19T18:50:50+00:00",
+  "registry": [
+    {
+      "name": "CBETH_ETH",
+      "declared": "Feed<CBETH, ETH>",
+      "address": "0x806b4Ac04501c29769051e42783cF04dCE41440b",
+      "source": "ingots/moonwell/src/registry.fe:29",
+      "listed_as": "CBETH / ETH",
+      "ok": true,
+      "checks": [
+        {
+          "check": "listed",
+          "ok": true,
+          "detail": "Chainlink lists 0x806b4Ac04501c29769051e42783cF04dCE41440b as \"CBETH / ETH\""
+        },
+        {
+          "check": "pair",
+          "ok": true,
+          "detail": "declared CBETH/ETH, listed CBETH/ETH"
+        },
+        {
+          "check": "decimals",
+          "ok": true,
+          "detail": "declared 18, listed 18"
+        },
+        {
+          "check": "heartbeat",
+          "ok": true,
+          "detail": "max_age 90,000 s, heartbeat 86,400 s"
+        },
+        {
+          "check": "on-chain decimals",
+          "ok": true,
+          "detail": "reported 18"
+        },
+        {
+          "check": "on-chain description",
+          "ok": true,
+          "detail": "\"CBETH / ETH\""
+        },
+        {
+          "check": "on-chain aggregator",
+          "ok": true,
+          "detail": "0x53fdcab0650570d07e2770004979ef10a86df559, listed 0x53fDcAb0650570d07E2770004979EF10A86Df559"
+        },
+        {
+          "check": "on-chain answer",
+          "ok": true,
+          "detail": "1144111860553661500 (1.14411 ETH per CBETH)"
+        },
+        {
+          "check": "on-chain freshness",
+          "ok": true,
+          "detail": "15,268 s old, max_age 90,000 s"
+        },
+        {
+          "check": "on-chain band",
+          "ok": true,
+          "detail": "1.14411 within 1 to 1.5"
+        }
+      ],
+      "suggestion": null
+    },
+    {
+      "name": "ETH_USD",
+      "declared": "Feed<ETH, USD>",
+      "address": "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70",
+      "source": "ingots/moonwell/src/registry.fe:38",
+      "listed_as": "ETH / USD",
+      "ok": true,
+      "checks": [
+        {
+          "check": "listed",
+          "ok": true,
+          "detail": "Chainlink lists 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70 as \"ETH / USD\""
+        },
+        {
+          "check": "pair",
+          "ok": true,
+          "detail": "declared ETH/USD, listed ETH/USD"
+        },
+        {
+          "check": "decimals",
+          "ok": true,
+          "detail": "declared 8, listed 8"
+        },
+        {
+          "check": "heartbeat",
+          "ok": true,
+          "detail": "max_age 1,800 s, heartbeat 1,200 s"
+        },
+        {
+          "check": "on-chain decimals",
+          "ok": true,
+          "detail": "reported 8"
+        },
+        {
+          "check": "on-chain description",
+          "ok": true,
+          "detail": "\"ETH / USD\""
+        },
+        {
+          "check": "on-chain aggregator",
+          "ok": true,
+          "detail": "0x05c84a58fe042275b37db038baacd15f410c7bb0, listed 0x05c84a58FE042275b37db038bAAcD15F410c7bB0"
+        },
+        {
+          "check": "on-chain answer",
+          "ok": true,
+          "detail": "178118400000 (1,781.18 USD per ETH)"
+        },
+        {
+          "check": "on-chain freshness",
+          "ok": true,
+          "detail": "364 s old, max_age 1,800 s"
+        },
+        {
+          "check": "on-chain band",
+          "ok": true,
+          "detail": "1,781.18 within 100 to 100,000"
+        }
+      ],
+      "suggestion": null
+    }
+  ],
+  "misdeclared": [
+    {
+      "name": "MIP_X43_CBETH_USD",
+      "declared": "Feed<CBETH, USD>",
+      "address": "0x806b4Ac04501c29769051e42783cF04dCE41440b",
+      "source": "tests/feeds/src/lib.fe:24",
+      "listed_as": "CBETH / ETH",
+      "ok": false,
+      "checks": [
+        {
+          "check": "listed",
+          "ok": true,
+          "detail": "Chainlink lists 0x806b4Ac04501c29769051e42783cF04dCE41440b as \"CBETH / ETH\""
+        },
+        {
+          "check": "pair",
+          "ok": false,
+          "detail": "declared CBETH/USD, listed CBETH/ETH"
+        },
+        {
+          "check": "decimals",
+          "ok": true,
+          "detail": "declared 18, listed 18"
+        },
+        {
+          "check": "heartbeat",
+          "ok": true,
+          "detail": "max_age 90,000 s, heartbeat 86,400 s"
+        },
+        {
+          "check": "on-chain decimals",
+          "ok": true,
+          "detail": "reported 18"
+        },
+        {
+          "check": "on-chain description",
+          "ok": true,
+          "detail": "\"CBETH / ETH\""
+        },
+        {
+          "check": "on-chain aggregator",
+          "ok": true,
+          "detail": "0x53fdcab0650570d07e2770004979ef10a86df559, listed 0x53fDcAb0650570d07E2770004979EF10A86Df559"
+        },
+        {
+          "check": "on-chain answer",
+          "ok": true,
+          "detail": "1144111860553661500 (1.14411 USD per CBETH)"
+        },
+        {
+          "check": "on-chain freshness",
+          "ok": true,
+          "detail": "15,273 s old, max_age 90,000 s"
+        },
+        {
+          "check": "on-chain band",
+          "ok": false,
+          "detail": "1.14411 within 1,000 to 20,000"
+        }
+      ],
+      "suggestion": "Chainlink lists CBETH/USD at 0xd7818272B9e248357d13057AAb0B417aF31E817d (8 decimals, heartbeat 1,200 s)"
+    },
+    {
+      "name": "SWAPPED_ETH_USD",
+      "declared": "Feed<ETH, USD>",
+      "address": "0xd7818272B9e248357d13057AAb0B417aF31E817d",
+      "source": "tests/feeds/src/lib.fe:35",
+      "listed_as": "CBETH / USD",
+      "ok": false,
+      "checks": [
+        {
+          "check": "listed",
+          "ok": true,
+          "detail": "Chainlink lists 0xd7818272B9e248357d13057AAb0B417aF31E817d as \"CBETH / USD\""
+        },
+        {
+          "check": "pair",
+          "ok": false,
+          "detail": "declared ETH/USD, listed CBETH/USD"
+        },
+        {
+          "check": "decimals",
+          "ok": true,
+          "detail": "declared 8, listed 8"
+        },
+        {
+          "check": "heartbeat",
+          "ok": true,
+          "detail": "max_age 1,800 s, heartbeat 1,200 s"
+        },
+        {
+          "check": "on-chain decimals",
+          "ok": true,
+          "detail": "reported 8"
+        },
+        {
+          "check": "on-chain description",
+          "ok": true,
+          "detail": "\"CBETH / USD\""
+        },
+        {
+          "check": "on-chain aggregator",
+          "ok": true,
+          "detail": "0x71e021bc2e8a709b72ac7b6036e5b2bf30f263d0, listed 0x71E021bc2e8a709B72aC7b6036e5B2Bf30F263d0"
+        },
+        {
+          "check": "on-chain answer",
+          "ok": true,
+          "detail": "203630846308 (2,036.31 USD per ETH)"
+        },
+        {
+          "check": "on-chain freshness",
+          "ok": true,
+          "detail": "165 s old, max_age 1,800 s"
+        },
+        {
+          "check": "on-chain band",
+          "ok": true,
+          "detail": "2,036.31 within 100 to 100,000"
+        }
+      ],
+      "suggestion": "Chainlink lists ETH/USD at 0x50015f8b17fb2C290Dde41fDc246ed0dcEE93a8b (8 decimals, heartbeat 1,200 s), 0x5731Ae06077c79A3B292498940211E0aE7130bd3 (18 decimals, heartbeat 1,200 s), 0xa4250cE1aA15Ff4cb5E5a8655293b65694e436Ed (8 decimals, heartbeat 1,200 s)"
+    }
+  ],
+  "claims": [
+    {
+      "question": "Is every feed in Moonwell's registry the feed Chainlink lists at its address, as the chain reports it?",
+      "holds": true,
+      "evidence": "CBETH_ETH is \"CBETH / ETH\": 10 of 10 checks; ETH_USD is \"ETH / USD\": 10 of 10 checks"
+    },
+    {
+      "question": "Is MIP-X43's declaration, the cbETH/ETH feed as cbETH/USD, rejected before deployment?",
+      "holds": true,
+      "evidence": "declared CBETH/USD, listed CBETH/ETH. Chainlink lists CBETH/USD at 0xd7818272B9e248357d13057AAb0B417aF31E817d (8 decimals, heartbeat 1,200 s)"
+    },
+    {
+      "question": "Is a wrong feed rejected even when it compiles and passes every check Dimension makes on chain?",
+      "holds": true,
+      "evidence": "the cbETH/USD feed declared as ETH/USD compiles, and on chain its decimals, answer, freshness and band all pass: 2,036.31 USD per ETH, while ETH/USD reads 1,781.18 USD per ETH. feed-check: declared ETH/USD, listed CBETH/USD"
+    }
+  ]
+}

@@ -279,8 +279,10 @@ A checklist for a team shipping a protocol built on Dimension:
 4. **Declare each feed once.** Set `max_age` from the feed's measured
    heartbeat plus a margin, and a band no honest answer leaves. Call `verify`
    in the constructor.
-5. **Review every registry entry against the chain** (address, pair,
-   decimals). It is the one assumption no check covers.
+5. **Check every registry entry before deploying**, with
+   [`feed_check.py`](../scripts/feeds/feed_check.py) for Chainlink feeds. It
+   catches a wrong address that every on-chain check accepts. For other feeds,
+   review address, pair and decimals against the operator's own record.
 6. **Decide where the runtime guard is worth its gas.** It is one invariant
    solve on a swap, and nearly free on joins and exits.
 7. **Audit as usual.** Dimension 0.1.0 is not audited. Its guarantees and

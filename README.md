@@ -134,6 +134,7 @@ The mistake is stopped wherever it is made:
 | MIP-X43 wrote it: the cbETH/ETH feed as cbETH's USD price | **compile time** | `expected Feed<CBETH, USD>, but Feed<CBETH, ETH> is given` |
 | A registry entry that lies, with a USD feed's 8 decimals | **deployment** | the constructor checks the real feed: `WrongDecimals(feed, 8, 18)` |
 | A registry entry that lies, with the real 18 decimals | **the first read** | 1.12 is outside the band declared for a USD price: `AnswerOutOfBand` |
+| Any registry entry that lies, even one every on-chain check accepts | **review**, before deployment | `make feeds`: Chainlink lists `0x806b…440b` as CBETH / ETH, and its CBETH / USD feed at `0xd781…817d` |
 
 [The on-chain record, block by block →](docs/moonwell.md)
 
@@ -187,13 +188,15 @@ Four layers. Each one catches what the one before cannot:
 flowchart LR
     M["a mistake in<br/>financial arithmetic"] --> C{"compile time<br/>types, sealed traits,<br/>where predicates"}
     C -- "rejected by<br/>the compiler" --> X1(["never builds"])
-    C -- "a declaration<br/>that lies" --> B{"deployment<br/>decimals checked"}
+    C -- "a declaration<br/>that lies" --> F{"review<br/>make feeds: Chainlink's<br/>directory and the chain"}
+    F -- "rejected" --> X0(["never ships"])
+    F --> B{"deployment<br/>decimals checked"}
     B -- "constructor<br/>reverts" --> X2(["never deploys"])
     B --> R{"every read<br/>positive, fresh,<br/>in band"}
     R -- "reverts" --> X3(["no price"])
     R --> G{"runtime guard<br/>value per share"}
     G -- "reverts" --> X4(["no loss"])
-    G --> E["what remains:<br/>a reviewed declaration"]
+    G --> E["what remains:<br/>trust in Chainlink's directory"]
 ```
 
 1. **Financial types.**
@@ -276,10 +279,12 @@ The rest of Dimension leans on Fe throughout:
 | The attacker's own transactions, step by step, from the real state | 3 transactions, 360 swaps | every amount equal; every end state equal | `make replay` |
 | Exhaustive search, three kernels, exact integers | 4,608 pool states, about 3.14M operations each | the two invariants hold under the guard in every operation kind | `make explore` |
 | The same kernels on the EVM and natively | pinned grid and attack | identical integers | `make unit` |
+| The pool contracts at every optimization level | `-O0`, `-O1`, `-O2`, `-Os` | the same attack to the wei at each; gas and size per level | `make evm` |
 | Admission and settlement against the exact rational result | 20,000 per backend | exact floor and ceil | `make unit` |
 | Constructions the compiler must reject | 17 cases, each with a corrected twin | all rejected with the intended error; all twins pass | `make compile-fail` |
 | Language behaviour the design rests on | 20 probes with golden outputs and bytecode hashes | all as recorded, identical on macOS and Linux | `make probes` |
 | Moonwell's market on Base forks | 14 blocks across the incident | Dimension correct at every block; identical to Moonwell where Moonwell was right | `make moonwell` |
+| Each declared feed against Chainlink's directory and Base | the registry, plus 2 wrong declarations that compile | the registry passes 10 of 10 checks per feed; both wrong ones rejected, one that passes every on-chain check | `make feeds` |
 | The ERC-4626 vault against OpenZeppelin's ERC4626 | 40,000 vectors, 33,684 where the rounding decides | all equal | `make vault` |
 | The vault against the exact rational result | 32,768 states × 4 previews, both backends | exact floor or ceil as EIP-4626 requires | `make unit` |
 | Planted bugs in the safety-critical code | 17 mutants across 7 layers | every one caught, for the reason expected of it | `make mutants FORKS=1` |
@@ -350,6 +355,16 @@ tests, and follow [docs/guide.md](docs/guide.md):
 - the method used to port Balancer;
 - a checklist before production.
 
+Before deploying, check your feed declarations with
+[`feed_check.py`](scripts/feeds/feed_check.py): one file, Python's standard
+library only, so you can copy it. It requires that Chainlink's directory lists
+each declared address as the declared pair, with the declared decimals and a
+heartbeat within `max_age`, and that the chain agrees:
+
+```sh
+python3 scripts/feeds/feed_check.py src/registry.fe --network base
+```
+
 The library's own page is [`ingots/dimension`](ingots/dimension), and its
 security policy is [SECURITY.md](SECURITY.md). `make consumer` checks the whole
 path on every CI run. It builds the quickstart as a fresh project taking
@@ -363,9 +378,15 @@ Dimension by git, its 3 tests must pass, and a misuse must be rejected.
   in the same batches.
 - **Types cannot prove an address is the feed it is declared to be.** A wrong
   feed that reports the declared decimals, with answers inside the declared
-  band, passes every check.
+  band, passes every on-chain check. `make feeds` catches it before
+  deployment by checking each declaration against Chainlink's directory and
+  the chain. That covers Chainlink feeds only: a rate provider (`RateSource`)
+  or another oracle network has no directory to check against, and stays a
+  reviewed declaration. The trust moves to Chainlink's own record, at review
+  time; nothing enforces it on chain.
 - **The guard costs gas:** about +48% on swaps and +6% to +8% on joins and
-  exits, so it is opt-in. On swaps that is one more invariant solve, which
+  exits at the default `-O1`, within two points of that at `-O2` and `-Os`,
+  so it is opt-in. On swaps that is one more invariant solve, which
   cannot safely be shortened: started from the invariant before the
   operation, Newton's integer iteration settles on a different value at dust
   balances, and in the search that let 13 losing operations through. The
@@ -396,6 +417,7 @@ type-checks, and every test suite passes, on Fe 26.7.0. The manifest is
 | `make fidelity` | The Balancer port against the deployed pool (mainnet fork; `MAINNET_RPC_URL` overrides the public RPC) |
 | `make replay` | The attacker's three transactions, step by step, through the three kernels (mainnet forks) |
 | `make moonwell` | Moonwell's market around MIP-X43 (Base forks; `BASE_RPC_URL` overrides the public RPC) |
+| `make feeds` | Each declared feed against Chainlink's directory and Base; wrong declarations must be rejected |
 | `make vault` | The ERC-4626 vault against OpenZeppelin's ERC4626 |
 | `make mutants` | Plants realistic bugs one at a time; each must be caught by the check meant for it |
 | `make consumer` | Builds the quickstart as a fresh project taking Dimension by git |
@@ -434,6 +456,8 @@ the Balancer pool it also emits a large solver three times instead of once.
 It is reported upstream as [argotorg/fe#2043](https://github.com/argotorg/fe/issues/2043), with the minimal
 reproducer kept in
 [`tests/compiler_findings`](tests/compiler_findings/os_skips_shared_tails).
+Measured since: `-O s` also costs 6.8% more gas than `-O 2` across the pool's
+six operations, while every level computes the same results to the wei.
 
 ## Declaration
 

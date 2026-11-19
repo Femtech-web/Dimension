@@ -2,12 +2,12 @@
 
 Usage: python3 -m harness.evm
 
-Builds FaithfulPool, TypedPool and GuardedPool with the pinned compiler, at each
-optimization level for their sizes, runs contracts/reference/test/PoolAttack.t.sol
-(a greedy attacker repeating the November 2025 exit against each deployed
+Builds FaithfulPool, TypedPool and GuardedPool with the pinned compiler at each
+optimization level, and at each runs contracts/reference/test/PoolAttack.t.sol:
+a greedy attacker repeating the November 2025 exit against each deployed
 contract, and gas for every operation on a pool with the osETH/wETH pool's
-balances and parameters), checks the claims made about them, and writes
-docs/results/evm/<platform>.json.
+balances and parameters. Checks the claims made about them, including that
+every level computes the same attack, and writes docs/results/evm/<platform>.json.
 """
 
 from __future__ import annotations
@@ -39,37 +39,15 @@ def build(ingot: Path = INGOT, contracts: dict[str, str] = CONTRACTS) -> dict[st
     return {k: len(bytes.fromhex((ingot / "out" / f"{c}.runtime.bin").read_text().strip())) for k, c in contracts.items()}
 
 
-def sizes_by_level() -> dict[str, dict[str, int]]:
-    """Runtime bytecode bytes of each contract at each optimization level."""
-    fe = resolve()
-    table = {}
-    for level in LEVELS:
-        shutil.rmtree(INGOT / "out", ignore_errors=True)
-        built = fe.run(["build", "-O", level, "--emit", "runtime-bytecode"], INGOT)
-        if built.code != 0:
-            raise SystemExit(f"Fe contracts failed to build at -O{level}:\n{built.output}")
-        table[f"O{level}"] = {
-            k: len(bytes.fromhex((INGOT / "out" / f"{c}.runtime.bin").read_text().strip())) for k, c in CONTRACTS.items()
-        }
-    return table
-
-
-def pct(value: int, base: int) -> str:
-    return f"{(value - base) / base * 100:+.1f}%"
-
-
-def main() -> int:
-    fe = resolve()
-    levels = sizes_by_level()
-    sizes = build()
+def attack_and_gas() -> tuple[dict, dict]:
+    """Runs PoolAttack against the contracts in out/: the attack per kernel and gas per operation."""
     RESULTS.unlink(missing_ok=True)
     proc = subprocess.run(
         ["forge", "test", "--match-contract", "PoolAttack"], cwd=REFERENCE, capture_output=True, text=True, timeout=3600
     )
     if proc.returncode != 0:
         print(proc.stdout[-4000:], proc.stderr[-2000:])
-        return 1
-
+        raise SystemExit(1)
     attacks, gas = {}, {}
     with RESULTS.open() as f:
         for row in csv.reader(f):
@@ -85,6 +63,39 @@ def main() -> int:
             else:
                 _, kernel, op, used = row
                 gas.setdefault(kernel, {})[op] = int(used)
+    return attacks, gas
+
+
+def by_level() -> tuple[dict, dict, dict]:
+    """Size, gas and attack outcome of each contract at each optimization level."""
+    fe = resolve()
+    sizes, gas, attacks = {}, {}, {}
+    for level in LEVELS:
+        shutil.rmtree(INGOT / "out", ignore_errors=True)
+        built = fe.run(["build", "-O", level, "--emit", "bytecode,runtime-bytecode"], INGOT)
+        if built.code != 0:
+            raise SystemExit(f"Fe contracts failed to build at -O{level}:\n{built.output}")
+        key = f"O{level}"
+        sizes[key] = {
+            k: len(bytes.fromhex((INGOT / "out" / f"{c}.runtime.bin").read_text().strip())) for k, c in CONTRACTS.items()
+        }
+        attacks[key], gas[key] = attack_and_gas()
+    return sizes, gas, attacks
+
+
+def pct(value: int, base: int) -> str:
+    return f"{(value - base) / base * 100:+.1f}%"
+
+
+def main() -> int:
+    fe = resolve()
+    levels, gas_by_level, attacks_by_level = by_level()
+    # The default build, which is -O1: its numbers are the headline ones.
+    sizes = build()
+    if sizes != levels["O1"]:
+        raise SystemExit(f"the default build is not -O1: {sizes} vs {levels['O1']}")
+    attacks, gas = attacks_by_level["O1"], gas_by_level["O1"]
+    differing = [level for level, a in attacks_by_level.items() if a != attacks]
 
     base = gas["faithful"]
     claims = [
@@ -97,6 +108,13 @@ def main() -> int:
             "question": "Do the typed and guarded pools keep the value behind each BPT under the same attack?",
             "holds": all(attacks[k]["value_per_bpt_end_wad"] >= attacks[k]["value_per_bpt_start_wad"] for k in ("typed", "guarded")),
             "evidence": f"typed {attacks['typed']['value_per_bpt_change']}, guarded {attacks['guarded']['value_per_bpt_change']}",
+        },
+        {
+            "question": "Does every optimization level compute the same attack, to the wei?",
+            "holds": not differing,
+            "evidence": "the attack's exits and value per BPT on each kernel are identical at -O0, -O1, -O2 and -Os"
+            if not differing
+            else f"differs from -O1 at {', '.join('-' + d for d in differing)}",
         },
     ]
     report = {
@@ -113,6 +131,7 @@ def main() -> int:
             "relative_to_faithful": {
                 k: {op: pct(v[op], base[op]) for op in v} for k, v in gas.items() if k != "faithful"
             },
+            "per_operation_by_level": gas_by_level,
         },
         "runtime_bytecode_bytes": sizes,
         "runtime_bytecode_bytes_by_level": levels,
@@ -129,6 +148,8 @@ def main() -> int:
         print(f"gas {k:9s} " + "  ".join(f"{op} {n:6d}" for op, n in v.items()))
     for level, row in levels.items():
         print(f"bytecode -{level}: " + ", ".join(f"{k} {n:,} B" for k, n in row.items()))
+    for level, table in gas_by_level.items():
+        print(f"mean gas -{level}: " + ", ".join(f"{k} {sum(v.values()) // len(v):,}" for k, v in table.items()))
     print(f"report: {path.relative_to(ROOT)}")
     return 0 if all(c["holds"] for c in claims) else 1
 

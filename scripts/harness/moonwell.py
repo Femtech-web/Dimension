@@ -77,7 +77,7 @@ def main() -> int:
          "rejected": compile_rejects},
         *[{**r, "rejected": True} for r in rejections],
         {"layer": "external assumption", "case": "a wrong feed declared with the decimals it reports and a band its answer falls in",
-         "rejected": False, "note": "passes every check; a registry entry is a reviewed declaration"},
+         "rejected": False, "note": "every on-chain check accepts it; make feeds rejects it before deployment"},
     ]
     claims = [
         {

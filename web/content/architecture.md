@@ -135,8 +135,10 @@ type. Two checks apply:
   (`WrongDecimals`, `NonPositiveAnswer`, `StaleAnswer`, `AnswerOutOfBand`,
   `RateOutOfBand`).
 
-The checks cannot prove an address is the feed it is declared to be. That stays
-a reviewed declaration (see [guarantees.md](guarantees.md)).
+The checks cannot prove an address is the feed it is declared to be. For
+Chainlink feeds, [`feed_check.py`](../scripts/feeds/feed_check.py) checks that
+before deployment, against Chainlink's directory and the chain (see
+[moonwell.md](moonwell.md#before-deployment-make-feeds)).
 
 ### The runtime guard: `invariant`
 
@@ -262,11 +264,12 @@ whether it holds, and the evidence.
 | `compile-fail` | each rejected construction, and its twin | the expected error code; the twin must pass |
 | `differential` | Fe StableMath | Balancer's Solidity, identical calldata, byte-identical results |
 | `explore` | three kernels | each other, and the two invariants |
-| `evm` | three deployed contracts | a greedy attacker; gas per operation |
+| `evm` | three deployed contracts, at each optimization level | a greedy attacker, identical at every level; gas per operation |
 | `vault` | the ERC-4626 vault's previews | OpenZeppelin's ERC4626 in the same states |
 | `fidelity` | the faithful kernel | the deployed pool on a mainnet fork |
 | `replay` | the three kernels | the attacker's own transactions, step by step, and the pool's state after each |
 | `moonwell` | the Fe oracle | Moonwell's deployed oracle and the real feeds on Base forks |
+| `feeds` | each declared feed | Chainlink's directory and Base; wrong declarations must be rejected |
 | `mutants` | the checks themselves | realistic bugs planted one at a time; the check meant for each must fail |
 
 Golden files never regenerate silently: `make update` rewrites them, and the

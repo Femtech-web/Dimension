@@ -44,7 +44,7 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: v1.4.4
-      - run: make fidelity replay moonwell
+      - run: make fidelity replay moonwell feeds
       - uses: actions/upload-artifact@v4
         if: always()
         with:
