@@ -5,7 +5,10 @@
 | [JUDGES.md](../JUDGES.md) | Verifying every claim in about ten minutes, and trying to break it |
 | [balancer.md](balancer.md) | The flagship: Balancer V2 ported, verified against its Solidity and the deployed pool, and typed |
 | [moonwell.md](moonwell.md) | Moonwell MIP-X43 on Base forks: the on-chain record and each layer that stops the mistake |
-| [guide.md](guide.md) | Using Dimension in your own protocol, with an API summary |
+| [../ingots/dimension](../ingots/dimension) | The library: install, quickstart, modules, safety model, versioning |
+| [guide.md](guide.md) | Using Dimension in your own protocol: getting started, each concept, a production checklist |
+| [../examples/quickstart](../examples/quickstart) | A deposit desk contract and its tests, to start from |
+| [../CHANGELOG.md](../CHANGELOG.md), [../SECURITY.md](../SECURITY.md) | Releases and their commits; how to report a vulnerability |
 | [architecture.md](architecture.md) | How the ingots, the type model, the boundaries and the verification fit together |
 | [guarantees.md](guarantees.md) | What each layer guarantees and what it does not; residuals; costs |
 | [comparison.md](comparison.md) | Prior work, and what Dimension adds to it |

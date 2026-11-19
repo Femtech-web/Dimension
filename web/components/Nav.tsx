@@ -17,11 +17,17 @@ export function Nav() {
           <span>Dimension</span>
         </Link>
         <nav className={styles.links} aria-label="Main">
-          {NAV.map((item) => (
-            <Link key={item.href} href={item.href} aria-current={path.startsWith(item.href) ? "page" : undefined}>
-              {item.label}
-            </Link>
-          ))}
+          {NAV.map((item) =>
+            item.file ? (
+              <a key={item.href} href={item.href}>
+                {item.label}
+              </a>
+            ) : (
+              <Link key={item.href} href={item.href} aria-current={path.startsWith(item.href) ? "page" : undefined}>
+                {item.label}
+              </Link>
+            ),
+          )}
           <a href={REPO} className={styles.repo}>
             GitHub ↗
           </a>

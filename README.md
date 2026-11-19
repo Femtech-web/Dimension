@@ -52,7 +52,9 @@ were ported to Fe line by line, then checked three ways:
   replayed step by step from the real chain state. Every amount the Fe port
   computes equals what Balancer's Vault computed. After each transaction the Fe
   pool holds exactly what the real pool held, all the way down from 4,922 WETH
-  to 0.14.
+  to 0.14. Getting there meant porting Balancer's protocol fees too: the pool
+  minted fee shares 33 times inside the first transaction alone. With the fee
+  logic removed, only 94 of its 121 steps match.
 
 **Then, the bug is real in it.** Over 4,608 pool states, 57,990 exact-out
 exits lower the value behind each pool share (worst 14.86%). A greedy attacker
@@ -84,7 +86,10 @@ $ make show CASE=typed_pool_with_balancer_upscale
 On the typed kernels, the same steps charge the attacker more once the balances
 reach dust: 17 wei of osETH out costs 1,071,109 wei of WETH instead of 625,492.
 The pool drifts from the state the attacker planned against, and step 25 fails
-Balancer's own `BAL#001` check, which reverts the whole batch.
+Balancer's own `BAL#001` check, which reverts the whole batch. Up to that step
+the value per share had risen from 1.027 to 1.186: the attack was paying the
+pool. The replay shows that the attacker's own sequence cannot run. The search
+and the greedy attacker below are the evidence that no other sequence pays.
 In the search, the types remove the losses at Balancer's two rounding sites;
 the 8 that remain come from StableMath's own precision, and the guard rejects
 exactly those. [The full account →](docs/balancer.md)
@@ -302,14 +307,32 @@ yet the guard still rejects every one of those losses.
 
 ## Use it in your protocol
 
+Dimension is for engineers writing DeFi contracts in Fe. It is a Fe library
+ingot: your contracts depend on it, and its checks run when they compile. Take
+it from this repository, pinned to a commit:
+
 ```toml
-[dependencies]
-dimension = { path = "../dimension/ingots/dimension" }
+[dependencies.dimension]
+source = "https://github.com/Femtech-web/Dimension"
+rev = "<commit>"        # a release's full commit hash
+name = "dimension"
+version = "0.1.0"
 ```
 
-Declare your assets, type the amounts that move, declare your feeds, and let
-the compiler hold the rest. [docs/guide.md](docs/guide.md) walks through each
-step, with the method used to port Balancer.
+Fe resolves `rev` as a full commit hash, so each release's commit is listed in
+the [changelog](CHANGELOG.md). Then start from
+[`examples/quickstart`](examples/quickstart), a deposit desk contract with its
+tests, and follow [docs/guide.md](docs/guide.md):
+
+- getting started in five steps;
+- every concept, with code from the tests;
+- the method used to port Balancer;
+- a checklist before production.
+
+The library's own page is [`ingots/dimension`](ingots/dimension), and its
+security policy is [SECURITY.md](SECURITY.md). `make consumer` checks the whole
+path on every CI run. It builds the quickstart as a fresh project taking
+Dimension by git, its 3 tests must pass, and a misuse must be rejected.
 
 ## Limits
 
@@ -325,6 +348,9 @@ step, with the method used to port Balancer.
   operation (+3% to +6%), for its checked rate read.
 - **Rounding up refuses some dust:** 1 wei out of a 2-wei balance, which
   Balancer paid out for free.
+- **The replay proves the recorded attack cannot run, not that no attack
+  exists.** That second claim rests on the search and the adaptive attacker,
+  over small pools.
 
 All of them, with their evidence: [docs/guarantees.md](docs/guarantees.md).
 
@@ -357,17 +383,28 @@ elsewhere the native search is skipped.
 | Path | Contents |
 |---|---|
 | [`ingots/dimension`](ingots/dimension) | The library: assets, flows, roundings, prices, values, policies, the guard, the oracle boundary |
+| [`examples/quickstart`](examples/quickstart) | A deposit desk contract and its tests: the project a team starts from |
 | [`ingots/balancer_v2`](ingots/balancer_v2) | Balancer V2 ported: StableMath, the faithful, typed and guarded pools, their contracts |
 | [`ingots/balancer_explorer`](ingots/balancer_explorer) | The native search and greedy attacker |
 | [`ingots/moonwell`](ingots/moonwell) | Moonwell's cbETH market: feed registry, composite pricing, oracle contracts |
 | [`ingots/vault`](ingots/vault) | An ERC-4626 vault's accounting, written with Dimension |
 | [`contracts/reference`](contracts/reference) | Foundry: Balancer's Solidity, the differential test, the EVM attack, the fork tests and the attack replay |
 | [`fixtures/balancer-v2-exploit`](fixtures/balancer-v2-exploit) | The attacker's swaps on the pool, read from the three transactions' events |
-| [`tests`](tests) | Unit tests (EVM and native), compile-fail cases with twins, probes |
+| [`tests`](tests) | Unit tests (EVM and native), compile-fail cases with twins, probes, the compiler finding's reproducer |
 | [`scripts`](scripts) | The pinned toolchain, and one harness module per suite |
 | [`third_party/balancer-v2`](third_party/balancer-v2) | Balancer's sources at the pinned commit |
 | [`docs`](docs/README.md) | The documentation and the saved results |
 | [`web`](web) | The site: the incidents charted, every claim, every planted bug, the docs |
+
+## Found along the way
+
+Building Dimension turned up a Fe compiler issue. `-O s`, documented as
+"size-oriented (currently similar to `2`)", emits 41% more code than `-O 2` for
+a 60-line program, because it skips the shared revert tails `-O 2` forms. In
+the Balancer pool it also emits a large solver three times instead of once.
+It is reported upstream as [argotorg/fe#2043](https://github.com/argotorg/fe/issues/2043), with the minimal
+reproducer kept in
+[`tests/compiler_findings`](tests/compiler_findings/os_skips_shared_tails).
 
 ## Declaration
 

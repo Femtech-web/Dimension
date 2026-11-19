@@ -60,6 +60,11 @@ export default function Balancer() {
           fork. The typed kernel charges more once balances reach dust, and the attacker&apos;s plan stops fitting the
           pool: step {replay.attacks[0].typed.steps_completed} (counting from 0) fails Balancer&apos;s own <code>BAL#001</code> check.
         </p>
+        <p className="ink2">
+          What this shows, and what it does not: the attacker&apos;s own sequence cannot run against the typed kernels.
+          An attacker who knew the pool rounds correctly would search for another; the exhaustive search and the greedy
+          attacker below are the evidence that none pays.
+        </p>
         <div style={{ marginTop: 24 }}>
           <Claims claims={replay.claims} />
         </div>

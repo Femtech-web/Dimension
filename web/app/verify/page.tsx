@@ -112,6 +112,19 @@ export default function Verify() {
         </p>
       </Section>
 
+      <Section eyebrow="Found along the way" title="A Fe compiler issue, reduced to 60 lines.">
+        <p className="ink2">
+          <code>fe build --help</code> describes <code>-O s</code> as size-oriented and &quot;currently similar to{" "}
+          <code>2</code>&quot;. On Fe 26.6.0 a 60-line program is 364 bytes at <code>-O 2</code> and 513 at{" "}
+          <code>-O s</code>: the size level skips the shared revert tails <code>-O 2</code> forms. In the Balancer pool it also
+          emits a large solver three times instead of once, for +14% in all.
+        </p>
+        <p>
+          Reported upstream as <a href="https://github.com/argotorg/fe/issues/2043">argotorg/fe#2043</a>, with{" "}
+          <a href={`${BLOB}/tests/compiler_findings/os_skips_shared_tails`}>the reproducer kept in this repository</a>.
+        </p>
+      </Section>
+
       <Section eyebrow="What the compiler rejects" title={`${compileFail.summary.cases} constructions, each with a corrected twin.`}>
         <div className="table-wrap">
           <table>

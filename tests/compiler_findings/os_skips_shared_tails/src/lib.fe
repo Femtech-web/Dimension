@@ -1,0 +1,62 @@
+use std::abi::sol
+
+pub enum Failure {
+    AddOverflow,
+    SubOverflow,
+    MulOverflow,
+    ZeroDivision,
+    DivInternal,
+    InvariantDidNotConverge,
+    BalanceDidNotConverge,
+    OutOfBounds,
+}
+
+impl Copy for Failure {}
+
+#[inline(never)]
+fn fail(_ failure: Failure) {
+    match failure {
+        Failure::AddOverflow => assert!(false, "BAL#000"),
+        Failure::SubOverflow => assert!(false, "BAL#001"),
+        Failure::MulOverflow => assert!(false, "BAL#003"),
+        Failure::ZeroDivision => assert!(false, "BAL#004"),
+        Failure::DivInternal => assert!(false, "BAL#005"),
+        Failure::InvariantDidNotConverge => assert!(false, "BAL#321"),
+        Failure::BalanceDidNotConverge => assert!(false, "BAL#322"),
+        Failure::OutOfBounds => assert!(false, "BAL#100"),
+    }
+}
+
+fn checked_add(_ a: u256, _ b: u256) -> u256 {
+    if a > 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff - b {
+        fail(Failure::AddOverflow)
+    }
+    a + b
+}
+
+fn checked_sub(_ a: u256, _ b: u256) -> u256 {
+    if b > a {
+        fail(Failure::SubOverflow)
+    }
+    a - b
+}
+
+fn checked_div(_ a: u256, _ b: u256) -> u256 {
+    if b == 0 {
+        fail(Failure::ZeroDivision)
+    }
+    a / b
+}
+
+pub msg A {
+    #[selector = sol("f(uint256,uint256)")]
+    F { a: u256, b: u256 } -> u256,
+}
+
+pub contract C {
+    recv A {
+        F { a, b } -> u256 {
+            checked_div(checked_add(a, b), checked_sub(a, b))
+        }
+    }
+}

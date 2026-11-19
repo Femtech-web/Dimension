@@ -1,0 +1,4 @@
+PASS a_deposit_is_credited_in_internal_units
+PASS the_desk_pays_down_and_charges_up
+PASS whole_amounts_round_trip_exactly
+test result: ok. 3 passed; 0 failed

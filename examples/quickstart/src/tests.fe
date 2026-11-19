@@ -1,0 +1,20 @@
+use super::{charge, credit, payout}
+
+#[test]
+fn a_deposit_is_credited_in_internal_units() {
+    // 1 micro-USDC is 10^12 internal units.
+    assert(credit(1) == 1_000_000_000_000)
+}
+
+#[test]
+fn the_desk_pays_down_and_charges_up() {
+    // 1.5 micro-USDC worth of internal units: paid out as 1, charged as 2.
+    assert(payout(1_500_000_000_000).value() == 1)
+    assert(charge(1_500_000_000_000).value() == 2)
+}
+
+#[test]
+fn whole_amounts_round_trip_exactly() {
+    assert(payout(credit(42)).value() == 42)
+    assert(charge(credit(42)).value() == 42)
+}

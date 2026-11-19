@@ -1,0 +1,4 @@
+kind = "test"
+backends = ["sonatina", "native"]
+layer = "usage"
+mechanism = "The quickstart a new project starts from: a deposit desk that credits, pays out and charges with roundings derived from direction"

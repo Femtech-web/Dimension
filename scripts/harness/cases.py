@@ -25,7 +25,13 @@ from harness.toolchain import ROOT, Fe, resolve
 SUITES = {
     "probes": [ROOT / "tests" / "probes"],
     "compile-fail": [ROOT / "tests" / "compile_fail"],
-    "unit": [ROOT / "tests" / "core", ROOT / "tests" / "oracle", ROOT / "tests" / "explorer", ROOT / "tests" / "vault"],
+    "unit": [
+        ROOT / "tests" / "core",
+        ROOT / "tests" / "oracle",
+        ROOT / "tests" / "explorer",
+        ROOT / "tests" / "vault",
+        ROOT / "examples" / "quickstart",
+    ],
 }
 TESTS = ROOT / "tests"
 SCHEMA = "dimension.cases/v1"
@@ -181,7 +187,7 @@ def run(fe: Fe, roots: list[Path], update: bool) -> list[Result]:
     for case_dir in discover(roots):
         spec = tomllib.loads((case_dir / "case.toml").read_text())
         result = Result(
-            id=str(case_dir.relative_to(TESTS)),
+            id=str(case_dir.relative_to(TESTS if case_dir.is_relative_to(TESTS) else ROOT)),
             kind=spec["kind"],
             layer=spec.get("layer", "cost"),
             mechanism=spec.get("mechanism", spec.get("question", "")),

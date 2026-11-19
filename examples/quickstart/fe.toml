@@ -1,0 +1,16 @@
+[ingot]
+name = "quickstart"
+version = "0.1.0"
+
+[dependencies]
+# In your own project, take Dimension from git instead, pinned to a release's
+# full commit hash (Fe resolves `rev` as a commit, not a tag):
+#
+#   [dependencies.dimension]
+#   source = "https://github.com/Femtech-web/Dimension"
+#   rev = "<commit>"
+#   name = "dimension"
+#   version = "0.1.0"
+#
+# Inside this repository the example uses the local copy.
+dimension = { path = "../../ingots/dimension" }

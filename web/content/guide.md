@@ -1,22 +1,98 @@
 # Using Dimension
 
-Dimension is an ordinary Fe library ingot. This guide shows how to use it in
-your own protocol, one concept at a time. Each section links to the tested code
-in this repository that it draws on. Snippets are quoted from that code, except
-two marked as sketches, which show a pattern.
+Dimension is for engineers writing DeFi contracts in Fe, and for teams porting
+Solidity protocols to Fe. It is a Fe library ingot, Fe's equivalent of a Rust
+crate. Your contracts depend on it, its rules are checked when they compile,
+and the types themselves cost nothing at run time.
 
-## Add the dependency
+This guide covers three things:
 
-Fe 26.6 ingots depend on each other by path. Check this repository out next to
-your project, then:
+- getting a project running with it, in five minutes;
+- each concept, linked to the tested code in this repository it draws on (two
+  snippets are marked as sketches of a pattern);
+- a checklist for taking a protocol built on it to production.
 
-```toml
-[dependencies]
-dimension = { path = "../dimension/ingots/dimension" }
+## Requirements
+
+- **Fe 26.6.0 or 26.7.0.** CI pins 26.6.0. On 26.7.0 every ingot also
+  type-checks, and every test suite passes on the EVM and natively. Install Fe
+  with its installer:
+  ```sh
+  curl -fsSL https://raw.githubusercontent.com/argotorg/fe/master/feup/feup.sh | bash -s -- --version v26.6.0
+  ```
+- **Targets.** Everything compiles for the EVM. Everything except
+  `value::oracle`, which calls other contracts, also compiles natively. Fe
+  26.6.0 builds native executables on Linux x86-64 and Apple silicon.
+
+## Getting started
+
+**1. Create a project.**
+
+```sh
+fe new my_protocol && cd my_protocol
 ```
 
-Never set `allow_unsafe` on this dependency in an ingot you deploy. Only test
-and simulation roots need it (see [Testing](#testing)).
+**2. Add Dimension** to `fe.toml`, pinned to a release commit:
+
+```toml
+[dependencies.dimension]
+source = "https://github.com/Femtech-web/Dimension"
+rev = "<commit>"        # a release's full commit hash
+name = "dimension"
+version = "0.1.0"
+```
+
+- Fe resolves `rev` as a full commit hash. A tag name is rejected, so take the
+  commit listed for the release in the [changelog](../CHANGELOG.md).
+- `name` selects the `dimension` ingot inside the repository's workspace.
+- For a local checkout, use a path relative to your project; Fe rejects
+  absolute paths: `dimension = { path = "../Dimension/ingots/dimension" }`.
+
+**3. Write typed code.** Copy the quickstart's
+[`src/lib.fe`](../examples/quickstart/src/lib.fe) and
+[`src/tests.fe`](../examples/quickstart/src/tests.fe) into your project. They
+are a deposit desk contract and its tests, and their core is this:
+
+```fe
+use dimension::{Asset, In, Out, Quantity, Settled, admit, given, owed, scaling_factor, settle}
+
+pub struct USDC {}
+
+impl Asset for USDC {
+    const DECIMALS: u256 = 6
+}
+
+/// Internal units credited for a deposit of `raw` USDC. Value arriving is counted down.
+pub fn credit(_ raw: u256) -> u256 {
+    admit(given<USDC, In>(raw), scaling_factor<USDC>()).value()
+}
+
+/// USDC paid out for `internal` units owed. Value leaving is paid down.
+pub fn payout(_ internal: u256) -> Quantity<USDC, Out, Settled> {
+    settle(owed<USDC, Out>(internal), scaling_factor<USDC>())
+}
+```
+
+**4. Check, test and build.**
+
+```sh
+fe check                     # every Dimension rule, at compile time
+fe test                      # the 3 tests, on the EVM
+fe test --backend native     # and natively
+fe build                     # the Desk contract's bytecode and ABI, in out/
+```
+
+**5. See a rule hold.** Change `payout` to return
+`Quantity<USDC, In, Settled>`, a payout treated as a charge. `fe check` rejects
+it: `expected Quantity<USDC, In, Settled>, but Quantity<USDC, Out, Settled> is
+given`.
+
+All of this is checked on every CI run (`make consumer`). The quickstart is built
+as a fresh project that takes Dimension by git. It must pass its tests, and a
+misuse must be rejected with Dimension's type error.
+
+For the full API, every item with its doc comment, see the reference generated
+by `fe doc`: `/api` on the project site, or `make apidoc` locally.
 
 ## Declare your assets
 
@@ -189,6 +265,26 @@ The method used for Balancer, in order:
    the math's signatures demand admitted amounts.
 4. **Measure the difference.** Run both versions over the same states and
    attacks, and measure gas.
+
+## Before production
+
+A checklist for a team shipping a protocol built on Dimension:
+
+1. **Pin a release commit**, and read the changelog before moving to another.
+2. **Never set `allow_unsafe` on Dimension in an ingot you deploy.** Keep
+   `assume_price` and `assume_rate` in test roots, and add a CI check like
+   `make unsafe-policy`.
+3. **Make your math's signatures demand admitted amounts**, as
+   `typed/math.fe` does. A raw `u256` can then never reach it unrounded.
+4. **Declare each feed once.** Set `max_age` from the feed's measured
+   heartbeat plus a margin, and a band no honest answer leaves. Call `verify`
+   in the constructor.
+5. **Review every registry entry against the chain** (address, pair,
+   decimals). It is the one assumption no check covers.
+6. **Decide where the runtime guard is worth its gas.** It is one invariant
+   solve on a swap, and nearly free on joins and exits.
+7. **Audit as usual.** Dimension 0.1.0 is not audited. Its guarantees and
+   limits are in [guarantees.md](guarantees.md).
 
 ## API at a glance
 

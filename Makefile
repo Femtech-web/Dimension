@@ -7,9 +7,9 @@ HARNESS := PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=scripts $(PYTHON) -m harness.
 CASES := $(HARNESS)cases
 FE := .tools/fe-$(shell sed -n 's/^version=//p' scripts/toolchain/fe.lock)/fe
 # The feasibility probes are kept exactly as recorded, so they are not formatted.
-FORMATTED := ingots tests/core tests/oracle tests/explorer tests/compile_fail
+FORMATTED := ingots tests/core tests/oracle tests/explorer tests/vault tests/compile_fail tests/compiler_findings examples
 
-.PHONY: help toolchain reference-deps fmt fmt-check test unit compile-fail probes differential explore evm vault fidelity replay moonwell unsafe-policy mutants web show demo update ci
+.PHONY: help toolchain reference-deps fmt fmt-check test unit compile-fail probes differential explore evm vault consumer apidoc fidelity replay moonwell unsafe-policy mutants web show demo update ci
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -49,6 +49,9 @@ evm: toolchain reference-deps ## The three Fe pool contracts on a real EVM: repe
 vault: toolchain reference-deps ## The ERC-4626 vault's previews against OpenZeppelin's ERC4626 (needs forge)
 	@$(HARNESS)vault
 
+consumer: toolchain ## A fresh project depending on Dimension by git at HEAD: correct code compiles, a misuse is rejected
+	@$(HARNESS)consumer
+
 fidelity: toolchain reference-deps ## The Fe port against the deployed exploited pool on a mainnet fork (needs forge and an archive RPC)
 	@$(HARNESS)fidelity
 
@@ -61,7 +64,10 @@ moonwell: toolchain reference-deps ## Moonwell's cbETH market on Base forks arou
 mutants: toolchain reference-deps ## Plant realistic bugs one at a time and require the check meant for each to catch it (FORKS=1 adds fork-only mutants)
 	@$(HARNESS)mutants $(if $(FORKS),--forks)
 
-web: ## Sync the saved reports and docs into web/ and build the site (needs Node 20.9+)
+apidoc: toolchain ## Generate the dimension API reference from its doc comments into web/public/api
+	@cd ingots/dimension && $(abspath $(FE)) doc -o $(abspath web/public/api) . static --self-contained
+
+web: apidoc ## Sync the saved reports and docs into web/ and build the site (needs Node 20.9+)
 	cd web && node scripts/sync.mjs && npm ci --no-audit --no-fund && npm run build
 
 show: toolchain ## Show one compile-fail case live: make show CASE=<name> (all cases if omitted)
@@ -82,4 +88,4 @@ unsafe-policy: ## Fail if a protocol ingot could forge a trusted value
 	@if grep -rnE '\bunsafe\b' $(PROTOCOL:%=ingots/%/src) | grep -v ingots/dimension/src/value/testing.fe | grep -vE ':[0-9]+:\s*//'; then \
 		echo "unsafe code outside dimension::value::testing"; exit 1; fi
 
-ci: fmt-check unsafe-policy test differential explore evm vault ## Everything CI runs
+ci: fmt-check unsafe-policy test differential explore evm vault consumer ## Everything CI runs

@@ -216,6 +216,50 @@ export default function Home() {
       </section>
 
       <section className="block">
+        <div className={`wrap ${styles.fe}`}>
+          <div>
+            <div className="eyebrow">Use it in your protocol</div>
+            <h2 style={{ margin: "14px 0 16px" }}>A Fe library. Five minutes to a typed contract.</h2>
+            <p className="ink2">
+              Dimension is an ingot, Fe&apos;s equivalent of a crate. Add it to <code>fe.toml</code> pinned to a release
+              commit, copy the quickstart, and your contracts&apos; amounts, prices and policies are checked whenever they
+              compile.
+            </p>
+            <p className="ink2">
+              CI builds the quickstart as a fresh project taking Dimension by git on every change: its tests must pass,
+              and a misuse must be rejected.
+            </p>
+            <div className={styles.ctas}>
+              <Link href="/docs/guide" className="button">
+                Getting started
+              </Link>
+              <Link href="/docs/library" className="button ghost">
+                The library
+              </Link>
+              <a href="/api/index.html" className="button ghost">
+                API reference
+              </a>
+            </div>
+          </div>
+          <div style={{ display: "grid", gap: 16, minWidth: 0 }}>
+            <Code title="fe.toml" lang="toml">
+              {`[dependencies.dimension]
+source = "https://github.com/Femtech-web/Dimension"
+rev = "<commit>"        # a release's full commit hash
+name = "dimension"
+version = "0.1.0"`}
+            </Code>
+            <Code title="examples/quickstart, from a fresh project" lang="shell">
+              {`fe check                     # every Dimension rule, at compile time
+fe test                      # 3 tests, on the EVM
+fe test --backend native     # and natively
+fe build                     # the Desk contract's bytecode and ABI`}
+            </Code>
+          </div>
+        </div>
+      </section>
+
+      <section className="block">
         <div className="wrap narrow">
           <div className="eyebrow">Don&apos;t take our word for it</div>
           <h2 style={{ margin: "14px 0 20px" }}>Every claim reproduces from one front door.</h2>

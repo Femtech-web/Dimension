@@ -25,6 +25,7 @@ for (const suite of suites) {
 writeFileSync(new URL("data/meta.json", web), JSON.stringify({ platform, suites: copied }, null, 2) + "\n");
 
 const DOCS = {
+  library: "ingots/dimension/README.md",
   judges: "JUDGES.md",
   guide: "docs/guide.md",
   balancer: "docs/balancer.md",

@@ -1,0 +1,52 @@
+//! A deposit desk: credits USDC deposits in 18-decimal internal units and pays
+//! withdrawals back in USDC. No line names a rounding: each follows from which
+//! way the value moves, so the desk never counts more than arrived or pays more
+//! than it owes.
+
+use std::abi::sol
+use dimension::{Asset, In, Out, Quantity, Settled, admit, given, owed, scaling_factor, settle}
+
+pub struct USDC {}
+
+impl Asset for USDC {
+    const DECIMALS: u256 = 6
+}
+
+/// Internal units credited for a deposit of `raw` USDC. Value arriving is
+/// counted down.
+pub fn credit(_ raw: u256) -> u256 {
+    admit(given<USDC, In>(raw), scaling_factor<USDC>()).value()
+}
+
+/// USDC paid out for `internal` units the desk owes. Value leaving is paid down.
+pub fn payout(_ internal: u256) -> Quantity<USDC, Out, Settled> {
+    settle(owed<USDC, Out>(internal), scaling_factor<USDC>())
+}
+
+/// USDC charged for `internal` units owed to the desk. A charge is rounded up.
+pub fn charge(_ internal: u256) -> Quantity<USDC, In, Settled> {
+    settle(owed<USDC, In>(internal), scaling_factor<USDC>())
+}
+
+pub msg DeskAbi {
+    #[selector = sol("credit(uint256)")]
+    Credit { raw: u256 } -> u256,
+    #[selector = sol("payout(uint256)")]
+    Payout { internal: u256 } -> u256,
+    #[selector = sol("charge(uint256)")]
+    Charge { internal: u256 } -> u256,
+}
+
+pub contract Desk {
+    recv DeskAbi {
+        Credit { raw } -> u256 {
+            credit(raw)
+        }
+        Payout { internal } -> u256 {
+            payout(internal).value()
+        }
+        Charge { internal } -> u256 {
+            charge(internal).value()
+        }
+    }
+}

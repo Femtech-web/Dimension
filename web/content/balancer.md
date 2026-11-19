@@ -49,7 +49,7 @@ From Balancer's monorepo at commit `e91a2b6` (pinned in
 | `FixedPoint`, `Math` | [`stable/fixed_point.fe`](../ingots/balancer_v2/src/stable/fixed_point.fe), [`stable/math.fe`](../ingots/balancer_v2/src/stable/math.fe) | line by line, with Solidity 0.7's wrapping arithmetic and Balancer's own checks |
 | `StableMath` | [`stable/stable_math.fe`](../ingots/balancer_v2/src/stable/stable_math.fe) | line by line, generic over 2 to 5 tokens (`const N: usize where N >= 2, N <= 5`) |
 | `ComposableStablePool` swap, join and exit paths, `BaseGeneralPool`, scaling helpers | [`pool/faithful.fe`](../ingots/balancer_v2/src/pool/faithful.fe) | the operations a two-token pool performs, including `_upscale`'s rounding |
-| `ComposableStablePoolProtocolFees`, `ExternalFees` | [`pool/fees.fe`](../ingots/balancer_v2/src/pool/fees.fe) | the protocol fees minted as BPT before and after every join and exit |
+| `ComposableStablePoolProtocolFees`, `ExternalFees` | [`pool/fees.fe`](../ingots/balancer_v2/src/pool/fees.fe) | the protocol fees minted as BPT before and after every join and exit: the pool minted them 33 times in the first attack transaction, and without them only 94 of its 121 steps match (`make mutants FORKS=1`) |
 
 Balancer's checks are kept as checks, with Balancer's error codes, so even a
 revert can be compared byte for byte. Every arithmetic function declares

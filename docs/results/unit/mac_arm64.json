@@ -8,13 +8,29 @@
   },
   "platform": "mac_arm64",
   "summary": {
-    "cases": 4,
-    "ok": 4,
+    "cases": 5,
+    "ok": 5,
     "by_kind": {
-      "test": 4
+      "test": 5
     }
   },
   "cases": [
+    {
+      "id": "examples/quickstart",
+      "kind": "test",
+      "layer": "usage",
+      "mechanism": "The quickstart a new project starts from: a deposit desk that credits, pays out and charges with roundings derived from direction",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "sonatina": {
+          "passed": 3
+        },
+        "native": {
+          "passed": 3
+        }
+      }
+    },
     {
       "id": "core",
       "kind": "test",
