@@ -10,10 +10,13 @@
 //!
 //! Joins and exits pay protocol fees exactly as in `faithful`.
 //!
-//! Every held balance moves through `credit` and `debit`, and the BPT supply
-//! through `issue` and `retire`, so each amount's direction is checked once more
-//! against what the pool does with it: an amount labelled as arriving cannot be
-//! paid out of a balance, and BPT labelled as coming back cannot be issued.
+//! Every balance the pool holds moves through `credit` and `debit`, and the BPT
+//! supply, the protocol's fee included, through `issue` and `retire`. So each
+//! amount's direction is checked once more against what the pool does with it:
+//! an amount labelled as arriving cannot be paid out of a balance, and BPT
+//! labelled as coming back cannot be issued. These are Dimension's `Held` and
+//! `Supply` operations for balances kept in an array by token index: the index
+//! is tied to its token at run time, by `check_factor`, not by type.
 //!
 //! With `guard`, each operation also enforces Dimension's runtime share-value
 //! check (see `pool::guarded`). It reuses the invariant the operation already
@@ -64,37 +67,43 @@ uses (check: mut Check)
     )
 }
 
-/// Dimension's `credit`, with Balancer's checked addition, so that a failure
-/// reverts with Balancer's own code: only an amount arriving, in token units,
-/// can be added to a balance the pool holds.
+/// Dimension's `Held::credit`, with Balancer's checked addition, so that a
+/// failure reverts with Balancer's own code: only an amount arriving, in token
+/// units, can be added to a balance the pool holds.
 fn credit<T, S: TokenUnits>(_ held: u256, _ q: Quantity<T, In, S>) -> u256
 uses (check: mut Check)
 {
     fp::add(held, q.value())
 }
 
-/// Dimension's `debit`, with Balancer's checked subtraction: only an amount
-/// leaving, in token units, can be taken from a balance the pool holds.
+/// Dimension's `Held::debit`, with Balancer's checked subtraction: only an
+/// amount leaving, in token units, can be taken from a balance the pool holds.
 fn debit<T, S: TokenUnits>(_ held: u256, _ q: Quantity<T, Out, S>) -> u256
 uses (check: mut Check)
 {
     fp::sub(held, q.value())
 }
 
-/// Dimension's `issue`, with Balancer's checked addition: only BPT going out
-/// can be added to the supply.
+/// Dimension's `Supply::issue`, with Balancer's checked addition: only BPT
+/// going out can be added to the supply.
 fn issue<T, S: TokenUnits>(_ supply: u256, _ q: Quantity<T, Out, S>) -> u256
 uses (check: mut Check)
 {
     fp::add(supply, q.value())
 }
 
-/// Dimension's `retire`, with Balancer's checked subtraction: only BPT coming
-/// back can be taken from the supply.
+/// Dimension's `Supply::retire`, with Balancer's checked subtraction: only BPT
+/// coming back can be taken from the supply.
 fn retire<T, S: TokenUnits>(_ supply: u256, _ q: Quantity<T, In, S>) -> u256
 uses (check: mut Check)
 {
     fp::sub(supply, q.value())
+}
+
+/// The protocol's fee, `bpt` minted to it by `fees`: BPT going out of the pool,
+/// so it is issued. `fees` computes it in BPT's own units, which are token units.
+fn protocol_fee(_ bpt: u256) -> Quantity<Bpt, Out, Given> {
+    dimension::given<Bpt, Out>(bpt)
 }
 
 /// The invariant of the balances the pool actually holds.
@@ -134,12 +143,15 @@ where N >= 2, N <= 5
     } else {
         invariant(pool.amp, balances)
     }
-    fees::update_after_join_exit(
-        mut pool,
+    let fee = fees::fee_after_join_exit(
+        supply: pool.supply,
+        protocol_swap_fee: pool.protocol_swap_fee,
         post_invariant,
         pre_invariant: before.value,
         pre_supply: before.shares,
     )
+    pool.supply = issue(pool.supply, protocol_fee(fee))
+    pool.stored_invariant = post_invariant
     if guard {
         enforce(pool, before, after_value: post_invariant)
     }
@@ -230,7 +242,13 @@ where N >= 2, N <= 5
     var balances = upscaled(pool.balances, pool.factors)
     let scaled_out = admit(amount_out, factor)
     let pre_invariant = invariant(pool.amp, balances)
-    fees::pay_before_join_exit(mut pool, invariant: pre_invariant)
+    let fee = fees::fee_before_join_exit(
+        stored_invariant: pool.stored_invariant,
+        supply: pool.supply,
+        protocol_swap_fee: pool.protocol_swap_fee,
+        invariant: pre_invariant,
+    )
+    pool.supply = issue(pool.supply, protocol_fee(fee))
     let before = Backing { value: pre_invariant, shares: pool.supply }
     let bpt_in = math::bpt_in_given_exact_token_out(
         pool,
@@ -260,7 +278,13 @@ where N >= 2, N <= 5
     check_factor(pool, index: j, factor)
     var balances = upscaled(pool.balances, pool.factors)
     let pre_invariant = invariant(pool.amp, balances)
-    fees::pay_before_join_exit(mut pool, invariant: pre_invariant)
+    let fee = fees::fee_before_join_exit(
+        stored_invariant: pool.stored_invariant,
+        supply: pool.supply,
+        protocol_swap_fee: pool.protocol_swap_fee,
+        invariant: pre_invariant,
+    )
+    pool.supply = issue(pool.supply, protocol_fee(fee))
     let before = Backing { value: pre_invariant, shares: pool.supply }
     let scaled_out = math::token_out_given_exact_bpt_in(
         pool,
@@ -291,7 +315,13 @@ where N >= 2, N <= 5
     var balances = upscaled(pool.balances, pool.factors)
     let scaled_in = admit(amount_in, factor)
     let pre_invariant = invariant(pool.amp, balances)
-    fees::pay_before_join_exit(mut pool, invariant: pre_invariant)
+    let fee = fees::fee_before_join_exit(
+        stored_invariant: pool.stored_invariant,
+        supply: pool.supply,
+        protocol_swap_fee: pool.protocol_swap_fee,
+        invariant: pre_invariant,
+    )
+    pool.supply = issue(pool.supply, protocol_fee(fee))
     let before = Backing { value: pre_invariant, shares: pool.supply }
     let bpt_out = math::bpt_out_given_exact_token_in(
         pool,
@@ -321,7 +351,13 @@ where N >= 2, N <= 5
     check_factor(pool, index: i, factor)
     var balances = upscaled(pool.balances, pool.factors)
     let pre_invariant = invariant(pool.amp, balances)
-    fees::pay_before_join_exit(mut pool, invariant: pre_invariant)
+    let fee = fees::fee_before_join_exit(
+        stored_invariant: pool.stored_invariant,
+        supply: pool.supply,
+        protocol_swap_fee: pool.protocol_swap_fee,
+        invariant: pre_invariant,
+    )
+    pool.supply = issue(pool.supply, protocol_fee(fee))
     let before = Backing { value: pre_invariant, shares: pool.supply }
     let scaled_in = math::token_in_given_exact_bpt_out(
         pool,

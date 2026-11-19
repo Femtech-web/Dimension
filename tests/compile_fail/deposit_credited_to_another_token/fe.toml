@@ -1,0 +1,6 @@
+[ingot]
+name = "deposit_credited_to_another_token"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../../ingots/dimension" }

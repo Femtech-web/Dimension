@@ -41,9 +41,9 @@ fe new my_protocol && cd my_protocol
 ```toml
 [dependencies.dimension]
 source = "https://github.com/Femtech-web/Dimension"
-rev = "57ce4106575a173b9fc51ebb44c3c2243e285cd5"   # v0.1.0
+rev = "468e2c20d405f1dfeaf42273e838884090d293a1"   # v0.2.0
 name = "dimension"
-version = "0.1.0"
+version = "0.2.0"
 ```
 
 - Fe resolves `rev` as a full commit hash. A tag name is rejected, so take the
@@ -124,8 +124,8 @@ The pattern from the Balancer kernel
 2. Bring it into internal units with `admit`.
 3. Let your math return an owed result.
 4. Leave through `settle`.
-5. Move what you hold with `credit` and `debit`, and what you issue with
-   `issue` and `retire`.
+5. Keep what you hold as a `Held<T>` and what you issue as a `Supply<T>`, and
+   move them with `credit` and `debit`, or `issue` and `retire`.
 
 The direction, `In` or `Out` of the protocol, decides every rounding. A sketch:
 
@@ -161,23 +161,26 @@ pub fn bpt_in_given_exact_token_out<T, const N: usize>(
 Then an amount that skipped `admit` cannot reach the math. Putting Balancer's
 `_upscale` back is a compile error.
 
-Step 5 is what makes a label more than a promise. `credit` adds only an amount
-moving `In`, and `debit` takes only one moving `Out`, both in token units
-(`Given` or `Settled`). So an amount labelled with the wrong direction does
-not compile where it changes a balance, and internal 18-decimal units never
-reach one. The vault ([`vault.fe`](../ingots/vault/src/vault.fe)) does this:
+Step 5 is what makes a label more than a promise. A `Held<T>` is credited only
+with an amount of `T` moving `In`, and debited only with one moving `Out`, both
+in token units (`Given` or `Settled`); a `Supply<T>` is issued only `Out` and
+retired only `In`. So an amount labelled with the wrong direction, or of the
+wrong token, does not compile where it changes a balance; a supply cannot be
+credited as if held; and internal 18-decimal units never reach either. The
+vault ([`vault.fe`](../ingots/vault/src/vault.fe)) keeps its assets as a
+`Held<A>` and its shares as a `Supply<Shares<A>>`:
 
 ```fe
 pub fn withdraw<A>(_ v: mut Vault<A>, _ assets: Quantity<A, Out, Given>) -> Quantity<Shares<A>, In, Settled> {
     let shares = preview_withdraw(v, assets)
-    v.total_assets = debit(v.total_assets, assets)   // assets leave
-    v.total_shares = retire(v.total_shares, shares)  // shares come back
+    v.total_assets = v.total_assets.debit(assets)   // assets leave
+    v.total_shares = v.total_shares.retire(shares)  // shares come back
     shares
 }
 ```
 
-Write `credit(v.total_assets, assets)` there, and the withdrawal's own label
-refuses it: `expected Quantity<_, In, _>, but Quantity<A, Out, Given> is
+Write `v.total_assets.credit(assets)` there, and the withdrawal's own label
+refuses it: `expected Quantity<A, In, _>, but Quantity<A, Out, Given> is
 given`. A deposit labelled, consistently, as leaving, which would round its
 shares up, is refused the same way
 ([`vault_deposit_labeled_as_leaving`](../tests/compile_fail/vault_deposit_labeled_as_leaving)).
@@ -307,8 +310,8 @@ every label, each place a raw number gets its direction: read each one. Items
    project that sets it, or that contains `unsafe` code.
 3. **Make your math's signatures demand admitted amounts**, as
    `typed/math.fe` does. A raw `u256` can then never reach it unrounded. And
-   move every balance and supply with `credit`, `debit`, `issue` and
-   `retire`, so each label is checked against the money it moves.
+   keep every balance as a `Held<T>` and every supply as a `Supply<T>`, so
+   each label is checked against the money it moves.
 4. **Declare each feed once.** Set `max_age` from the feed's measured
    heartbeat plus a margin, and a band no honest answer leaves. Call `verify`
    in the constructor.
@@ -318,7 +321,7 @@ every label, each place a raw number gets its direction: read each one. Items
    review address, pair and decimals against the operator's own record.
 6. **Decide where the runtime guard is worth its gas.** It is one invariant
    solve on a swap, and nearly free on joins and exits.
-7. **Audit as usual.** Dimension 0.1.0 is not audited. Its guarantees and
+7. **Audit as usual.** Dimension 0.2.0 is not audited. Its guarantees and
    limits are in [guarantees.md](guarantees.md).
 
 ## API at a glance
@@ -330,8 +333,8 @@ every label, each place a raw number gets its direction: read each one. Items
 | `Given`, `Admitted`, `Owed`, `Settled` | stages | where an amount is in its life |
 | `Quantity<T, F, S>` | type | an amount of `T` moving in `F` at stage `S` |
 | `given`, `owed` | functions | label a raw number |
-| `credit`, `debit` | functions | move a held balance: only `In` can be credited, only `Out` debited, in token units |
-| `issue`, `retire` | functions | move a supply the protocol issues: only `Out` can be issued, only `In` retired |
+| `Held<T>`, `held`, `credit`, `debit` | type, function, methods | a balance of `T` the protocol holds: credited only `In`, debited only `Out`, by amounts of `T` in token units |
+| `Supply<T>`, `supply_of`, `issue`, `retire` | type, function, methods | a total of `T` the protocol issues: issued only `Out`, retired only `In` |
 | `TokenUnits` | sealed trait | the stages in token units, `Given` and `Settled` |
 | `admit`, `settle` | functions | the only ways to reach `Admitted` and `Settled` |
 | `ScalingFactor<T>`, `scaling_factor`, `with_rate` | type, functions | decimals and rate scaling |

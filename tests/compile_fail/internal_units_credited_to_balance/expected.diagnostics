@@ -1,10 +1,10 @@
 error[6-0003]: trait bound is not satisfied
-    ┌─ src/lib.fe:12:5
+    ┌─ src/lib.fe:12:25
     │
- 12 │     credit(held, admit(given<USDC, In>(raw), scaling_factor<USDC>()))
-    │     ^^^^^^ `Admitted` doesn't implement `TokenUnits`
+ 12 │     held<USDC>(balance).credit(admit(given<USDC, In>(raw), scaling_factor<USDC>())).raw()
+    │                         ^^^^^^ `Admitted` doesn't implement `TokenUnits`
     │
-    ┌─ src/value.fe:117:21
+    ┌─ src/value.fe:134:22
     │
-117 │ pub fn credit<T, S: TokenUnits>(_ held: u256, _ q: Quantity<T, In, S>) -> u256 {
-    │                     ---------- required by this bound on `credit`
+134 │     pub fn credit<S: TokenUnits>(self, _ q: Quantity<T, In, S>) -> Self {
+    │                      ---------- required by this bound on `credit`

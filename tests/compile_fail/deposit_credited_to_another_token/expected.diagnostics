@@ -1,0 +1,13 @@
+error[8-0000]: type mismatch
+   ┌─ src/lib.fe:10:34
+   │
+10 │     pair.usdc = pair.usdc.credit(amount)
+   │                                  ^^^^^^ expected `Quantity<USDC, In, _>`, but `Quantity<WETH, In, Given>` is given
+error[8-0031]: type annotation is needed
+   ┌─ src/lib.fe:10:27
+   │
+10 │     pair.usdc = pair.usdc.credit(amount)
+   │                           ^^^^^^
+   │                           │
+   │                           type annotation is needed
+   │                           consider giving `: fn credit<USDC, _>` here

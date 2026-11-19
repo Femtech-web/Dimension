@@ -1,4 +1,4 @@
-use dimension::{Given, In, Out, Quantity, Settled, credit, exchange, issue}
+use dimension::{Given, In, Out, Quantity, Settled, exchange}
 use vault::vault::{Shares, Vault}
 
 // A deposit written, consistently, as assets leaving the vault. Every signature
@@ -12,10 +12,10 @@ pub fn deposit<A>(_ v: mut Vault<A>, _ assets: Quantity<A, Out, Given>) -> Quant
 > {
     let shares: Quantity<Shares<A>, In, Settled> = exchange(
         assets,
-        numerator: v.total_shares + 1,
-        denominator: v.total_assets + 1,
+        numerator: v.total_shares.raw() + 1,
+        denominator: v.total_assets.raw() + 1,
     )
-    v.total_assets = credit(v.total_assets, assets)
-    v.total_shares = issue(v.total_shares, shares)
+    v.total_assets = v.total_assets.credit(assets)
+    v.total_shares = v.total_shares.issue(shares)
     shares
 }

@@ -20,8 +20,9 @@ cli/                         the command line: `new`, `check`, `feeds` (standard
 tests/
   core/  oracle/  explorer/  vault/  unit tests; core, explorer and vault run on the EVM and natively
   unsafe_root/               the one forgery the compiler allows, which `dimension check` fails
-  compile_fail/              19 rejected constructions, each with a corrected twin
+  compile_fail/              21 rejected constructions, each with a corrected twin
   zero_cost/                 typed code next to the same code by hand, measured by `make evm`
+  labels/                    label calls written every way Fe allows, for `make consumer`
   feeds/                     wrong feed declarations that compile, for `make feeds`
   compiler_findings/         the reproducer filed as argotorg/fe#2043
   probes/                    20 language-feasibility probes on an early prototype, kept as recorded
@@ -49,7 +50,7 @@ be one more ingot depending on `dimension`, with no change to the core.
 | `asset` | `Asset { const DECIMALS }`, implemented once per token type |
 | `rounding` | sealed `Rounding` with `Floor` and `Ceil`, the only two |
 | `flow` | sealed `Flow` (`In`, `Out`) with associated `Admission` and `Obligation` roundings; sealed `Stage` (`Given`, `Admitted`, `Owed`, `Settled`), and `TokenUnits` for the two in token units; sealed `Valuation` (`Collateral` rounds down, `Debt` up) |
-| `value` | `Amount<T>`, `Quantity<T, F, S>`, `Rate<T>`, `ScalingFactor<T>`, `Price<B, Q>`, `Value<Q, V>`, the only functions that construct the trusted ones, and `credit`, `debit`, `issue`, `retire`, which move a balance or a supply only in the direction an amount is labelled |
+| `value` | `Amount<T>`, `Quantity<T, F, S>`, `Rate<T>`, `ScalingFactor<T>`, `Price<B, Q>`, `Value<Q, V>`, the only functions that construct the trusted ones, and `Held<T>` and `Supply<T>`, a balance held and a supply issued, which move only by an amount of their own token, in the direction it is labelled |
 | `value::oracle` | EVM only: `Feed<B, Q>` and `RateSource<T>` declarations, `verify`, `read`, `read_rate` |
 | `value::testing` | `unsafe fn assume_price`, `assume_rate` for tests and simulations |
 | `policy` | `RiskPolicy` constants checked by `where` predicates |
@@ -278,12 +279,12 @@ whether it holds, and the evidence.
 | `replay` | the three kernels | the attacker's own transactions, step by step, and the pool's state after each |
 | `moonwell` | the Fe oracle | Moonwell's deployed oracle and the real feeds on Base forks |
 | `feeds` | each declared feed | Chainlink's directory and Base; wrong declarations must be rejected |
-| `consumer` | a fresh project from `dimension new` | Dimension taken by git; its tests; a misuse; `dimension check` passes it and fails it with `allow_unsafe` or a forged price |
+| `consumer` | a fresh project from `dimension new`, and the CLI's label list | Dimension taken by git; its tests; a misuse; `dimension check` passes it and fails it with `allow_unsafe` or a forged price; its labels equal the compiler's in every ingot |
 | `mutants` | the checks themselves | realistic bugs planted one at a time; the check meant for each must fail |
 
 Golden files never regenerate silently: `make update` rewrites them, and the
 diff is reviewed before it is kept. The differential test clears Foundry's
 failure cache so its counts are deterministic. CI runs `make ci` and
-`make mutants` on Linux, and the fork targets, with all 19 mutants, in a
+`make mutants` on Linux, and the fork targets, with all 21 mutants, in a
 separate job. The same goldens pass on macOS and Linux,
 so diagnostics and bytecode hashes do not depend on the platform.

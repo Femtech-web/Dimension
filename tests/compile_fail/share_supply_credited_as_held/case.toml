@@ -1,0 +1,6 @@
+kind = "compile_fail"
+expect_code = "2-0010"
+layer = "compile-time"
+mechanism = "A redemption credits the shares coming back to the vault's share supply, as if the vault held them, which would raise the supply instead of retiring them: a supply is only issued or retired"
+twin = "fixed"
+twin_run = "test"

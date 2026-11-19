@@ -21,11 +21,13 @@ trusts, or misprice them, and warns on what to review:
 - the Fe version is one Dimension is tested on (warn), and the project compiles (fail);
 - every Chainlink feed it declares is the feed it claims to be (fail), with `--network`.
 
-It also lists every label: each place a raw number gets its direction
-(`given<T, In>`, `owed<T, Out>`). The compiler cannot see whether a raw number
-really arrives or leaves. A labelled amount that reaches `credit` or `debit` is
-checked against the balance it moves; the list is the rest of what a reviewer
-must read.
+It also lists every label: each call of `given`, `owed`, `held` or
+`supply_of`, under whatever name the project imports them as, with the type
+named or inferred. That is where a raw number gets its meaning, a direction or a
+token held or issued, which the compiler cannot verify on its own. An amount
+that then moves a holding is checked against both; the list is what a reviewer
+must read. `make consumer` requires the list to equal the compiler's own, in
+every ingot of this repository.
 
 Exits 1 if any check fails. Python 3.11+, standard library only.
 """
@@ -51,7 +53,6 @@ SUPPORTED_FE = ("26.6.0", "26.7.0")
 _RELEASE = re.compile(r"^## (\d+\.\d+\.\d+)\b[^\n]*\n\nCommit `([0-9a-f]{40})`", re.MULTILINE)
 _FULL_COMMIT = re.compile(r"^[0-9a-f]{40}$")
 _UNSAFE = re.compile(r"\bunsafe\b")
-_LABEL = re.compile(r"\b(given|owed)\s*<")
 
 
 def releases() -> dict[str, str]:
@@ -113,24 +114,125 @@ def find_fe(explicit: str | None) -> str | None:
 
 
 def without_comments(text: str) -> str:
-    return re.sub(r"//[^\n]*", "", text)
+    """Blanks comments and string literals, keeping every offset and line."""
+    blank = lambda m: re.sub(r"[^\n]", " ", m.group())
+    text = re.sub(r"/\*.*?\*/", blank, text, flags=re.DOTALL)
+    text = re.sub(r"//[^\n]*", blank, text)
+    return re.sub(r'"(?:[^"\\\n]|\\.)*"', blank, text)
 
 
-def labels(path: Path, project: Path) -> list[tuple[str, str]]:
-    """Each `given<..>` or `owed<..>` call in a source file: where, and the label."""
-    text = without_comments(path.read_text())
+_USE = re.compile(r"(?:^|(?<=[;{}\n]))[ \t]*(?:pub[ \t]+)?use[ \t]+", re.MULTILINE)
+_NAME = re.compile(r"[A-Za-z_]\w*|\*")
+
+
+def imports(text: str) -> list[tuple[list[str], str | None]]:
+    """Every `use` path in a source, with its `as` alias: braces and nesting expanded."""
+
+    def tree(i: int, prefix: list[str]) -> tuple[list, int]:
+        while text[i].isspace():
+            i += 1
+        if text[i] == "{":
+            i, found = i + 1, []
+            while True:
+                while text[i].isspace() or text[i] == ",":
+                    i += 1
+                if text[i] == "}":
+                    return found, i + 1
+                items, i = tree(i, prefix)
+                found += items
+        segment = _NAME.match(text, i)
+        if not segment:
+            return [], i + 1
+        i = segment.end()
+        if text.startswith("::", i):
+            return tree(i + 2, prefix + [segment.group()])
+        alias = re.match(r"\s+as\s+([A-Za-z_]\w*)", text[i:])
+        return [(prefix + [segment.group()], alias.group(1) if alias else None)], i + (alias.end() if alias else 0)
+
     found = []
-    for m in _LABEL.finditer(text):
-        if text[: m.start()].rstrip().endswith("fn"):
+    for m in _USE.finditer(text):
+        try:
+            found += tree(m.end(), [])[0]
+        except IndexError:
+            pass
+    return found
+
+
+LABELLING = ("given", "owed", "held", "supply_of")
+
+
+def exported(uses: list[list[tuple[list[str], str | None]]]) -> dict[str, str]:
+    """Names a project's own modules re-export a labelling function under, at any depth."""
+    names: dict[str, str] = {}
+    while True:
+        added = {
+            alias or path[-1]: names.get(path[-1]) or path[-1]
+            for file in uses
+            for path, alias in file
+            if ((path[0] == "dimension" and path[-1] in LABELLING) or (path[0] != "dimension" and path[-1] in names))
+            and (alias or path[-1]) not in names
+        }
+        if not added:
+            return names
+        names.update(added)
+
+
+def labels(path: Path, project: Path, uses: list[tuple[list[str], str | None]], reexported: dict[str, str]) -> list[tuple[str, str]]:
+    """Each call of a labelling function in a source file, under any name it resolves to: where, and the label."""
+    text = without_comments(path.read_text())
+    local = set(re.findall(r"\bfn\s+([A-Za-z_]\w*)", text))
+    # Names usable unqualified in this file, and the module aliases that lead into Dimension.
+    bare: dict[str, str] = {}
+    modules = {"dimension"}
+    for use_path, alias in uses:
+        last = use_path[-1]
+        if use_path[0] == "dimension" and last == "*":
+            bare.update({name: name for name in LABELLING})
+        elif use_path[0] == "dimension" and last in LABELLING:
+            bare[alias or last] = last
+        elif use_path[0] != "dimension" and last in reexported:
+            bare[alias or last] = reexported[last]
+        elif use_path[0] == "dimension":
+            modules.add(alias or last)
+    bare = {name: target for name, target in bare.items() if name not in local}
+    callable_names = set(bare) | set(LABELLING) | set(reexported)
+    pattern = re.compile(r"(?<![\w.])((?:[A-Za-z_]\w*\s*::\s*)*)(" + "|".join(map(re.escape, sorted(callable_names, key=len, reverse=True))) + r")\b")
+    found = []
+    for m in pattern.finditer(text):
+        qualifier = [q.strip() for q in m.group(1).split("::") if q.strip()]
+        name = m.group(2)
+        if qualifier:
+            if name in LABELLING and qualifier[0] in modules:
+                target = name
+            elif name in reexported and qualifier[0] in ("super", "self", "crate", "ingot"):
+                target = reexported[name]
+            else:
+                continue
+        elif name in bare:
+            target = bare[name]
+        else:
             continue
-        depth, end = 0, m.end() - 1
-        while end < len(text):
-            depth += {"<": 1, ">": -1}.get(text[end], 0)
-            if depth == 0:
-                break
-            end += 1
-        line = text.count("\n", 0, m.start()) + 1
-        found.append((f"{path.relative_to(project)}:{line}", re.sub(r"\s+", " ", text[m.start() : end + 1])))
+        if re.search(r"\bfn\s*$", text[: m.start()]):
+            continue
+        i = m.end()
+        while i < len(text) and text[i].isspace():
+            i += 1
+        generics = ""
+        if i < len(text) and text[i] == "<":
+            depth, end = 0, i
+            while end < len(text):
+                depth += {"<": 1, ">": -1}.get(text[end], 0)
+                if depth == 0:
+                    break
+                end += 1
+            generics = re.sub(r"\s+", " ", text[i : end + 1]).replace("< ", "<").replace(", >", ">").replace(" >", ">")
+            i = end + 1
+            while i < len(text) and text[i].isspace():
+                i += 1
+        if i >= len(text) or text[i] != "(":
+            continue
+        label = target + (generics or " (type inferred)") + ("" if name == target else f" as {name}")
+        found.append((f"{path.relative_to(project)}:{text.count(chr(10), 0, m.start()) + 1}", label))
     return found
 
 
@@ -176,11 +278,13 @@ def checklist(project: Path, network: str | None, rpc: str | None, fe_path: str 
         for i, line in enumerate(without_comments(path.read_text()).splitlines(), 1)
         if _UNSAFE.search(line)
     ]
-    rows.labels = [site for path in sources for site in labels(path, project)]
+    uses = [imports(without_comments(path.read_text())) for path in sources]
+    reexported = exported(uses)
+    rows.labels = [site for path, file_uses in zip(sources, uses) for site in labels(path, project, file_uses, reexported)]
     rows.add(
         "note",
         "labels",
-        f"{len(rows.labels)} places a raw number gets its direction, listed below: review each"
+        f"{len(rows.labels)} places a raw number gets its meaning, listed below: review each"
         if rows.labels
         else "no raw number gets a direction here",
     )
@@ -240,7 +344,7 @@ def check(project: Path, network: str | None, rpc: str | None, fe_path: str | No
         print(f"  {status}  {name:<13} {detail}")
     if rows.labels:
         width = max(len(where) for where, _ in rows.labels)
-        print("\n  labels to review (amounts that reach credit or debit are also checked against their balance):")
+        print("\n  labels to review (an amount that moves a holding is also checked against it):")
         for where, label in rows.labels:
             print(f"    {where:<{width}}  {label}")
     return 1 if rows.failed else 0

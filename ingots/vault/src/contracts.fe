@@ -4,7 +4,7 @@
 #![cfg(target = "evm")]
 
 use std::abi::sol
-use dimension::{In, Out, given}
+use dimension::{In, Out, given, held, supply_of}
 use super::vault::{Shares, Vault, preview_deposit, preview_mint, preview_redeem, preview_withdraw}
 
 /// The vault's underlying token.
@@ -22,7 +22,7 @@ pub msg VaultPreviews {
 }
 
 fn state(_ total_assets: u256, _ total_shares: u256) -> Vault<Underlying> {
-    Vault { total_assets, total_shares }
+    Vault { total_assets: held(total_assets), total_shares: supply_of(total_shares) }
 }
 
 pub contract TypedVault {

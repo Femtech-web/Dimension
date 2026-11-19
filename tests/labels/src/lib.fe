@@ -1,0 +1,52 @@
+//! Label calls written every way Fe allows. `make consumer` requires
+//! `dimension check` to list exactly the calls the compiler finds here.
+
+use dimension::{Given, In, Out, Owed, Quantity, given, held}
+use dimension::owed as computed
+use dimension::value as v
+
+pub struct USDC {}
+pub struct Shares<A> {}
+
+/// With the type named.
+pub fn deposit(_ raw: u256) -> Quantity<USDC, In, Given> {
+    given<USDC, In>(raw)
+}
+
+/// With the type inferred from the return type.
+pub fn withdrawal(_ raw: u256) -> Quantity<USDC, Out, Given> {
+    given(raw)
+}
+
+/// Through an aliased import.
+pub fn payout(_ internal: u256) -> Quantity<USDC, Out, Owed> {
+    computed<USDC, Out>(internal)
+}
+
+/// Through a module path, with a nested generic.
+pub fn redemption(_ raw: u256) -> Quantity<Shares<USDC>, In, Given> {
+    v::given<Shares<USDC>, In>(raw)
+}
+
+/// Two labels in one expression, on one line.
+pub fn net(_ arriving: u256, _ leaving: u256) -> u256 {
+    difference(
+        given<USDC, In>(arriving).value(),
+        computed<USDC, Out>(leaving).value(),
+    )
+}
+
+fn difference(_ a: u256, _ b: u256) -> u256 {
+    a - b
+}
+
+/// A holding and a supply, read from storage: the token named, and inferred.
+pub fn books(_ assets: u256, _ shares: u256) -> u256 {
+    let issued: dimension::Supply<Shares<USDC>> = v::supply_of(shares)
+    held<USDC>(assets).raw() + issued.raw()
+}
+
+// Not calls: given<USDC, Out>(raw) in a comment,
+pub fn note() -> String<16> {
+    "given<A, Out>(1)"
+}

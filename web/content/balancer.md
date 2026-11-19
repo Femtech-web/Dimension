@@ -263,17 +263,17 @@ the faithful one reads it raw, as Balancer does.
 |---|---|---|---|
 | swapGivenIn | 15,164 | 16,104 (+6.2%) | 22,644 (+49.3%) |
 | swapGivenOut | 15,981 | 17,000 (+6.4%) | 23,553 (+47.4%) |
-| exitGivenIn | 23,240 | 24,097 (+3.7%) | 24,913 (+7.2%) |
-| exitGivenOut | 24,493 | 25,332 (+3.4%) | 26,148 (+6.8%) |
-| joinGivenIn | 25,585 | 26,380 (+3.1%) | 27,196 (+6.3%) |
-| joinGivenOut | 23,453 | 24,360 (+3.9%) | 25,176 (+7.3%) |
+| exitGivenIn | 23,240 | 24,189 (+4.1%) | 24,995 (+7.6%) |
+| exitGivenOut | 24,493 | 25,424 (+3.8%) | 26,230 (+7.1%) |
+| joinGivenIn | 25,585 | 26,472 (+3.5%) | 27,278 (+6.6%) |
+| joinGivenOut | 23,453 | 24,452 (+4.3%) | 25,258 (+7.7%) |
 
 | Runtime bytecode | Faithful | Typed | Guarded |
 |---|---|---|---|
-| `-O0` | 19,423 B | 28,740 B | 28,746 B |
-| `-O1` (default) | 8,014 B | 9,346 B | 9,797 B |
-| `-O2` | 7,992 B | 9,332 B | 9,783 B |
-| `-Os` | 9,139 B | 10,230 B | 10,614 B |
+| `-O0` | 19,423 B | 29,161 B | 29,167 B |
+| `-O1` (default) | 8,014 B | 9,412 B | 9,867 B |
+| `-O2` | 7,992 B | 9,400 B | 9,855 B |
+| `-Os` | 9,139 B | 10,299 B | 10,685 B |
 
 Each contract is built, attacked and measured at every level. The attack's
 results are identical to the wei at all four, so the level changes only the
@@ -283,10 +283,10 @@ it. `-O2` is the cheapest, by 16 gas over `-O1`; `-Os` costs 6.8% more gas than
 
 | Mean gas per operation | Faithful | Typed | Guarded |
 |---|---|---|---|
-| `-O0` | 29,850 | 32,465 (+8.8%) | 35,742 (+19.7%) |
-| `-O1` (default) | 21,319 | 22,212 (+4.2%) | 24,938 (+17.0%) |
-| `-O2` | 21,303 | 22,198 (+4.2%) | 24,924 (+17.0%) |
-| `-Os` | 22,744 | 23,730 (+4.3%) | 26,541 (+16.7%) |
+| `-O0` | 29,850 | 32,779 (+9.8%) | 36,056 (+20.8%) |
+| `-O1` (default) | 21,319 | 22,274 (+4.5%) | 24,993 (+17.2%) |
+| `-O2` | 21,303 | 22,258 (+4.5%) | 24,978 (+17.3%) |
+| `-Os` | 22,744 | 23,783 (+4.6%) | 26,587 (+16.9%) |
 
 The type machinery itself compiles away: typed and raw code produce
 byte-identical bytecode at `-O1`, `-O2` and `-Os` in the probes. The typed

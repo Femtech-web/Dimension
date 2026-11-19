@@ -1,0 +1,10 @@
+use dimension::{In, given, held}
+use super::{Pair, deposit_weth}
+
+#[test]
+fn the_deposit_lands_in_its_own_balance() {
+    var pair = Pair { usdc: held(10), weth: held(20) }
+    deposit_weth(mut pair, given(5))
+    assert(pair.weth.raw() == 25)
+    assert(pair.usdc.raw() == 10)
+}

@@ -217,7 +217,7 @@ export default function Home() {
               A direction is a sealed trait whose associated types name its roundings. Only <code>admit</code> produces
               an admitted amount, and it takes its rounding from the direction. A call site never names one, so it cannot
               name the wrong one. And the direction an amount is labelled with is checked against the money: a balance is
-              credited only with value arriving, and debited only with value leaving.
+              credited only with value arriving, debited only with value leaving, and only ever by its own token.
             </p>
             <p className="ink2">
               The direction is resolved statically: on the library itself, the typed code compiles to the same bytes as
@@ -268,9 +268,9 @@ export default function Home() {
             <Code title="fe.toml" lang="toml">
               {`[dependencies.dimension]
 source = "https://github.com/Femtech-web/Dimension"
-rev = "57ce4106575a173b9fc51ebb44c3c2243e285cd5"   # v0.1.0
+rev = "468e2c20d405f1dfeaf42273e838884090d293a1"   # v0.2.0
 name = "dimension"
-version = "0.1.0"`}
+version = "0.2.0"`}
             </Code>
             <Code title="from a clone of Dimension" lang="shell">
               {`python3 cli/dimension.py new ../my-protocol

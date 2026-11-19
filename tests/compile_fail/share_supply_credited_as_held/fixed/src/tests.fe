@@ -1,0 +1,14 @@
+use dimension::{given, held, supply_of}
+use vault::vault::Vault
+use super::redeem
+
+pub struct USDC {}
+
+#[test]
+fn redeemed_shares_leave_the_supply() {
+    // 10 of 100 shares, against 100 assets, 1 virtual of each: 10 * 101 / 101 = 10 assets.
+    var v = Vault<USDC> { total_assets: held(100), total_shares: supply_of(100) }
+    assert(redeem(mut v, given(10)).value() == 10)
+    assert(v.total_shares.raw() == 90)
+    assert(v.total_assets.raw() == 90)
+}

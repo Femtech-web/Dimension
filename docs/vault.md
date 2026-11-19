@@ -58,15 +58,19 @@ expected `Quantity<Shares<A>, Out, Settled>`, but `Quantity<_, In, Settled>` is 
 
 A developer could tell that lie consistently instead, declaring the deposit's
 assets `Out` and its shares `In` in every signature. The vault's books then
-refuse it. Each operation moves its assets with `credit` or `debit`, and its
-shares with `issue` or `retire`, and those take only the matching direction:
+refuse it. Its assets are a `Held<A>` and its shares a `Supply<Shares<A>>`,
+which move only by their own token, in the matching direction:
 
 ```
-v.total_assets = credit(v.total_assets, assets)
-                                        ^^^^^^ expected `Quantity<_, In, _>`, but `Quantity<A, Out, Given>` is given
-v.total_shares = issue(v.total_shares, shares)
-                                       ^^^^^^ expected `Quantity<_, Out, _>`, but `Quantity<Shares<A>, In, Settled>` is given
+v.total_assets = v.total_assets.credit(assets)
+                                       ^^^^^^ expected `Quantity<A, In, _>`, but `Quantity<A, Out, Given>` is given
+v.total_shares = v.total_shares.issue(shares)
+                                      ^^^^^^ expected `Quantity<Shares<A>, Out, _>`, but `Quantity<Shares<A>, In, Settled>` is given
 ```
+
+The same types refuse a redemption that credits the returning shares to the
+supply, which would raise it instead of retiring them
+(`share_supply_credited_as_held`): a `Supply` has no `credit`.
 
 That is case `vault_deposit_labeled_as_leaving`.
 

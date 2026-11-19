@@ -8,9 +8,9 @@ version = "0.1.0"
 #
 #   [dependencies.dimension]
 #   source = "https://github.com/Femtech-web/Dimension"
-#   rev = "57ce4106575a173b9fc51ebb44c3c2243e285cd5"   # v0.1.0
+#   rev = "468e2c20d405f1dfeaf42273e838884090d293a1"   # v0.2.0
 #   name = "dimension"
-#   version = "0.1.0"
+#   version = "0.2.0"
 #
 # Inside this repository the example uses the local copy.
 dimension = { path = "../../ingots/dimension" }

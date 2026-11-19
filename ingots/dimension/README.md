@@ -44,9 +44,9 @@ Add the dependency to your ingot's `fe.toml`, pinned to a release commit:
 ```toml
 [dependencies.dimension]
 source = "https://github.com/Femtech-web/Dimension"
-rev = "57ce4106575a173b9fc51ebb44c3c2243e285cd5"   # v0.1.0
+rev = "468e2c20d405f1dfeaf42273e838884090d293a1"   # v0.2.0
 name = "dimension"
-version = "0.1.0"
+version = "0.2.0"
 ```
 
 - Fe resolves `rev` as a full commit hash, not a tag. Each release's commit is
@@ -83,7 +83,7 @@ fe build                     # bytecode and ABI in out/
 |---|---|
 | `asset` | `Asset`: a token type and its decimals |
 | `flow`, `rounding` | `In` and `Out`, the stages `Given`, `Admitted`, `Owed`, `Settled` (`TokenUnits`: the two in token units), the valuation sides `Collateral` and `Debt`. Sealed: `Floor` and `Ceil` are the only roundings |
-| `value` | `Quantity`, `ScalingFactor`, `Rate`, `Price`, `Amount`, `Value`, and the only functions that produce the trusted ones: `admit`, `settle`, `exchange`, `value_of`. `credit` and `debit` move a held balance, `issue` and `retire` a supply, each only in the direction an amount is labelled |
+| `value` | `Quantity`, `ScalingFactor`, `Rate`, `Price`, `Amount`, `Value`, and the only functions that produce the trusted ones: `admit`, `settle`, `exchange`, `value_of`. `Held<T>` (`credit`, `debit`) and `Supply<T>` (`issue`, `retire`) move a balance held or a supply issued, only by their own token, in the direction it is labelled |
 | `value::oracle` | EVM only. `Feed<B, Q>` and `RateSource<T>` declarations; `verify` at deployment; `read` and `read_rate` with freshness and band checks |
 | `policy` | `RiskPolicy`, with `borrow_capacity` and `is_healthy` checked by compile-time predicates |
 | `invariant` | `Backing` and `preserves_share_value`, an exact runtime share-value check |
@@ -120,7 +120,7 @@ costs the same gas as the hand-written one on every call.
 
 ## Status and versioning
 
-Version 0.1.0, built for the Fe Builders Challenge 2026. It is not audited:
+Version 0.2.0, built for the Fe Builders Challenge 2026. It is not audited:
 audit a protocol built on it as you would any other. Versions follow semantic
 versioning; before 1.0, a minor version may change the API, and every change
 is listed in the [changelog](../../CHANGELOG.md). Report vulnerabilities

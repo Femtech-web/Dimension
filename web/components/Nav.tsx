@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV, REPO } from "@/lib/site";
+import { NAV, RELEASE, REPO } from "@/lib/site";
 import styles from "./Nav.module.css";
 
 export function Nav() {
@@ -17,8 +17,8 @@ export function Nav() {
             </svg>
             <span>Dimension</span>
           </Link>
-          <a href={`${REPO}/releases/tag/v0.1.0`} className={styles.version}>
-            v0.1.0
+          <a href={`${REPO}/releases/tag/v${RELEASE.version}`} className={styles.version}>
+            v{RELEASE.version}
           </a>
         </div>
         <nav className={styles.links} aria-label="Main">

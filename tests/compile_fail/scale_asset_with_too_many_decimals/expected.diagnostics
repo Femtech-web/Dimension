@@ -4,7 +4,7 @@ error[8-0093]: const requirement is not satisfied
   8 │     scaling_factor<WIDE>()
     │     ^^^^^^^^^^^^^^^^^^^^^^ condition evaluated to `false`
     │
-    ┌─ src/value.fe:170:61
+    ┌─ src/value.fe:205:61
     │
-170 │ pub fn scaling_factor<T: Asset>() -> ScalingFactor<T> where T::DECIMALS <= 18 {
+205 │ pub fn scaling_factor<T: Asset>() -> ScalingFactor<T> where T::DECIMALS <= 18 {
     │                                                             ----------------- required by this predicate

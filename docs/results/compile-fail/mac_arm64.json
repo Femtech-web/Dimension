@@ -8,10 +8,10 @@
   },
   "platform": "mac_arm64",
   "summary": {
-    "cases": 19,
-    "ok": 19,
+    "cases": 21,
+    "ok": 21,
     "by_kind": {
-      "compile_fail": 19
+      "compile_fail": 21
     }
   },
   "cases": [
@@ -156,6 +156,30 @@
       }
     },
     {
+      "id": "compile_fail/deposit_credited_to_another_token",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A two-token pool credits a WETH deposit to its USDC balance: a held balance takes only amounts of its own token",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "bf0d162637ed3b4de2d8e1fa8b6f9e5ebf10aea9d8f2f43cf975e6da7cc96997",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-// A WETH deposit, credited to the USDC balance.",
+            "+// A WETH deposit, credited to the WETH balance.",
+            "-    pair.usdc = pair.usdc.credit(amount)",
+            "+    pair.weth = pair.weth.credit(amount)"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
       "id": "compile_fail/forge_admitted_quantity",
       "kind": "compile_fail",
       "layer": "compile-time",
@@ -189,7 +213,7 @@
       "observed": {
         "error_code": "2-0003",
         "message": "`wad` is not visible",
-        "diagnostics_sha256": "9db5057edf00dd10fc0f480e38735e02140403228119c8edb5a4ff59d940a262",
+        "diagnostics_sha256": "3397a6a3950782a3f4c8171649552d18a2f8bc8ac95f30eb8fae6f1392670c55",
         "twin": {
           "mode": "check",
           "fix": [
@@ -217,17 +241,17 @@
       "observed": {
         "error_code": "6-0003",
         "message": "trait bound is not satisfied",
-        "diagnostics_sha256": "91e5f13c8149c1291fb66d4aaf7ad45f2958d386f42226158af649f9af2c196c",
+        "diagnostics_sha256": "1b8c72c656f25e7a0ffd65e7e279ff0e19763b046a1d6226231365fe6126f920",
         "twin": {
           "mode": "test",
           "fix": [
-            "-use dimension::{Asset, In, admit, credit, given, scaling_factor}",
-            "+use dimension::{Asset, In, credit, given}",
+            "-use dimension::{Asset, In, admit, given, held, scaling_factor}",
+            "+use dimension::{Asset, In, given, held}",
             "-// A USDC deposit added to the desk's USDC balance after admission, in internal",
             "-// 18-decimal units: 10^12 times what arrived.",
             "+// The deposit credited in USDC's own units, as it arrived.",
-            "-    credit(held, admit(given<USDC, In>(raw), scaling_factor<USDC>()))",
-            "+    credit(held, given<USDC, In>(raw))"
+            "-    held<USDC>(balance).credit(admit(given<USDC, In>(raw), scaling_factor<USDC>())).raw()",
+            "+    held<USDC>(balance).credit(given<USDC, In>(raw)).raw()"
           ],
           "passed": 1,
           "ok": true
@@ -364,12 +388,36 @@
       "observed": {
         "error_code": "8-0093",
         "message": "const requirement is not satisfied",
-        "diagnostics_sha256": "f2bedcfd785bf5714e90348f4dd1111bd4cd059a227081afc4ebf1069b7928e4",
+        "diagnostics_sha256": "584e5c1462132118e275e96f7dab20ad3cb409675a6ff126ed4c037f179066ee",
         "twin": {
           "mode": "test",
           "fix": [
             "-    const DECIMALS: u256 = 24",
             "+    const DECIMALS: u256 = 18"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/share_supply_credited_as_held",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "A redemption credits the shares coming back to the vault's share supply, as if the vault held them, which would raise the supply instead of retiring them: a supply is only issued or retired",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "2-0010",
+        "message": "no method named `credit` found for struct `Supply`",
+        "diagnostics_sha256": "7ece6d3f6caef17e740cfc8d6f5668eb3dba2d67474c5e76d2cb6e9228e61908",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-// Shares coming back, credited to the share supply as if the vault held them.",
+            "+// Shares coming back, retired from the share supply.",
+            "-    v.total_shares = v.total_shares.credit(shares)",
+            "+    v.total_shares = v.total_shares.retire(shares)"
           ],
           "passed": 1,
           "ok": true
@@ -459,7 +507,7 @@
       "observed": {
         "error_code": "8-0000",
         "message": "type mismatch",
-        "diagnostics_sha256": "8ff7713bf2c107c43a4af95c4d49643555ca800a4e107da0335e728a9fc68150",
+        "diagnostics_sha256": "8207635b443e480a3366f89c2b81ebe02df24871a10328cd2659d384731ee3f1",
         "twin": {
           "mode": "test",
           "fix": [
@@ -492,7 +540,7 @@
       "observed": {
         "error_code": "8-0000",
         "message": "type mismatch",
-        "diagnostics_sha256": "49233cb5b2d0190bde17c25710fcc0c4b7a76b80e0fbf7354030fd04ff58e73f",
+        "diagnostics_sha256": "d0f9483c3f141c70492215806f3122d3fa025a53aac91d1223994f2c047de2b9",
         "twin": {
           "mode": "test",
           "fix": [

@@ -1,0 +1,11 @@
+use dimension::{Given, Held, In, Quantity}
+
+pub struct USDC {}
+pub struct WETH {}
+
+pub struct Pair { pub usdc: Held<USDC>, pub weth: Held<WETH> }
+
+// A WETH deposit, credited to the WETH balance.
+pub fn deposit_weth(_ pair: mut Pair, _ amount: Quantity<WETH, In, Given>) {
+    pair.weth = pair.weth.credit(amount)
+}

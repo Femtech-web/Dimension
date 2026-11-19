@@ -45,36 +45,36 @@
       "typed": {
         "swapGivenIn": 16104,
         "swapGivenOut": 17000,
-        "exitGivenIn": 24097,
-        "exitGivenOut": 25332,
-        "joinGivenIn": 26380,
-        "joinGivenOut": 24360
+        "exitGivenIn": 24189,
+        "exitGivenOut": 25424,
+        "joinGivenIn": 26472,
+        "joinGivenOut": 24452
       },
       "guarded": {
         "swapGivenIn": 22644,
         "swapGivenOut": 23553,
-        "exitGivenIn": 24913,
-        "exitGivenOut": 26148,
-        "joinGivenIn": 27196,
-        "joinGivenOut": 25176
+        "exitGivenIn": 24995,
+        "exitGivenOut": 26230,
+        "joinGivenIn": 27278,
+        "joinGivenOut": 25258
       }
     },
     "relative_to_faithful": {
       "typed": {
         "swapGivenIn": "+6.2%",
         "swapGivenOut": "+6.4%",
-        "exitGivenIn": "+3.7%",
-        "exitGivenOut": "+3.4%",
-        "joinGivenIn": "+3.1%",
-        "joinGivenOut": "+3.9%"
+        "exitGivenIn": "+4.1%",
+        "exitGivenOut": "+3.8%",
+        "joinGivenIn": "+3.5%",
+        "joinGivenOut": "+4.3%"
       },
       "guarded": {
         "swapGivenIn": "+49.3%",
         "swapGivenOut": "+47.4%",
-        "exitGivenIn": "+7.2%",
-        "exitGivenOut": "+6.8%",
-        "joinGivenIn": "+6.3%",
-        "joinGivenOut": "+7.3%"
+        "exitGivenIn": "+7.6%",
+        "exitGivenOut": "+7.1%",
+        "joinGivenIn": "+6.6%",
+        "joinGivenOut": "+7.7%"
       }
     },
     "per_operation_by_level": {
@@ -90,18 +90,18 @@
         "typed": {
           "swapGivenIn": 24962,
           "swapGivenOut": 26523,
-          "exitGivenIn": 34086,
-          "exitGivenOut": 37725,
-          "joinGivenIn": 36958,
-          "joinGivenOut": 34536
+          "exitGivenIn": 34557,
+          "exitGivenOut": 38196,
+          "joinGivenIn": 37429,
+          "joinGivenOut": 35007
         },
         "guarded": {
           "swapGivenIn": 32671,
           "swapGivenOut": 34241,
-          "exitGivenIn": 35144,
-          "exitGivenOut": 38783,
-          "joinGivenIn": 38016,
-          "joinGivenOut": 35594
+          "exitGivenIn": 35615,
+          "exitGivenOut": 39254,
+          "joinGivenIn": 38487,
+          "joinGivenOut": 36065
         }
       },
       "O1": {
@@ -116,18 +116,18 @@
         "typed": {
           "swapGivenIn": 16104,
           "swapGivenOut": 17000,
-          "exitGivenIn": 24097,
-          "exitGivenOut": 25332,
-          "joinGivenIn": 26380,
-          "joinGivenOut": 24360
+          "exitGivenIn": 24189,
+          "exitGivenOut": 25424,
+          "joinGivenIn": 26472,
+          "joinGivenOut": 24452
         },
         "guarded": {
           "swapGivenIn": 22644,
           "swapGivenOut": 23553,
-          "exitGivenIn": 24913,
-          "exitGivenOut": 26148,
-          "joinGivenIn": 27196,
-          "joinGivenOut": 25176
+          "exitGivenIn": 24995,
+          "exitGivenOut": 26230,
+          "joinGivenIn": 27278,
+          "joinGivenOut": 25258
         }
       },
       "O2": {
@@ -142,18 +142,18 @@
         "typed": {
           "swapGivenIn": 16095,
           "swapGivenOut": 16991,
-          "exitGivenIn": 24079,
-          "exitGivenOut": 25314,
-          "joinGivenIn": 26362,
-          "joinGivenOut": 24345
+          "exitGivenIn": 24167,
+          "exitGivenOut": 25408,
+          "joinGivenIn": 26456,
+          "joinGivenOut": 24433
         },
         "guarded": {
           "swapGivenIn": 22635,
           "swapGivenOut": 23544,
-          "exitGivenIn": 24895,
-          "exitGivenOut": 26130,
-          "joinGivenIn": 27178,
-          "joinGivenOut": 25161
+          "exitGivenIn": 24973,
+          "exitGivenOut": 26214,
+          "joinGivenIn": 27262,
+          "joinGivenOut": 25239
         }
       },
       "Os": {
@@ -168,18 +168,18 @@
         "typed": {
           "swapGivenIn": 16611,
           "swapGivenOut": 17657,
-          "exitGivenIn": 25575,
-          "exitGivenOut": 28709,
-          "joinGivenIn": 28290,
-          "joinGivenOut": 25536
+          "exitGivenIn": 25652,
+          "exitGivenOut": 28791,
+          "joinGivenIn": 28372,
+          "joinGivenOut": 25613
         },
         "guarded": {
           "swapGivenIn": 23390,
           "swapGivenOut": 24440,
-          "exitGivenIn": 26401,
-          "exitGivenOut": 29535,
-          "joinGivenIn": 29116,
-          "joinGivenOut": 26362
+          "exitGivenIn": 26468,
+          "exitGivenOut": 29607,
+          "joinGivenIn": 29188,
+          "joinGivenOut": 26429
         }
       }
     }
@@ -364,14 +364,14 @@
       "vault": {
         "O0": {
           "bytes": {
-            "typed": 3806,
+            "typed": 4034,
             "raw": 3325
           },
           "identical": false,
           "calls": 2048,
           "equal": 2048,
           "gas_per_call": {
-            "typed": 3845.1,
+            "typed": 4082.1,
             "raw": 3549.6
           },
           "by_function": {
@@ -379,28 +379,28 @@
               "calls": 512,
               "equal": 512,
               "succeeded": 423,
-              "gas_typed": 1575912,
+              "gas_typed": 1676163,
               "gas_raw": 1451550
             },
             "previewMint": {
               "calls": 512,
               "equal": 512,
               "succeeded": 429,
-              "gas_typed": 1681363,
+              "gas_typed": 1783036,
               "gas_raw": 1553950
             },
             "previewWithdraw": {
               "calls": 512,
               "equal": 512,
               "succeeded": 447,
-              "gas_typed": 1772093,
+              "gas_typed": 1878032,
               "gas_raw": 1640675
             },
             "previewRedeem": {
               "calls": 512,
               "equal": 512,
               "succeeded": 417,
-              "gas_typed": 1568764,
+              "gas_typed": 1667593,
               "gas_raw": 1444915
             }
           }
@@ -539,29 +539,29 @@
   },
   "runtime_bytecode_bytes": {
     "faithful": 8014,
-    "typed": 9346,
-    "guarded": 9797
+    "typed": 9412,
+    "guarded": 9867
   },
   "runtime_bytecode_bytes_by_level": {
     "O0": {
       "faithful": 19423,
-      "typed": 28740,
-      "guarded": 28746
+      "typed": 29161,
+      "guarded": 29167
     },
     "O1": {
       "faithful": 8014,
-      "typed": 9346,
-      "guarded": 9797
+      "typed": 9412,
+      "guarded": 9867
     },
     "O2": {
       "faithful": 7992,
-      "typed": 9332,
-      "guarded": 9783
+      "typed": 9400,
+      "guarded": 9855
     },
     "Os": {
       "faithful": 9139,
-      "typed": 10230,
-      "guarded": 10614
+      "typed": 10299,
+      "guarded": 10685
     }
   },
   "claims": [
@@ -588,7 +588,7 @@
     {
       "question": "Above -O0, is Dimension's typing free, gas for gas, against the same code written by hand?",
       "holds": true,
-      "evidence": "at -O1, -O2 and -Os the roundings compile to identical bytes, and the vault to the same size with identical gas on every call. At -O0, which no one deploys, typed costs rounding +7.8%, vault +8.3% per call"
+      "evidence": "at -O1, -O2 and -Os the roundings compile to identical bytes, and the vault to the same size with identical gas on every call. At -O0, which no one deploys, typed costs rounding +7.8%, vault +15.0% per call"
     }
   ]
 }

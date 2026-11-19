@@ -1,0 +1,14 @@
+//! The re-exported label, renamed again and used from another file.
+
+use dimension::{Flow, Given, In, Quantity}
+use super::USDC
+use super::aliases::label as arriving
+
+pub fn arrival(_ raw: u256) -> Quantity<USDC, In, Given> {
+    arriving(raw)
+}
+
+/// A label whose direction is a type parameter.
+pub fn labelled<F: Flow>(_ raw: u256) -> Quantity<USDC, F, Given> {
+    super::aliases::label<USDC, F>(raw)
+}

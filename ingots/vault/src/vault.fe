@@ -1,12 +1,15 @@
-use dimension::{Given, In, Out, Quantity, Settled, credit, debit, exchange, issue, retire}
+use dimension::{Given, Held, In, Out, Quantity, Settled, Supply, exchange}
 
 /// The share token of a vault over `A`.
 pub struct Shares<A> {}
 
-/// What a vault over `A` holds and has issued. Conversions count one virtual
-/// asset and one virtual share, as OpenZeppelin's ERC4626 does with a decimals
-/// offset of 0, so a first depositor cannot inflate the share price to nothing.
-pub struct Vault<A> { pub total_assets: u256, pub total_shares: u256 }
+/// What a vault over `A` holds and has issued: its assets are a balance of `A`
+/// it holds, its shares a supply it issues, so each moves only in the direction
+/// an amount is labelled, and only by an amount of its own token. Conversions
+/// count one virtual asset and one virtual share, as OpenZeppelin's ERC4626 does
+/// with a decimals offset of 0, so a first depositor cannot inflate the share
+/// price to nothing.
+pub struct Vault<A> { pub total_assets: Held<A>, pub total_shares: Supply<Shares<A>> }
 
 impl<A> Copy for Vault<A> {}
 
@@ -18,8 +21,8 @@ pub fn preview_deposit<A>(_ v: Vault<A>, _ assets: Quantity<A, In, Given>) -> Qu
 > {
     exchange(
         assets,
-        numerator: v.total_shares + 1,
-        denominator: v.total_assets + 1,
+        numerator: v.total_shares.raw() + 1,
+        denominator: v.total_assets.raw() + 1,
     )
 }
 
@@ -31,8 +34,8 @@ pub fn preview_mint<A>(_ v: Vault<A>, _ shares: Quantity<Shares<A>, Out, Given>)
 > {
     exchange(
         shares,
-        numerator: v.total_assets + 1,
-        denominator: v.total_shares + 1,
+        numerator: v.total_assets.raw() + 1,
+        denominator: v.total_shares.raw() + 1,
     )
 }
 
@@ -44,8 +47,8 @@ pub fn preview_withdraw<A>(_ v: Vault<A>, _ assets: Quantity<A, Out, Given>) -> 
 > {
     exchange(
         assets,
-        numerator: v.total_shares + 1,
-        denominator: v.total_assets + 1,
+        numerator: v.total_shares.raw() + 1,
+        denominator: v.total_assets.raw() + 1,
     )
 }
 
@@ -57,8 +60,8 @@ pub fn preview_redeem<A>(_ v: Vault<A>, _ shares: Quantity<Shares<A>, In, Given>
 > {
     exchange(
         shares,
-        numerator: v.total_assets + 1,
-        denominator: v.total_shares + 1,
+        numerator: v.total_assets.raw() + 1,
+        denominator: v.total_shares.raw() + 1,
     )
 }
 
@@ -68,8 +71,8 @@ pub fn deposit<A>(_ v: mut Vault<A>, _ assets: Quantity<A, In, Given>) -> Quanti
     Settled,
 > {
     let shares = preview_deposit(v, assets)
-    v.total_assets = credit(v.total_assets, assets)
-    v.total_shares = issue(v.total_shares, shares)
+    v.total_assets = v.total_assets.credit(assets)
+    v.total_shares = v.total_shares.issue(shares)
     shares
 }
 
@@ -79,8 +82,8 @@ pub fn mint<A>(_ v: mut Vault<A>, _ shares: Quantity<Shares<A>, Out, Given>) -> 
     Settled,
 > {
     let assets = preview_mint(v, shares)
-    v.total_assets = credit(v.total_assets, assets)
-    v.total_shares = issue(v.total_shares, shares)
+    v.total_assets = v.total_assets.credit(assets)
+    v.total_shares = v.total_shares.issue(shares)
     assets
 }
 
@@ -90,8 +93,8 @@ pub fn withdraw<A>(_ v: mut Vault<A>, _ assets: Quantity<A, Out, Given>) -> Quan
     Settled,
 > {
     let shares = preview_withdraw(v, assets)
-    v.total_assets = debit(v.total_assets, assets)
-    v.total_shares = retire(v.total_shares, shares)
+    v.total_assets = v.total_assets.debit(assets)
+    v.total_shares = v.total_shares.retire(shares)
     shares
 }
 
@@ -101,7 +104,7 @@ pub fn redeem<A>(_ v: mut Vault<A>, _ shares: Quantity<Shares<A>, In, Given>) ->
     Settled,
 > {
     let assets = preview_redeem(v, shares)
-    v.total_assets = debit(v.total_assets, assets)
-    v.total_shares = retire(v.total_shares, shares)
+    v.total_assets = v.total_assets.debit(assets)
+    v.total_shares = v.total_shares.retire(shares)
     assets
 }

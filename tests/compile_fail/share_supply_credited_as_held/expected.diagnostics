@@ -1,0 +1,5 @@
+error[2-0010]: no method named `credit` found for struct `Supply`
+   ┌─ src/lib.fe:12:37
+   │
+12 │     v.total_shares = v.total_shares.credit(shares)
+   │                                     ^^^^^^ method not found in `Supply`

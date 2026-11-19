@@ -110,32 +110,67 @@ pub fn exchange<A, B, G: Flow>(
     Quantity { v: <G::Opposite as Flow>::Obligation::mul_div(given.v, numerator, denominator) }
 }
 
-/// Adds value arriving to `held`, a balance of `T` in token units. Only an
-/// amount moving `In`, in token units, can be credited. So a label is checked
-/// against what the code does with the money: an amount labelled as leaving
-/// cannot be added to what the protocol holds.
-pub fn credit<T, S: TokenUnits>(_ held: u256, _ q: Quantity<T, In, S>) -> u256 {
-    held + q.v
+/// A balance of `T` the protocol holds, in token units. It moves only through
+/// `credit` and `debit`, each in one direction, so an amount's label is checked
+/// against what the code does with the money, and its token against the
+/// balance's.
+pub struct Held<T> { raw: u256 }
+
+impl<T> Copy for Held<T> {}
+
+/// A balance of `T`, read from where the protocol keeps it. Like `given`, it is
+/// where a raw number gets its meaning, and `dimension check` lists each call.
+pub fn held<T>(_ raw: u256) -> Held<T> {
+    Held { raw }
 }
 
-/// Takes value leaving from `held`, a balance of `T` in token units. Only an
-/// amount moving `Out`, in token units, can be debited, and debiting more than
-/// is held reverts.
-pub fn debit<T, S: TokenUnits>(_ held: u256, _ q: Quantity<T, Out, S>) -> u256 {
-    held - q.v
+impl<T> Held<T> {
+    pub fn raw(self) -> u256 {
+        self.raw
+    }
+
+    /// Adds value arriving. Only an amount of `T` moving `In`, in token units,
+    /// can be credited.
+    pub fn credit<S: TokenUnits>(self, _ q: Quantity<T, In, S>) -> Self {
+        Held { raw: self.raw + q.v }
+    }
+
+    /// Takes value leaving. Only an amount of `T` moving `Out`, in token units,
+    /// can be debited, and debiting more than is held reverts.
+    pub fn debit<S: TokenUnits>(self, _ q: Quantity<T, Out, S>) -> Self {
+        Held { raw: self.raw - q.v }
+    }
 }
 
-/// Adds shares going out to `supply`, the total of a token the protocol itself
-/// issues, such as a pool's or a vault's shares. Only an amount moving `Out`,
-/// in token units, can be issued.
-pub fn issue<T, S: TokenUnits>(_ supply: u256, _ q: Quantity<T, Out, S>) -> u256 {
-    supply + q.v
+/// The total of `T` the protocol has issued, such as its shares, in token
+/// units. It moves only through `issue` and `retire`: it is not a balance the
+/// protocol holds, and cannot be credited or debited as one.
+pub struct Supply<T> { raw: u256 }
+
+impl<T> Copy for Supply<T> {}
+
+/// The issued total of `T`, read from where the protocol keeps it. Listed by
+/// `dimension check`, like `held`.
+pub fn supply_of<T>(_ raw: u256) -> Supply<T> {
+    Supply { raw }
 }
 
-/// Removes shares coming back from `supply`. Only an amount moving `In`, in
-/// token units, can be retired, and retiring more than was issued reverts.
-pub fn retire<T, S: TokenUnits>(_ supply: u256, _ q: Quantity<T, In, S>) -> u256 {
-    supply - q.v
+impl<T> Supply<T> {
+    pub fn raw(self) -> u256 {
+        self.raw
+    }
+
+    /// Adds shares going out to a holder. Only an amount of `T` moving `Out`,
+    /// in token units, can be issued.
+    pub fn issue<S: TokenUnits>(self, _ q: Quantity<T, Out, S>) -> Self {
+        Supply { raw: self.raw + q.v }
+    }
+
+    /// Removes shares coming back. Only an amount of `T` moving `In`, in token
+    /// units, can be retired, and retiring more than was issued reverts.
+    pub fn retire<S: TokenUnits>(self, _ q: Quantity<T, In, S>) -> Self {
+        Supply { raw: self.raw - q.v }
+    }
 }
 
 impl<T, F: Flow> Quantity<T, F, Settled> {

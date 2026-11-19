@@ -7,7 +7,7 @@ HARNESS := PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=scripts $(PYTHON) -m harness.
 CASES := $(HARNESS)cases
 FE := .tools/fe-$(shell sed -n 's/^version=//p' scripts/toolchain/fe.lock)/fe
 # The feasibility probes are kept exactly as recorded, so they are not formatted.
-FORMATTED := ingots tests/core tests/oracle tests/explorer tests/vault tests/unsafe_root tests/feeds tests/zero_cost tests/compile_fail tests/compiler_findings examples
+FORMATTED := ingots tests/core tests/oracle tests/explorer tests/vault tests/unsafe_root tests/labels tests/feeds tests/zero_cost tests/compile_fail tests/compiler_findings examples
 
 .PHONY: help toolchain reference-deps fmt fmt-check test unit compile-fail probes differential explore evm vault consumer apidoc fidelity replay moonwell feeds unsafe-policy mutants web show demo update ci
 

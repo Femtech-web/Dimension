@@ -1,4 +1,10 @@
+import meta from "@/data/meta.json";
+
 export const REPO = "https://github.com/Femtech-web/Dimension";
+/** The newest tagged release, from the changelog (synced by scripts/sync.mjs). */
+export const RELEASE = meta.release;
+/** The commit this build was made from, and whether it had uncommitted changes (next.config.ts). */
+export const BUILD = { commit: process.env.NEXT_PUBLIC_COMMIT ?? "", dirty: process.env.NEXT_PUBLIC_COMMIT_DIRTY === "1" };
 export const BLOB = `${REPO}/blob/main`;
 
 export const NAV: { href: string; label: string; file?: boolean }[] = [

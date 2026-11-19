@@ -1,4 +1,4 @@
-use dimension::{Asset, In, credit, given}
+use dimension::{Asset, In, given, held}
 
 pub struct USDC {}
 
@@ -7,6 +7,6 @@ impl Asset for USDC {
 }
 
 // The deposit credited in USDC's own units, as it arrived.
-pub fn deposit(_ held: u256, _ raw: u256) -> u256 {
-    credit(held, given<USDC, In>(raw))
+pub fn deposit(_ balance: u256, _ raw: u256) -> u256 {
+    held<USDC>(balance).credit(given<USDC, In>(raw)).raw()
 }

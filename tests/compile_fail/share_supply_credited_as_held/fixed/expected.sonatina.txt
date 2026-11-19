@@ -1,0 +1,2 @@
+PASS redeemed_shares_leave_the_supply
+test result: ok. 1 passed; 0 failed

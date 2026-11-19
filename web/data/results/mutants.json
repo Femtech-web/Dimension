@@ -185,7 +185,7 @@
       "outcome": "caught",
       "evidence": [
         "FAIL compile_fail/vault_deposit_labeled_as_leaving",
-        "FAIL compile_fail/internal_units_credited_to_balance"
+        "FAIL compile_fail/deposit_credited_to_another_token"
       ]
     },
     {
@@ -201,6 +201,36 @@
       "evidence": [
         "FAIL compile_fail/internal_units_credited_to_balance",
         "compiled, but it must be rejected"
+      ]
+    },
+    {
+      "id": "credit-takes-any-token",
+      "layer": "types",
+      "bug": "A held balance can be credited with an amount of another token",
+      "files": [
+        "ingots/dimension/src/value.fe"
+      ],
+      "check": "make compile-fail",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "FAIL compile_fail/deposit_credited_to_another_token",
+        "compiled, but it must be rejected"
+      ]
+    },
+    {
+      "id": "supply-can-be-credited",
+      "layer": "types",
+      "bug": "A supply the protocol issues can be credited, as if the protocol held it",
+      "files": [
+        "ingots/dimension/src/value.fe"
+      ],
+      "check": "make compile-fail",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "FAIL compile_fail/share_supply_credited_as_held",
+        "FAIL compile_fail/forge_price"
       ]
     },
     {
@@ -273,8 +303,8 @@
       "caught": true,
       "outcome": "caught",
       "evidence": [
-        "[FAIL: every step must compute what Balancer computed: 94 != 121] test_attack1() (gas: 13671139)",
-        "[FAIL: every step must compute what Balancer computed: 94 != 121] test_attack2() (gas: 13562912)"
+        "[FAIL: every step must compute what Balancer computed: 94 != 121] test_attack1() (gas: 13752828)",
+        "[FAIL: every step must compute what Balancer computed: 94 != 121] test_attack2() (gas: 13643503)"
       ]
     },
     {
@@ -297,7 +327,7 @@
     {
       "question": "Is every planted bug in the safety-critical code caught by the check meant to catch it?",
       "holds": true,
-      "evidence": "19 of 19 mutants caught, each for the reason expected of it, across 7 layers: bind time, compile time, port fidelity, read time, runtime guard, types, unsafe policy"
+      "evidence": "21 of 21 mutants caught, each for the reason expected of it, across 7 layers: bind time, compile time, port fidelity, read time, runtime guard, types, unsafe policy"
     }
   ]
 }

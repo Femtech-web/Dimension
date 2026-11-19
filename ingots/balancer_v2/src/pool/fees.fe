@@ -30,6 +30,49 @@ uses (check: mut Check)
     )
 }
 
+/// The BPT `pay_before_join_exit` mints, computed the same way, for the typed
+/// pool, which issues it through Dimension's `issue`.
+pub fn fee_before_join_exit(
+    stored_invariant: u256,
+    supply: u256,
+    protocol_swap_fee: u256,
+    invariant: u256,
+) -> u256
+uses (check: mut Check)
+{
+    let growth = if invariant > stored_invariant {
+        invariant - stored_invariant
+    } else {
+        0
+    }
+    let percentage = fp::mul_down(fp::div_down(growth, invariant), protocol_swap_fee)
+    bpt_for_ownership(supply, percentage)
+}
+
+/// The BPT `update_after_join_exit` mints, computed the same way, or 0 when it
+/// mints none, for the typed pool. It stores nothing.
+pub fn fee_after_join_exit(
+    supply: u256,
+    protocol_swap_fee: u256,
+    post_invariant: u256,
+    pre_invariant: u256,
+    pre_supply: u256,
+) -> u256
+uses (check: mut Check)
+{
+    let feeless = fp::mul_down(pre_invariant, fp::div_down(supply, pre_supply))
+    if post_invariant > feeless {
+        let percentage = math::div_down(
+            math::mul(post_invariant - feeless, protocol_swap_fee),
+            post_invariant,
+        )
+        if percentage > 0 {
+            return bpt_for_ownership(supply, percentage)
+        }
+    }
+    0
+}
+
 /// Pays the fees due before a join or exit. `invariant` is the pool's current
 /// invariant, which Balancer computes with the amplification of the last join
 /// or exit (the same, as amplification is constant here).

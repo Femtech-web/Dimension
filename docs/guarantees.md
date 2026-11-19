@@ -15,7 +15,7 @@ established, and what it does not guarantee. Status words:
 |---|---|---|---|---|
 | Compile time | A price used for the wrong pair; prices composed without a shared asset; collateral added to debt | `Price<B, Q>` and `Value<Q, V>` phantom parameters; `Mul` only through a shared asset | compile-fail cases with twins; Moonwell's MIP-X43 configuration written against the real Base registry | tested |
 | Compile time | An amount rounded the wrong way when admitted or settled; a scaled amount handed to the math without admission | `Flow` and `Stage` types; `admit` and `settle` are the only producers; the typed kernel reaches StableMath only through `Admitted` signatures | Balancer's `_upscale` line put back into the typed pool is rejected; the explorer measures the effect | verified |
-| Compile time | An amount moved against its label: credited while labelled as leaving, issued while labelled as coming back; internal units added to a raw balance | `credit`, `debit`, `issue`, `retire` take only the matching direction, in `TokenUnits` (sealed) | compile-fail cases `vault_deposit_labeled_as_leaving`, `internal_units_credited_to_balance`; the typed pool and vault move every balance and supply this way, with every result unchanged; mutants | tested |
+| Compile time | An amount moved against its label: credited while labelled as leaving, issued while labelled as coming back; another token's amount credited; a supply credited as if held; internal units added to a raw balance | `Held<T>` (`credit`, `debit`) and `Supply<T>` (`issue`, `retire`) take only their own token, the matching direction, in `TokenUnits` (sealed) | compile-fail cases `vault_deposit_labeled_as_leaving`, `deposit_credited_to_another_token`, `share_supply_credited_as_held`, `internal_units_credited_to_balance`; the vault and the typed pool move every balance and supply this way, the protocol's fee included, with every result unchanged; mutants | tested |
 | Compile time | A third rounding direction, a custom flow, an incoherent risk policy, an asset with more than 18 decimals | sealed traits; `where` predicates on associated constants | compile-fail cases | tested |
 | Compile time | Trusted values built from raw numbers; test constructors reached from production code | private fields; `unsafe fn` constructors gated by `allow_unsafe`; `make unsafe-policy` here, and `dimension check` for a team's own project | compile-fail cases `forge_price`, `forge_admitted_quantity`, `test_constructor_from_production_root`; CI policy check; `make consumer` requires `dimension check` to fail a project with `allow_unsafe` or `unsafe` code | tested |
 | Compile time | An oracle read in code that has not declared it calls out and reads the clock | effects: `read` requires `uses (call: mut Call, ctx: Ctx)` | compile-fail case `oracle_read_without_effects` | tested |
@@ -44,15 +44,20 @@ established, and what it does not guarantee. Status words:
 What they do not establish:
 
 - **That a label is true, until the money moves.** `given` and `owed` attach
-  a direction to a raw number, and `given<T, In>(x)` compiles even if `x` is in
-  fact leaving. Two things do not compile. Changing a direction after
-  rounding: a payout cannot be used where a charge is required
-  (`payout_settled_as_charge`). And moving money against its label: `credit`,
-  `debit`, `issue` and `retire` take only the matching direction, so a deposit
-  labelled as leaving cannot be credited (`vault_deposit_labeled_as_leaving`).
-  In the typed Balancer pool, 16 of the 17 labels reach one of them, and the
-  17th feeds StableMath, whose signature fixes its direction.
-  `dimension check` lists every label for review.
+  a direction to a raw number, `held` and `supply_of` a token and a role, and
+  `given<T, In>(x)` compiles even if `x` is in fact leaving. Two things do not
+  compile. Changing a direction after rounding: a payout cannot be used where
+  a charge is required (`payout_settled_as_charge`). And moving money against
+  its label: a holding takes only its own token, in the matching direction, so
+  a deposit labelled as leaving cannot be credited
+  (`vault_deposit_labeled_as_leaving`). In the typed Balancer pool, 17 of the
+  18 labels reach a holding, and the 18th feeds StableMath, whose signature
+  fixes its direction. `dimension check` lists every label for review, and
+  `make consumer` requires that list to equal the compiler's.
+- **That the tokens moved.** Dimension checks the books against the labels.
+  That a token transfer matches each entry is the protocol's own code. The
+  Balancer pool keeps balances in an array by token, so there each index is
+  tied to its token at run time (`check_factor`), not by type.
 - **That StableMath is precise.** Its own rounding inside the invariant
   solvers is outside the scaling boundary. See the residuals below.
 - **That no attack exists.** The recorded attack cannot run. That no other
@@ -93,24 +98,24 @@ down and paid it for free.
 |---|---|---|---|
 | swapGivenIn | 15,164 | 16,104 (+6.2%) | 22,644 (+49.3%) |
 | swapGivenOut | 15,981 | 17,000 (+6.4%) | 23,553 (+47.4%) |
-| exitGivenIn | 23,240 | 24,097 (+3.7%) | 24,913 (+7.2%) |
-| exitGivenOut | 24,493 | 25,332 (+3.4%) | 26,148 (+6.8%) |
-| joinGivenIn | 25,585 | 26,380 (+3.1%) | 27,196 (+6.3%) |
-| joinGivenOut | 23,453 | 24,360 (+3.9%) | 25,176 (+7.3%) |
+| exitGivenIn | 23,240 | 24,189 (+4.1%) | 24,995 (+7.6%) |
+| exitGivenOut | 24,493 | 25,424 (+3.8%) | 26,230 (+7.1%) |
+| joinGivenIn | 25,585 | 26,472 (+3.5%) | 27,278 (+6.6%) |
+| joinGivenOut | 23,453 | 24,452 (+4.3%) | 25,258 (+7.7%) |
 
 | Runtime bytecode | Faithful | Typed | Guarded |
 |---|---|---|---|
-| `-O0` | 19,423 B | 28,740 B | 28,746 B |
-| `-O1` (default) | 8,014 B | 9,346 B | 9,797 B |
-| `-O2` | 7,992 B | 9,332 B | 9,783 B |
-| `-Os` | 9,139 B | 10,230 B | 10,614 B |
+| `-O0` | 19,423 B | 29,161 B | 29,167 B |
+| `-O1` (default) | 8,014 B | 9,412 B | 9,867 B |
+| `-O2` | 7,992 B | 9,400 B | 9,855 B |
+| `-Os` | 9,139 B | 10,299 B | 10,685 B |
 
 | Mean gas per operation | Faithful | Typed | Guarded |
 |---|---|---|---|
-| `-O0` | 29,850 | 32,465 (+8.8%) | 35,742 (+19.7%) |
-| `-O1` (default) | 21,319 | 22,212 (+4.2%) | 24,938 (+17.0%) |
-| `-O2` | 21,303 | 22,198 (+4.2%) | 24,924 (+17.0%) |
-| `-Os` | 22,744 | 23,730 (+4.3%) | 26,541 (+16.7%) |
+| `-O0` | 29,850 | 32,779 (+9.8%) | 36,056 (+20.8%) |
+| `-O1` (default) | 21,319 | 22,274 (+4.5%) | 24,993 (+17.2%) |
+| `-O2` | 21,303 | 22,258 (+4.5%) | 24,978 (+17.3%) |
+| `-Os` | 22,744 | 23,783 (+4.6%) | 26,587 (+16.9%) |
 
 Gas is measured on a pool with the osETH/wETH pool's balances and parameters
 before the exploit, including its 50% protocol swap fee, for 10 tokens or 10
@@ -138,7 +143,7 @@ function on the same 512 inputs of every magnitude at each level:
 | Pair | `-O0` | `-O1` and `-O2` | `-Os` |
 |---|---|---|---|
 | The four roundings, for a 6-decimal token | typed 3,131 B and 3,153 gas per call; by hand 2,817 B and 2,924 (+7.8%) | identical bytes; 580 gas each | identical bytes; 601 gas each |
-| An ERC-4626 vault's four previews | typed 3,806 B and 3,845 gas; by hand 3,325 B and 3,550 (+8.3%) | 671 B each, laid out differently; 740 gas each | 671 B each; 740 gas each |
+| An ERC-4626 vault's four previews | typed 4,034 B and 4,082 gas; by hand 3,325 B and 3,550 (+15.0%) | 671 B each, laid out differently; 740 gas each | 671 B each; 740 gas each |
 
 Every one of the 4,096 calls per level returns the same result in both, reverts
 included. `-O0` is not a level anyone deploys at.

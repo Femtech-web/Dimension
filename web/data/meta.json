@@ -14,5 +14,9 @@
     "replay",
     "unit",
     "vault"
-  ]
+  ],
+  "release": {
+    "version": "0.2.0",
+    "commit": "468e2c20d405f1dfeaf42273e838884090d293a1"
+  }
 }

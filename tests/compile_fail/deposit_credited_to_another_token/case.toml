@@ -1,0 +1,7 @@
+kind = "compile_fail"
+expect_code = "8-0000"
+consequential_codes = ["8-0031"]
+layer = "compile-time"
+mechanism = "A two-token pool credits a WETH deposit to its USDC balance: a held balance takes only amounts of its own token"
+twin = "fixed"
+twin_run = "test"

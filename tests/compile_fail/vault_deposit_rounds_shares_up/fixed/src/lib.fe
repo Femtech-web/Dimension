@@ -9,7 +9,7 @@ pub fn preview_deposit<A>(_ v: Vault<A>, _ assets: Quantity<A, In, Given>) -> Qu
 > {
     exchange(
         assets,
-        numerator: v.total_shares + 1,
-        denominator: v.total_assets + 1,
+        numerator: v.total_shares.raw() + 1,
+        denominator: v.total_assets.raw() + 1,
     )
 }

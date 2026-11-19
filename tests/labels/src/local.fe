@@ -1,0 +1,9 @@
+//! A local function that shares a label's name is not a label.
+
+fn held(_ x: u256) -> u256 {
+    x
+}
+
+pub fn twice(_ x: u256) -> u256 {
+    held(x) + held(x)
+}

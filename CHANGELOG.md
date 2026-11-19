@@ -4,9 +4,28 @@ Changes to the `dimension` library ingot (`ingots/dimension`). Versions follow
 semantic versioning; before 1.0, a minor version may change the API. Fe resolves
 a git dependency's `rev` as a full commit hash, so each release lists its commit.
 
-## 0.2.0: 2026-11-20
+## 0.3.0: 2026-11-19
 
 The commit is recorded here when the release is tagged. Release notes:
+[docs/releases/v0.3.0.md](docs/releases/v0.3.0.md).
+
+### Changed
+
+- A balance the protocol holds is now a `Held<T>`, and a supply it issues a
+  `Supply<T>`. `credit` and `debit` are methods of `Held<T>`, and `issue` and
+  `retire` of `Supply<T>`, so each also checks the token, and that a holding
+  is used in its role: WETH cannot be credited to a USDC balance, nor returning
+  shares credited to a supply. The free functions of 0.2.0 are removed.
+
+### Added
+
+- `held` and `supply_of`, which read a balance or a supply from where the
+  protocol keeps it. Like `given`, they are where a raw number gets its
+  meaning, and `dimension check` lists each call.
+
+## 0.2.0: 2026-11-19
+
+Commit `468e2c20d405f1dfeaf42273e838884090d293a1` (tag `v0.2.0`). Release notes:
 [docs/releases/v0.2.0.md](docs/releases/v0.2.0.md).
 
 ### Added

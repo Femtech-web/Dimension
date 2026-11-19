@@ -1,0 +1,14 @@
+use dimension::{Given, In, Out, Quantity, Settled}
+use vault::vault::{Shares, Vault, preview_redeem}
+
+// Shares coming back, credited to the share supply as if the vault held them.
+pub fn redeem<A>(_ v: mut Vault<A>, _ shares: Quantity<Shares<A>, In, Given>) -> Quantity<
+    A,
+    Out,
+    Settled,
+> {
+    let assets = preview_redeem(v, shares)
+    v.total_assets = v.total_assets.debit(assets)
+    v.total_shares = v.total_shares.credit(shares)
+    assets
+}

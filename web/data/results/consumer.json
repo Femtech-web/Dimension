@@ -3,7 +3,7 @@
   "question": "Does Dimension work as a dependency of someone else's project?",
   "dependency": {
     "source": "this repository's git history",
-    "rev": "0f548cb41d22ad1348baca0b953d58079815284b",
+    "rev": "468e2c20d405f1dfeaf42273e838884090d293a1",
     "name": "dimension",
     "version": "0.1.0"
   },
@@ -12,16 +12,179 @@
     "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110"
   },
   "platform": "mac_arm64",
+  "labels": {
+    "tests/labels": {
+      "cli": [
+        "src/lib.fe:13",
+        "src/lib.fe:18",
+        "src/lib.fe:23",
+        "src/lib.fe:28",
+        "src/lib.fe:34",
+        "src/lib.fe:35",
+        "src/lib.fe:45",
+        "src/lib.fe:46",
+        "src/uses.fe:13",
+        "src/uses.fe:8"
+      ],
+      "compiler": [
+        "src/lib.fe:13",
+        "src/lib.fe:18",
+        "src/lib.fe:23",
+        "src/lib.fe:28",
+        "src/lib.fe:34",
+        "src/lib.fe:35",
+        "src/lib.fe:45",
+        "src/lib.fe:46",
+        "src/uses.fe:13",
+        "src/uses.fe:8"
+      ]
+    },
+    "examples/quickstart": {
+      "cli": [
+        "src/lib.fe:18",
+        "src/lib.fe:23",
+        "src/lib.fe:28"
+      ],
+      "compiler": [
+        "src/lib.fe:18",
+        "src/lib.fe:23",
+        "src/lib.fe:28"
+      ]
+    },
+    "ingots/vault": {
+      "cli": [
+        "src/contracts.fe:25",
+        "src/contracts.fe:25",
+        "src/contracts.fe:33",
+        "src/contracts.fe:40",
+        "src/contracts.fe:47",
+        "src/contracts.fe:54"
+      ],
+      "compiler": [
+        "src/contracts.fe:25",
+        "src/contracts.fe:25",
+        "src/contracts.fe:33",
+        "src/contracts.fe:40",
+        "src/contracts.fe:47",
+        "src/contracts.fe:54"
+      ]
+    },
+    "ingots/balancer_v2": {
+      "cli": [
+        "src/contracts.fe:121",
+        "src/contracts.fe:132",
+        "src/contracts.fe:156",
+        "src/contracts.fe:167",
+        "src/contracts.fe:190",
+        "src/contracts.fe:199",
+        "src/contracts.fe:216",
+        "src/contracts.fe:239",
+        "src/contracts.fe:248",
+        "src/contracts.fe:265",
+        "src/pool/typed.fe:106",
+        "src/pool/typed.fe:175",
+        "src/pool/typed/math.fe:102",
+        "src/pool/typed/math.fe:127",
+        "src/pool/typed/math.fe:149",
+        "src/pool/typed/math.fe:33",
+        "src/pool/typed/math.fe:56",
+        "src/pool/typed/math.fe:80"
+      ],
+      "compiler": [
+        "src/contracts.fe:121",
+        "src/contracts.fe:132",
+        "src/contracts.fe:156",
+        "src/contracts.fe:167",
+        "src/contracts.fe:190",
+        "src/contracts.fe:199",
+        "src/contracts.fe:216",
+        "src/contracts.fe:239",
+        "src/contracts.fe:248",
+        "src/contracts.fe:265",
+        "src/pool/typed.fe:106",
+        "src/pool/typed.fe:175",
+        "src/pool/typed/math.fe:102",
+        "src/pool/typed/math.fe:127",
+        "src/pool/typed/math.fe:149",
+        "src/pool/typed/math.fe:33",
+        "src/pool/typed/math.fe:56",
+        "src/pool/typed/math.fe:80"
+      ]
+    },
+    "ingots/balancer_explorer": {
+      "cli": [
+        "src/scenario.fe:124",
+        "src/scenario.fe:134",
+        "src/scenario.fe:147",
+        "src/scenario.fe:157",
+        "src/scenario.fe:169",
+        "src/scenario.fe:177",
+        "src/scenario.fe:188",
+        "src/scenario.fe:196",
+        "src/scenario.fe:207",
+        "src/scenario.fe:215",
+        "src/scenario.fe:226",
+        "src/scenario.fe:234",
+        "src/scenario.fe:253",
+        "src/scenario.fe:262",
+        "src/scenario.fe:274",
+        "src/scenario.fe:283",
+        "src/scenario.fe:294",
+        "src/scenario.fe:301",
+        "src/scenario.fe:311",
+        "src/scenario.fe:318",
+        "src/scenario.fe:328",
+        "src/scenario.fe:335",
+        "src/scenario.fe:345",
+        "src/scenario.fe:352"
+      ],
+      "compiler": [
+        "src/scenario.fe:124",
+        "src/scenario.fe:134",
+        "src/scenario.fe:147",
+        "src/scenario.fe:157",
+        "src/scenario.fe:169",
+        "src/scenario.fe:177",
+        "src/scenario.fe:188",
+        "src/scenario.fe:196",
+        "src/scenario.fe:207",
+        "src/scenario.fe:215",
+        "src/scenario.fe:226",
+        "src/scenario.fe:234",
+        "src/scenario.fe:253",
+        "src/scenario.fe:262",
+        "src/scenario.fe:274",
+        "src/scenario.fe:283",
+        "src/scenario.fe:294",
+        "src/scenario.fe:301",
+        "src/scenario.fe:311",
+        "src/scenario.fe:318",
+        "src/scenario.fe:328",
+        "src/scenario.fe:335",
+        "src/scenario.fe:345",
+        "src/scenario.fe:352"
+      ]
+    },
+    "ingots/moonwell": {
+      "cli": [],
+      "compiler": []
+    }
+  },
   "claims": [
     {
       "question": "Can a new project depend on Dimension from git, and does it get Dimension's checks?",
       "holds": true,
-      "evidence": "`dimension new` creates the quickstart taking Dimension at 0f548cb by git source; it builds and passes its 3 tests; an incoming amount used as an outgoing one is rejected with 8-0000"
+      "evidence": "`dimension new` creates the quickstart taking Dimension at 468e2c2 by git source; it builds and passes its 3 tests; an incoming amount used as an outgoing one is rejected with 8-0000"
     },
     {
       "question": "Does `dimension check` pass that project, list its labels for review, and fail it once it can forge values Dimension trusts?",
       "holds": true,
-      "evidence": "the new project: 5 of 6 checks ok, and a warning on pinned (it pins HEAD, not a release); its 3 labels listed for review (given<USDC, In>, owed<USDC, Out>, owed<USDC, In>); with allow_unsafe set on Dimension it fails allow_unsafe; with a price forged by a pointer cast, which compiles, it fails unsafe code"
+      "evidence": "the new project: 6 of 6 checks ok, no warnings; its 3 labels listed for review (given<USDC, In>, owed<USDC, Out>, owed<USDC, In>); with allow_unsafe set on Dimension it fails allow_unsafe; with a price forged by a pointer cast, which compiles, it fails unsafe code"
+    },
+    {
+      "question": "Does `dimension check` list exactly the label calls the compiler finds, however they are written?",
+      "holds": true,
+      "evidence": "identical to the compiler's list in every ingot: tests/labels 10, examples/quickstart 3, ingots/vault 6, ingots/balancer_v2 18, ingots/balancer_explorer 24, ingots/moonwell 0. tests/labels writes them every way Fe allows: type inferred, aliased, re-exported and renamed in another file, through a module path, generic in the direction, a holding and a supply, and decoys: a comment, a string, and a local function sharing a label's name"
     }
   ]
 }
