@@ -1,0 +1,110 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! The typed operations behind Dimension's runtime share-value guard.
+//!
+//! Types fix the direction of every rounding at the pool's boundary, which
+//! removes the loss Balancer V2's `_upscale` allowed. They cannot see precision
+//! lost inside StableMath's own solvers, which in rare, heavily imbalanced
+//! states still lets an operation lower the value behind each BPT. The guard
+//! measures the pool's invariant per BPT before and after every trader
+//! operation and fails the operation if it fell. Joins and exits also store the
+//! invariant of the balances the Vault actually holds, so the stored value never
+//! exceeds what the pool backs. The check lives in `typed`, next to the code it
+//! guards; these are the typed operations with it switched on.
+
+use dimension::{Given, In, Out, Quantity, ScalingFactor, Settled}
+use super::Pool
+use super::typed
+use super::typed::Bpt
+use super::super::stable::check::Check
+
+pub fn swap_given_in<TIn, TOut, const N: usize>(
+    _ pool: mut Pool<N>,
+    i: usize,
+    j: usize,
+    amount_in: Quantity<TIn, In, Given>,
+    factor_in: ScalingFactor<TIn>,
+    factor_out: ScalingFactor<TOut>,
+) -> Quantity<TOut, Out, Settled>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    typed::swap_given_in(
+        mut pool,
+        i,
+        j,
+        amount_in,
+        factor_in,
+        factor_out,
+        guard: true,
+    )
+}
+
+pub fn swap_given_out<TIn, TOut, const N: usize>(
+    _ pool: mut Pool<N>,
+    i: usize,
+    j: usize,
+    amount_out: Quantity<TOut, Out, Given>,
+    factor_in: ScalingFactor<TIn>,
+    factor_out: ScalingFactor<TOut>,
+) -> Quantity<TIn, In, Settled>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    typed::swap_given_out(
+        mut pool,
+        i,
+        j,
+        amount_out,
+        factor_in,
+        factor_out,
+        guard: true,
+    )
+}
+
+pub fn exit_given_out<T, const N: usize>(
+    _ pool: mut Pool<N>,
+    j: usize,
+    amount_out: Quantity<T, Out, Given>,
+    factor: ScalingFactor<T>,
+) -> Quantity<Bpt, In, Settled>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    typed::exit_given_out(mut pool, j, amount_out, factor, guard: true)
+}
+
+pub fn exit_given_in<T, const N: usize>(
+    _ pool: mut Pool<N>,
+    j: usize,
+    bpt_in: Quantity<Bpt, In, Given>,
+    factor: ScalingFactor<T>,
+) -> Quantity<T, Out, Settled>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    typed::exit_given_in(mut pool, j, bpt_in, factor, guard: true)
+}
+
+pub fn join_given_in<T, const N: usize>(
+    _ pool: mut Pool<N>,
+    i: usize,
+    amount_in: Quantity<T, In, Given>,
+    factor: ScalingFactor<T>,
+) -> Quantity<Bpt, Out, Settled>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    typed::join_given_in(mut pool, i, amount_in, factor, guard: true)
+}
+
+pub fn join_given_out<T, const N: usize>(
+    _ pool: mut Pool<N>,
+    i: usize,
+    bpt_out: Quantity<Bpt, Out, Given>,
+    factor: ScalingFactor<T>,
+) -> Quantity<T, In, Settled>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    typed::join_given_out(mut pool, i, bpt_out, factor, guard: true)
+}

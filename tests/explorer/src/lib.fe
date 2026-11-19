@@ -4,7 +4,7 @@
 //! passing on both means the EVM and native builds computed the same results.
 
 use balancer_explorer::attack::greedy
-use balancer_explorer::scenario::Scenario
+use balancer_explorer::scenario::{FAITHFUL, GUARDED, Scenario, TYPED}
 use balancer_explorer::search::run_grid
 
 const EXIT_GIVEN_OUT: usize = 3
@@ -30,6 +30,8 @@ fn small_grid_matches_on_this_backend() {
     assert(r.typed.tried[EXIT_GIVEN_OUT] == 40)
     assert(r.typed.value_losses[EXIT_GIVEN_OUT] == 0)
     assert(r.typed.stored_violations[EXIT_GIVEN_OUT] == 0)
+    assert(r.guarded.value_losses[EXIT_GIVEN_OUT] == 0)
+    assert(r.guarded.stored_violations[EXIT_GIVEN_OUT] == 0)
 }
 
 #[test]
@@ -41,7 +43,7 @@ fn repeated_exits_match_on_this_backend() {
         supply_x2: 3,
         steps: 10,
         cap: 6,
-        typed: false,
+        kernel: FAITHFUL,
     )
     assert(f.steps == 4)
     assert(f.bpt_burned == 12)
@@ -54,10 +56,20 @@ fn repeated_exits_match_on_this_backend() {
         supply_x2: 3,
         steps: 10,
         cap: 6,
-        typed: true,
+        kernel: TYPED,
     )
     assert(t.steps == 3)
     assert(t.bpt_burned == 15)
     assert(t.value_end_wad == 900_000_000_000_000_000)
     assert(t.gain_wad == -2_492_955_465_587_044_534)
+    let g = greedy(
+        scenario(),
+        b0: 8,
+        b1: 8,
+        supply_x2: 3,
+        steps: 10,
+        cap: 6,
+        kernel: GUARDED,
+    )
+    assert(g.gain_wad == t.gain_wad)
 }

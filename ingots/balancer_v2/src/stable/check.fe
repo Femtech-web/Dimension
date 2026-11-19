@@ -15,6 +15,8 @@ pub enum Failure {
     DivInternal,
     InvariantDidNotConverge,
     BalanceDidNotConverge,
+    /// Not a Balancer check: Dimension's runtime guard, see `pool::guarded`.
+    ShareValueDecreased,
 }
 
 impl Copy for Failure {}
@@ -24,6 +26,10 @@ pub trait Check {
     /// treat the operation's results as meaningless.
     fn fail(mut self, _ failure: Failure)
 }
+
+/// An operation would have lowered the value behind each BPT.
+#[error]
+pub struct ShareValueDecreased {}
 
 /// Balancer V2's behaviour: revert with `Error("BAL#xyz")`.
 pub struct Revert {}
@@ -40,6 +46,7 @@ impl Check for Revert {
             Failure::DivInternal => assert!(false, "BAL#005"),
             Failure::InvariantDidNotConverge => assert!(false, "BAL#321"),
             Failure::BalanceDidNotConverge => assert!(false, "BAL#322"),
+            Failure::ShareValueDecreased => revert_error(ShareValueDecreased {}),
         }
     }
 }

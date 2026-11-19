@@ -1,0 +1,45 @@
+use dimension::{Backing, preserves_share_value}
+
+const MAX: u256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+#[test]
+fn equal_or_higher_share_value_is_preserved() {
+    assert(
+        preserves_share_value(
+            Backing { value: 100, shares: 100 },
+            Backing { value: 90, shares: 90 },
+        ),
+    )
+    assert(
+        preserves_share_value(
+            Backing { value: 100, shares: 100 },
+            Backing { value: 101, shares: 100 },
+        ),
+    )
+}
+
+#[test]
+fn one_unit_lower_is_caught() {
+    // 99/100 < 100/101: lower by one part in 10,100.
+    assert(
+        !preserves_share_value(
+            Backing { value: 100, shares: 101 },
+            Backing { value: 99, shares: 100 },
+        ),
+    )
+}
+
+#[test]
+fn products_beyond_256_bits_compare_exactly() {
+    // value * shares overflows u256 here; the comparison must still be exact.
+    let before = Backing { value: MAX, shares: MAX - 1 }
+    assert(
+        preserves_share_value(before, Backing { value: MAX, shares: MAX - 1 }),
+    )
+    assert(
+        !preserves_share_value(before, Backing { value: MAX - 1, shares: MAX - 1 }),
+    )
+    assert(
+        preserves_share_value(before, Backing { value: MAX - 1, shares: MAX - 2 }),
+    )
+}

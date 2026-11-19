@@ -1,0 +1,27 @@
+//! A token priced in USD through ETH: its feed into ETH, then ETH/USD. The
+//! composition is checked by type, `Price<T, ETH> * Price<ETH, USD>` being
+//! `Price<T, USD>`, so neither leg can stand in for the other or for the whole.
+
+#![cfg(target = "evm")]
+
+use std::evm::{Call, Ctx}
+use dimension::Price
+use dimension::value::oracle
+use dimension::value::oracle::Feed
+use super::registry::{ETH, USD}
+
+pub struct ViaEth<T> { pub leg: Feed<T, ETH>, pub eth_usd: Feed<ETH, USD> }
+
+impl<T> Copy for ViaEth<T> {}
+
+impl<T> ViaEth<T> {
+    /// Checks that both feeds report the decimals declared for them.
+    pub fn verify(self) uses (call: mut Call) {
+        oracle::verify(self.leg)
+        oracle::verify(self.eth_usd)
+    }
+
+    pub fn read(self) -> Price<T, USD> uses (call: mut Call, ctx: Ctx) {
+        oracle::read(self.leg) * oracle::read(self.eth_usd)
+    }
+}

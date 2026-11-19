@@ -1,0 +1,18 @@
+error[2-0010]: no method named `value` found for u256 `u256`
+   ┌─ src/lib.fe:29:51
+   │
+29 │     balances[j] = fp::sub(balances[j], scaled_out.value())
+   │                                                   ^^^^^ method not found in `u256`
+error[8-0000]: type mismatch
+   ┌─ src/lib.fe:26:21
+   │
+26 │         amount_out: scaled_out,
+   │                     ^^^^^^^^^^ expected `Quantity<_, Out, Admitted>`, but `u256` is given
+error[8-0031]: type annotation is needed
+   ┌─ src/lib.fe:22:18
+   │
+22 │     let bpt_in = math::bpt_in_given_exact_token_out(
+   │                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   │                  │
+   │                  type annotation is needed
+   │                  consider giving `: fn bpt_in_given_exact_token_out<_, const N: usize>` here

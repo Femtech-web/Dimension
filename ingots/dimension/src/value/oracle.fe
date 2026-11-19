@@ -10,7 +10,7 @@
 
 use std::abi::sol
 use std::evm::{Call, Ctx}
-use super::{Price, WAD}
+use super::{Price, Rate, WAD}
 
 const FEED_GAS: u256 = 100_000
 
@@ -20,6 +20,40 @@ pub msg AggregatorV3 {
     Decimals -> u8,
     #[selector = sol("latestRoundData()")]
     LatestRoundData -> (u256, i256, u256, u256, u256),
+}
+
+/// A token's exchange-rate provider, as Balancer's `IRateProvider`.
+pub msg RateProvider {
+    #[selector = sol("getRate()")]
+    GetRate -> u256,
+}
+
+/// A rate provider approved for `T`, with the band a sane rate must fall in
+/// (18 decimals). Declared once, like a `Feed`.
+pub struct RateSource<T> { addr: Address, min_wad: u256, max_wad: u256 }
+
+impl<T> Copy for RateSource<T> {}
+
+pub const fn rate_source<T>(_ addr: Address, min_wad: u256, max_wad: u256) -> RateSource<T> {
+    RateSource { addr, min_wad, max_wad }
+}
+
+#[error]
+pub struct RateOutOfBand { source: Address, wad: u256, min_wad: u256, max_wad: u256 }
+
+/// Reads `s` and returns its rate as a `Rate`, or reverts.
+pub fn read_rate<T>(_ s: RateSource<T>) -> Rate<T> uses (call: mut Call) {
+    let wad: u256 = call.static(
+            addr: s.addr,
+            gas: FEED_GAS,
+            message: RateProvider::GetRate {},
+        )
+    if wad < s.min_wad || wad > s.max_wad {
+        revert_error(
+            RateOutOfBand { source: s.addr, wad, min_wad: s.min_wad, max_wad: s.max_wad },
+        )
+    }
+    Rate { wad }
 }
 
 /// A feed approved for pricing `B` in `Q`, declared once as a constant in a

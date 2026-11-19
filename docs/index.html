@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dimension verification</title>
+<meta name="description" content="Every claim Dimension makes, with its evidence, generated from the saved reports.">
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10); --band: rgba(137,135,129,0.10);
+  --s1: #2a78d6; --s2: #eb6834; --good: #0ca30c; --bad: #d03b3b; --code: #f0efec;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --band: rgba(137,135,129,0.14);
+    --s1: #3987e5; --s2: #d95926; --code: #262624;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --band: rgba(137,135,129,0.14);
+  --s1: #3987e5; --s2: #d95926; --code: #262624;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 960px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 28px; margin: 0 0 4px; }
+h2 { font-size: 20px; margin: 48px 0 8px; padding-top: 16px; border-top: 1px solid var(--grid); }
+h3 { font-size: 15px; margin: 24px 0 8px; }
+p { margin: 8px 0; color: var(--ink-2); max-width: 72ch; }
+code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--code); padding: 1px 4px; border-radius: 4px; }
+h3 code { font-weight: 400; color: var(--ink-2); }
+.sub { color: var(--ink-2); margin: 0; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 24px 0 8px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+.tile-label { font-size: 13px; color: var(--ink-2); }
+.tile-value { font-size: 24px; font-weight: 600; margin: 2px 0; }
+.tile-detail { font-size: 13px; color: var(--muted); }
+.claims { list-style: none; padding: 0; margin: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+.claims li { display: grid; grid-template-columns: 88px 1fr; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--grid); }
+.claims li:first-child { border-top: 0; }
+.q { font-weight: 500; }
+.ev { color: var(--ink-2); font-size: 14px; overflow-wrap: anywhere; }
+.status { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+.dot { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; color: #fff; font-size: 11px; font-weight: 700; }
+.dot.good { background: var(--good); } .dot.bad { background: var(--bad); }
+.missing { color: var(--muted); }
+.scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-top: 1px solid var(--grid); vertical-align: top; }
+thead th { border-top: 0; color: var(--ink-2); font-weight: 500; }
+.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nw { white-space: nowrap; }
+figure { margin: 16px 0; }
+figcaption { font-weight: 500; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 8px 0; font-size: 14px; color: var(--ink-2); }
+.key { display: inline-block; width: 16px; height: 2px; vertical-align: middle; margin-right: 6px; border-radius: 1px; }
+.key.s1 { background: var(--s1); } .key.s2 { background: var(--s2); }
+.chart { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px; }
+svg { display: block; width: 100%; height: auto; }
+svg:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+.grid { stroke: var(--grid); stroke-width: 1; }
+.axis { stroke: var(--axis); stroke-width: 1; }
+.band { fill: var(--band); }
+.band-label, .tick { fill: var(--muted); font-size: 12px; }
+.label { fill: var(--ink-2); font-size: 13px; }
+.line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.line.s1 { stroke: var(--s1); } .line.s2 { stroke: var(--s2); }
+.mark { stroke: var(--surface); stroke-width: 2; }
+.mark.s1 { fill: var(--s1); } .mark.s2 { fill: var(--s2); }
+.crosshair { stroke: var(--muted); stroke-width: 1; }
+.hit { fill: transparent; cursor: crosshair; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px 10px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); min-width: 200px; }
+.tip .head { color: var(--muted); margin-bottom: 4px; }
+.tip .head:not(:first-child) { margin-top: 8px; }
+.tip .row { display: flex; align-items: center; gap: 8px; }
+.tip strong { font-variant-numeric: tabular-nums; }
+.tip .name { color: var(--ink-2); }
+details { margin-top: 8px; }
+summary { cursor: pointer; color: var(--ink-2); font-size: 14px; }
+footer { margin-top: 48px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+<h1>Dimension verification</h1>
+<p class="sub">Every claim Dimension makes, with its evidence, generated from the reports in <code>docs/results/</code>.
+Fe 26.6.0 (5b3f96a) on mac_arm64. 3/3 unit suites, 16/16 compile-fail cases, 20/20 probes.</p>
+<div class="tiles"><div class="tile"><div class="tile-label">Against Balancer&#x27;s Solidity</div><div class="tile-value">0 mismatches</div><div class="tile-detail">220,000 vectors, reverts included</div></div><div class="tile"><div class="tile-label">Against the deployed pool</div><div class="tile-value">0 mismatches</div><div class="tile-detail">495 quotes at block 23,717,399</div></div><div class="tile"><div class="tile-label">Losing exact-out exits</div><div class="tile-value">57,990 → 8 → 0</div><div class="tile-detail">Balancer, typed, guarded</div></div><div class="tile"><div class="tile-label">cbETH at MIP-X43, in USD</div><div class="tile-value">1.12 vs 2,206.68</div><div class="tile-detail">Moonwell&#x27;s oracle vs Dimension</div></div></div>
+
+<h2>Claims</h2>
+<p>Each claim is a question a run answers. A claim fails its run if the answer is no; nothing here is written by hand.</p>
+<h3>Balancer&#x27;s Solidity against the Fe port <code>make differential</code></h3><ul class="claims"><li><span class="status"><span class="dot good" aria-hidden="true">✓</span>holds</span><div><div class="q">Does the Fe port compute exactly what Balancer V2&#x27;s Solidity computes, reverts included?</div><div class="ev">220,000 vectors over 22 functions: 170,900 identical results, 49,100 identical reverts, 0 mismatches</div></div></li></ul><h3>The Fe port against the deployed pool <code>make fidelity</code></h3><ul class="claims"><li><span class="status"><span class="dot good" aria-hidden="true">✓</span>holds</span><div><div class="q">Does the Fe port return exactly what the deployed pool returned, on its state the block before the exploit?</div><div class="ev">495 quotes against Vault.queryBatchSwap at block 23,717,399: 468 identical values, 27 identical reverts, 0 mismatches</div></div></li></ul><h3>Native search over the three kernels <code>make explore</code></h3><ul class="claims"><li><span class="status"><span class="dot good" aria-hidden="true">✓</span>holds</span><div><div class="q">Does the faithful port lose value per BPT on GIVEN_OUT exits, as Balancer V2 did?</div><div class="ev">57990 losing exits, worst 14.8607%</div></div></li><li><span class="status"><span class="dot good" aria-hidden="true">✓</span>holds</span><div><div class="q">Do the types alone remove the losses at Balancer&#x27;s two _upscale sites?</div><div class="ev">swapGivenOut 48 -&gt; 0; exitGivenOut 57990 -&gt; 8</div></div></li><li><span class="status"><span class="dot good" aria-hidden="true">✓</span>holds</span><div><div class="q">Are the operations the types do not change identical with and without them?</div><div class="ev">swapGivenIn, exitGivenIn, joinGivenIn and joinGivenOut counts match between faithful and typed</div></div></li><li><span class="status"><span class="dot good" aria-hidden="true">✓</span>holds</span><div><div class="q">With the runtime guard added, does any operation lose value per BPT or store an invariant its balances do not back?</div><div class="ev">guarded: 0 losses and 0 stored-invariant violations in every operation kind</div></div></li><li><span class="status"><span class="dot good" aria-hidden="true">✓</span>holds</span><div><div class="q">Does the guard reject exactly the operations that would have lost value, and nothing else?</div><div class="ev">exitGivenOut 8, joinGivenIn 9 rejected; each equals the typed losses</div></div></li><li><span class="status"><span class="dot good" aria-hidden="true">✓</span>holds</span><div><div class="q">Can a repeated-exit attacker gain against the faithful kernel, and is it always a loss with Dimension?</div><div class="ev">pool 300/300: faithful -0.743 D, typed -95.011 D, guarded -95.011 D; pool 8/8: faithful +1.386 D, typed -2.493 D, guarded -2.493 D; pool 1000/1000: faithful +20.923 D, typed -151.416 D, guarded -151.416 D</div></div></li></ul><h3>The three contracts on an EVM <code>make evm</code></h3><ul class="claims"><li><span class="status"><span class="dot good" aria-hidden="true">✓</span>holds</span><div><div class="q">Deployed on an EVM, does the faithful pool let a repeated-exit attacker take value from LPs?</div><div class="ev">value per BPT -3.38% over 51 exits</div></div></li><li><span class="status"><span class="dot good" aria-hidden="true">✓</span>holds</span><div><div class="q">Do the typed and guarded pools keep the value behind each BPT under the same attack?</div><div class="ev">typed +19.51%, guarded +19.51%</div></div></li></ul><h3>Moonwell&#x27;s cbETH market on Base forks <code>make moonwell</code></h3><ul class="claims"><li><span class="status"><span class="dot good" aria-hidden="true">✓</span>holds</span><div><div class="q">Did Moonwell&#x27;s deployed oracle price cbETH at the bare exchange rate throughout MIP-X43&#x27;s window?</div><div class="ev">12 blocks from 42,194,663 to 42,538,948: 1.1224 USD to 1.1229 USD</div></div></li><li><span class="status"><span class="dot good" aria-hidden="true">✓</span>holds</span><div><div class="q">At the same blocks, does the Fe oracle price cbETH as cbETH/ETH times ETH/USD from the same feeds?</div><div class="ev">2,091.1616 USD to 2,243.1581 USD, asserted equal at every block to the product of the two feeds&#x27; answers</div></div></li><li><span class="status"><span class="dot good" aria-hidden="true">✓</span>holds</span><div><div class="q">Where Moonwell&#x27;s oracle was right, is the Fe price identical to it?</div><div class="ev">block 42,194,662: 2206683650838065175827 wad, block 42,538,949: 2091161605700000000000 wad, identical</div></div></li><li><span class="status"><span class="dot good" aria-hidden="true">✓</span>holds</span><div><div class="q">Is MIP-X43&#x27;s misconfiguration rejected in each form it can take, and at which layer?</div><div class="ev">compile: 8-0000 type mismatch; bind: WrongDecimals; read: AnswerOutOfBand</div></div></li></ul>
+
+<h2>Moonwell MIP-X43</h2>
+<p>MIP-X43 executed at Base block 42,194,663 and was undone at block 42,538,949. In between, Moonwell valued cbETH at the cbETH/ETH exchange rate. Dimension's oracle reads the same two feeds and multiplies them, as the types require.</p><figure><figcaption>cbETH price in USD, read at 14 Base blocks from the same two Chainlink feeds</figcaption><div class="legend"><span><i class="key s1"></i>Dimension (<code>CbethUsdOracle</code>)</span><span><i class="key s2"></i>Moonwell's deployed oracle</span></div><div class="chart"><svg id="chart" viewBox="0 0 880 320" role="img" tabindex="0" aria-label="cbETH price in USD from both oracles, block 42,194,662 to 42,538,949. A table of the same values follows."><rect class="band" x="93.9" y="28" width="724.3" height="256"/><text class="band-label" x="101.9" y="42">MIP-X43 in effect</text><line class="axis" x1="56" x2="856" y1="284.0" y2="284.0"/><text class="tick" x="48" y="288.0" text-anchor="end">0</text><line class="grid" x1="56" x2="856" y1="241.3" y2="241.3"/><text class="tick" x="48" y="245.3" text-anchor="end">0.5K</text><line class="grid" x1="56" x2="856" y1="198.7" y2="198.7"/><text class="tick" x="48" y="202.7" text-anchor="end">1K</text><line class="grid" x1="56" x2="856" y1="156.0" y2="156.0"/><text class="tick" x="48" y="160.0" text-anchor="end">1.5K</text><line class="grid" x1="56" x2="856" y1="113.3" y2="113.3"/><text class="tick" x="48" y="117.3" text-anchor="end">2K</text><line class="grid" x1="56" x2="856" y1="70.7" y2="70.7"/><text class="tick" x="48" y="74.7" text-anchor="end">2.5K</text><line class="grid" x1="56" x2="856" y1="28.0" y2="28.0"/><text class="tick" x="48" y="32.0" text-anchor="end">3K</text><text class="tick" x="116.3" y="308" text-anchor="middle">Feb 16</text><text class="tick" x="207.2" y="308" text-anchor="middle">Feb 17</text><text class="tick" x="298.1" y="308" text-anchor="middle">Feb 18</text><text class="tick" x="388.9" y="308" text-anchor="middle">Feb 19</text><text class="tick" x="479.8" y="308" text-anchor="middle">Feb 20</text><text class="tick" x="570.7" y="308" text-anchor="middle">Feb 21</text><text class="tick" x="661.6" y="308" text-anchor="middle">Feb 22</text><text class="tick" x="752.5" y="308" text-anchor="middle">Feb 23</text><text class="tick" x="843.3" y="308" text-anchor="middle">Feb 24</text><polyline class="line s2" points="93.9,95.7 93.9,283.9 159.7,283.9 225.6,283.9 291.4,283.9 357.2,283.9 423.1,283.9 488.9,283.9 554.8,283.9 620.6,283.9 686.4,283.9 752.3,283.9 818.1,283.9 818.1,105.6"/><circle class="mark s2" cx="93.9" cy="95.7" r="4"/><circle class="mark s2" cx="93.9" cy="283.9" r="4"/><circle class="mark s2" cx="159.7" cy="283.9" r="4"/><circle class="mark s2" cx="225.6" cy="283.9" r="4"/><circle class="mark s2" cx="291.4" cy="283.9" r="4"/><circle class="mark s2" cx="357.2" cy="283.9" r="4"/><circle class="mark s2" cx="423.1" cy="283.9" r="4"/><circle class="mark s2" cx="488.9" cy="283.9" r="4"/><circle class="mark s2" cx="554.8" cy="283.9" r="4"/><circle class="mark s2" cx="620.6" cy="283.9" r="4"/><circle class="mark s2" cx="686.4" cy="283.9" r="4"/><circle class="mark s2" cx="752.3" cy="283.9" r="4"/><circle class="mark s2" cx="818.1" cy="283.9" r="4"/><circle class="mark s2" cx="818.1" cy="105.6" r="4"/><polyline class="line s1" points="93.9,95.7 93.9,95.7 159.7,95.5 225.6,93.5 291.4,92.6 357.2,93.4 423.1,95.1 488.9,97.0 554.8,96.0 620.6,94.7 686.4,94.7 752.3,96.6 818.1,105.6 818.1,105.6"/><circle class="mark s1" cx="93.9" cy="95.7" r="4"/><circle class="mark s1" cx="93.9" cy="95.7" r="4"/><circle class="mark s1" cx="159.7" cy="95.5" r="4"/><circle class="mark s1" cx="225.6" cy="93.5" r="4"/><circle class="mark s1" cx="291.4" cy="92.6" r="4"/><circle class="mark s1" cx="357.2" cy="93.4" r="4"/><circle class="mark s1" cx="423.1" cy="95.1" r="4"/><circle class="mark s1" cx="488.9" cy="97.0" r="4"/><circle class="mark s1" cx="554.8" cy="96.0" r="4"/><circle class="mark s1" cx="620.6" cy="94.7" r="4"/><circle class="mark s1" cx="686.4" cy="94.7" r="4"/><circle class="mark s1" cx="752.3" cy="96.6" r="4"/><circle class="mark s1" cx="818.1" cy="105.6" r="4"/><circle class="mark s1" cx="818.1" cy="105.6" r="4"/><text class="label" x="488.9" y="80.6" text-anchor="middle">Dimension, same feeds</text><text class="label" x="488.9" y="274.0" text-anchor="middle">Moonwell's oracle: about 1.12 USD</text><line class="crosshair" x1="0" x2="0" y1="28" y2="284" visibility="hidden"/><rect class="hit" x="56" y="28" width="800" height="256"/></svg><div id="tip" class="tip" hidden></div></div><details><summary>Table of the same values</summary><div class="scroll"><table><thead><tr><th>Block</th><th>Time (UTC)</th><th class="n">Moonwell (USD)</th><th class="n">Dimension (USD)</th></tr></thead><tbody><tr><td>42,194,662</td><td>Feb 15, 18:04:31</td><td class="n">2,206.6837</td><td class="n">2,206.6837</td></tr><tr><td>42,194,663</td><td>Feb 15, 18:04:33</td><td class="n">1.1227</td><td class="n">2,206.6837</td></tr><tr><td>42,225,961</td><td>Feb 16, 11:27:49</td><td class="n">1.1227</td><td class="n">2,209.5567</td></tr><tr><td>42,257,260</td><td>Feb 17, 04:51:07</td><td class="n">1.1224</td><td class="n">2,232.6376</td></tr><tr><td>42,288,558</td><td>Feb 17, 22:14:23</td><td class="n">1.1225</td><td class="n">2,243.1581</td></tr><tr><td>42,319,857</td><td>Feb 18, 15:37:41</td><td class="n">1.1225</td><td class="n">2,234.0663</td></tr><tr><td>42,351,156</td><td>Feb 19, 09:00:59</td><td class="n">1.1225</td><td class="n">2,213.2208</td></tr><tr><td>42,382,454</td><td>Feb 20, 02:24:15</td><td class="n">1.1229</td><td class="n">2,190.9733</td></tr><tr><td>42,413,753</td><td>Feb 20, 19:47:33</td><td class="n">1.1229</td><td class="n">2,203.5089</td></tr><tr><td>42,445,052</td><td>Feb 21, 13:10:51</td><td class="n">1.1229</td><td class="n">2,217.9224</td></tr><tr><td>42,476,350</td><td>Feb 22, 06:34:07</td><td class="n">1.1229</td><td class="n">2,217.9721</td></tr><tr><td>42,507,649</td><td>Feb 22, 23:57:25</td><td class="n">1.1229</td><td class="n">2,196.3561</td></tr><tr><td>42,538,948</td><td>Feb 23, 17:20:43</td><td class="n">1.1229</td><td class="n">2,091.1616</td></tr><tr><td>42,538,949</td><td>Feb 23, 17:20:45</td><td class="n">2,091.1616</td><td class="n">2,091.1616</td></tr></tbody></table></div></details></figure><script type="application/json" id="points">[{"x": 93.9, "block": "42,194,662", "time": "Feb 15, 18:04:31 UTC", "fe": "2,206.68", "moonwell": "2,206.68"}, {"x": 93.9, "block": "42,194,663", "time": "Feb 15, 18:04:33 UTC", "fe": "2,206.68", "moonwell": "1.12"}, {"x": 159.7, "block": "42,225,961", "time": "Feb 16, 11:27:49 UTC", "fe": "2,209.56", "moonwell": "1.12"}, {"x": 225.6, "block": "42,257,260", "time": "Feb 17, 04:51:07 UTC", "fe": "2,232.64", "moonwell": "1.12"}, {"x": 291.4, "block": "42,288,558", "time": "Feb 17, 22:14:23 UTC", "fe": "2,243.16", "moonwell": "1.12"}, {"x": 357.2, "block": "42,319,857", "time": "Feb 18, 15:37:41 UTC", "fe": "2,234.07", "moonwell": "1.12"}, {"x": 423.1, "block": "42,351,156", "time": "Feb 19, 09:00:59 UTC", "fe": "2,213.22", "moonwell": "1.12"}, {"x": 488.9, "block": "42,382,454", "time": "Feb 20, 02:24:15 UTC", "fe": "2,190.97", "moonwell": "1.12"}, {"x": 554.8, "block": "42,413,753", "time": "Feb 20, 19:47:33 UTC", "fe": "2,203.51", "moonwell": "1.12"}, {"x": 620.6, "block": "42,445,052", "time": "Feb 21, 13:10:51 UTC", "fe": "2,217.92", "moonwell": "1.12"}, {"x": 686.4, "block": "42,476,350", "time": "Feb 22, 06:34:07 UTC", "fe": "2,217.97", "moonwell": "1.12"}, {"x": 752.3, "block": "42,507,649", "time": "Feb 22, 23:57:25 UTC", "fe": "2,196.36", "moonwell": "1.12"}, {"x": 818.1, "block": "42,538,948", "time": "Feb 23, 17:20:43 UTC", "fe": "2,091.16", "moonwell": "1.12"}, {"x": 818.1, "block": "42,538,949", "time": "Feb 23, 17:20:45 UTC", "fe": "2,091.16", "moonwell": "2,091.16"}]</script><h3>Where each form of the mistake is stopped</h3><div class="scroll"><table><thead><tr><th>Layer</th><th>Declaration</th><th>Result</th><th>Outcome</th></tr></thead><tbody><tr><td>compile</td><td>the cbETH/ETH feed used as cbETH&#x27;s USD feed</td><td>8-0000 type mismatch</td><td>rejected</td></tr><tr><td>bind</td><td>cbETH/ETH declared as cbETH/USD with 8 decimals</td><td>WrongDecimals</td><td>rejected</td></tr><tr><td>read</td><td>cbETH/ETH declared as cbETH/USD with 18 decimals</td><td>AnswerOutOfBand</td><td>rejected</td></tr><tr><td>external assumption</td><td>a wrong feed declared with the decimals it reports and a band its answer falls in</td><td>passes every check; a registry entry is a reviewed declaration</td><td>passes</td></tr></tbody></table></div>
+
+<h2>Balancer V2</h2>
+<p>Every single operation on 4,608 small pool states, amounts up to 96. Each cell: operations that lowered the value per share / operations that stored an invariant the balances do not support.</p><div class="scroll"><table><thead><tr><th>Operation</th><th class="n">Faithful (Balancer)</th><th class="n">Typed</th><th class="n">Guarded</th></tr></thead><tbody><tr><td><code>swapGivenOut</code></td><td class="n">48 / 0</td><td class="n">0 / 0</td><td class="n">0 / 0</td></tr><tr><td><code>exitGivenOut</code></td><td class="n">57,990 / 108,976</td><td class="n">8 / 16</td><td class="n">0 / 0</td></tr><tr><td><code>joinGivenIn</code></td><td class="n">9 / 14</td><td class="n">9 / 14</td><td class="n">0 / 0</td></tr><tr><td><code>joinGivenOut</code></td><td class="n">0 / 57</td><td class="n">0 / 57</td><td class="n">0 / 0</td></tr></tbody></table></div><h3>Cost</h3><p>osETH/wETH pool balances before the exploit (4,922.36 WETH, 6,851.58 osETH), amp 200, fee 0.01%, 10 tokens out.</p><div class="scroll"><table><thead><tr><th>Contract</th><th class="n">swapGivenOut gas</th><th class="n">exitGivenOut gas</th><th class="n">Runtime bytes</th></tr></thead><tbody><tr><td>Faithful</td><td class="n">15,669</td><td class="n">21,116</td><td class="n">7,414</td></tr><tr><td>Typed</td><td class="n">16,695 (+6.5%)</td><td class="n">21,478 (+1.7%)</td><td class="n">9,233</td></tr><tr><td>Guarded</td><td class="n">23,130 (+47.6%)</td><td class="n">22,313 (+5.7%)</td><td class="n">9,675</td></tr></tbody></table></div>
+
+<h2>What the compiler rejects</h2>
+<p>16 of 16 constructions are rejected by the compiler with the expected error, and each corrected twin compiles and passes its tests. Run any of them live with <code>make show CASE=&lt;name&gt;</code>.</p><div class="scroll"><table><thead><tr><th>Case</th><th>Mechanism</th><th class="nw">Error</th><th class="nw">Twin</th></tr></thead><tbody><tr><td><code>add_collateral_to_debt</code></td><td>Adding a debt value to a collateral value, which hides the shortfall a solvency check must see</td><td class="nw"><code>8-0000</code></td><td class="nw">✓ passes</td></tr><tr><td><code>balancer_floor_upscale_as_admitted</code></td><td>An amount leaving the pool is scaled with floor rounding and handed to the math as if it had been admitted</td><td class="nw"><code>8-0000</code></td><td class="nw">✓ passes</td></tr><tr><td><code>compose_prices_without_shared_asset</code></td><td>Multiplying cbETH/ETH by USD/ETH, which is not a cbETH/USD price</td><td class="nw"><code>8-0000</code></td><td class="nw">✓ passes</td></tr><tr><td><code>custom_flow</code></td><td>Defining a new flow with its own choice of admission and settlement rounding</td><td class="nw"><code>6-0003</code></td><td class="nw">✓ passes</td></tr><tr><td><code>custom_rounding_direction</code></td><td>Adding a third rounding direction that could round in the caller&#x27;s favour</td><td class="nw"><code>6-0003</code></td><td class="nw">✓ passes</td></tr><tr><td><code>forge_admitted_quantity</code></td><td>Building an admitted quantity directly, skipping the rounding admission applies</td><td class="nw"><code>2-0003</code></td><td class="nw">✓ passes</td></tr><tr><td><code>forge_price</code></td><td>Building a trusted price from a raw number outside the verified boundary</td><td class="nw"><code>2-0003</code></td><td class="nw">✓ passes</td></tr><tr><td><code>liquidation_bonus_creates_bad_debt</code></td><td>A liquidation bonus so large that liquidating at the threshold needs more collateral than the position holds</td><td class="nw"><code>8-0093</code></td><td class="nw">✓ passes</td></tr><tr><td><code>ltv_at_liquidation_threshold</code></td><td>A loan-to-value equal to the liquidation threshold, so a new loan can be liquidated at once</td><td class="nw"><code>8-0093</code></td><td class="nw">✓ passes</td></tr><tr><td><code>moonwell_component_feed_in_usd_market</code></td><td>cbETH&#x27;s USD price is configured as the cbETH/ETH exchange-rate feed alone, written against the real Base feed registry</td><td class="nw"><code>8-0000</code></td><td class="nw">✓ passes</td></tr><tr><td><code>oracle_read_without_effects</code></td><td>Reading a price feed from a function whose signature does not declare the call and clock capabilities it uses</td><td class="nw"><code>8-0036</code></td><td class="nw">✓ passes</td></tr><tr><td><code>payout_settled_as_charge</code></td><td>A payout rounded down is used where the amount charged must be rounded up</td><td class="nw"><code>8-0000</code></td><td class="nw">✓ passes</td></tr><tr><td><code>scale_asset_with_too_many_decimals</code></td><td>Scaling a 24-decimal asset into 18-decimal internal units, which cannot be done without losing value</td><td class="nw"><code>8-0093</code></td><td class="nw">✓ passes</td></tr><tr><td><code>test_constructor_from_production_root</code></td><td>A production root reaching Dimension&#x27;s unsafe test constructors without trusting them in fe.toml</td><td class="nw"><code>16-0015</code></td><td class="nw">✓ passes</td></tr><tr><td><code>typed_pool_with_balancer_upscale</code></td><td>Inside the typed pool, one line of Balancer V2 is put back: the amount out is scaled with _upscale&#x27;s floor rounding and handed to StableMath</td><td class="nw"><code>8-0000</code></td><td class="nw">✓ passes</td></tr><tr><td><code>value_with_another_assets_price</code></td><td>Valuing a USDC balance with the cbETH price</td><td class="nw"><code>8-0000</code></td><td class="nw">✓ passes</td></tr></tbody></table></div>
+
+<footer>Reproduce: <code>make ci</code>, <code>make fidelity</code>, <code>make moonwell</code>, then <code>make page</code>.
+See docs/JUDGES.md for a guided tour.</footer>
+</main>
+<script>
+(() => {
+  const svg = document.getElementById("chart");
+  const data = document.getElementById("points");
+  if (!svg || !data) return;
+  const points = JSON.parse(data.textContent);
+  const tip = document.getElementById("tip");
+  const hair = svg.querySelector(".crosshair");
+  const hit = svg.querySelector(".hit");
+  let focus = 0;
+  const row = (cls, value, name) => {
+    const r = document.createElement("div"); r.className = "row";
+    const k = document.createElement("i"); k.className = "key " + cls;
+    const v = document.createElement("strong"); v.textContent = value + " USD";
+    const n = document.createElement("span"); n.className = "name"; n.textContent = name;
+    r.append(k, v, n); return r;
+  };
+  const show = (i) => {
+    const near = points.filter((p) => Math.abs(p.x - points[i].x) < 3);
+    hair.setAttribute("x1", points[i].x); hair.setAttribute("x2", points[i].x); hair.setAttribute("visibility", "visible");
+    tip.replaceChildren();
+    for (const p of near) {
+      const head = document.createElement("div"); head.className = "head"; head.textContent = "Block " + p.block + " · " + p.time;
+      tip.append(head, row("s1", p.fe, "Dimension"), row("s2", p.moonwell, "Moonwell"));
+    }
+    tip.hidden = false;
+    const box = svg.getBoundingClientRect(), scale = box.width / svg.viewBox.baseVal.width;
+    const left = points[i].x * scale + 16, room = box.width - tip.offsetWidth - 8;
+    tip.style.left = Math.max(8, left > room ? points[i].x * scale - tip.offsetWidth - 8 : left) + "px";
+    tip.style.top = "24px";
+  };
+  const hide = () => { tip.hidden = true; hair.setAttribute("visibility", "hidden"); };
+  const nearest = (evt) => {
+    const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+    const x = pt.matrixTransform(svg.getScreenCTM().inverse()).x;
+    let best = 0;
+    points.forEach((p, i) => { if (Math.abs(p.x - x) < Math.abs(points[best].x - x)) best = i; });
+    return best;
+  };
+  hit.addEventListener("pointermove", (e) => { focus = nearest(e); show(focus); });
+  hit.addEventListener("pointerleave", hide);
+  svg.addEventListener("focus", () => show(focus));
+  svg.addEventListener("blur", hide);
+  svg.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight") focus = Math.min(points.length - 1, focus + 1);
+    else if (e.key === "ArrowLeft") focus = Math.max(0, focus - 1);
+    else return;
+    e.preventDefault(); show(focus);
+  });
+})();
+</script>
+</body>
+</html>

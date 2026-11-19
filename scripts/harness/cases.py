@@ -73,12 +73,15 @@ def check_compile_fail(fe: Fe, case_dir: Path, spec: dict, result: Result, updat
     if outcome.code == 0 or not errors:
         result.fail("compiled, but it must be rejected")
         return
-    code, message = errors[0]
+    intended = [(c, m) for c, m in errors if c == spec["expect_code"]]
+    code, message = (intended or errors)[0]
     result.observed = {
         "error_code": code,
         "message": message,
         "diagnostics_sha256": hashlib.sha256(outcome.output.encode()).hexdigest(),
     }
+    if not intended:
+        result.fail(f"rejected, but not with {spec['expect_code']}")
     # Every error must be the intended one; a stray error elsewhere in the
     # case would mean it fails for a reason other than the mechanism it names.
     # `consequential_codes` lists errors the same mistake also triggers.

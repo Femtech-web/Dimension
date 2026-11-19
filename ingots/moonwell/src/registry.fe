@@ -1,0 +1,44 @@
+//! The feeds Moonwell's cbETH market reads on Base, each declared once with the
+//! pair it prices. Declarations are reviewed facts, checked against the chain
+//! where they can be: decimals when a contract binds a feed, positivity,
+//! freshness and band on every read. The pair itself is not observable on chain.
+//!
+//! `max_age` is the feed's heartbeat plus margin, from its update history:
+//! cbETH/ETH updates every 86,400 s, ETH/USD at least every 1,200 s.
+
+#![cfg(target = "evm")]
+
+use dimension::Asset
+use dimension::value::oracle::{Feed, feed}
+
+pub struct CBETH {}
+pub struct ETH {}
+pub struct USD {}
+
+impl Asset for CBETH {
+    const DECIMALS: u256 = 18
+}
+impl Asset for ETH {
+    const DECIMALS: u256 = 18
+}
+
+const WAD: u256 = 1_000_000_000_000_000_000
+
+/// Chainlink cbETH/ETH exchange rate. A staking receipt's rate starts at 1 ETH
+/// and accrues slowly; 1.5 leaves decades of headroom.
+pub const CBETH_ETH: Feed<CBETH, ETH> = feed(
+    Address::new(0x806b4Ac04501c29769051e42783cF04dCE41440b),
+    decimals: 18,
+    max_age: 90_000,
+    min_wad: WAD,
+    max_wad: 3 * WAD / 2,
+)
+
+/// Chainlink ETH/USD.
+pub const ETH_USD: Feed<ETH, USD> = feed(
+    Address::new(0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70),
+    decimals: 8,
+    max_age: 1_800,
+    min_wad: 100 * WAD,
+    max_wad: 100_000 * WAD,
+)

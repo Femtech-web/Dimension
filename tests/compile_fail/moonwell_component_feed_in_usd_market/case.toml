@@ -1,7 +1,8 @@
 kind = "compile_fail"
 expect_code = "8-0000"
 layer = "compile-time"
-mechanism = "A market whose collateral must be priced in USD is configured with the cbETH/ETH component feed"
+mechanism = "cbETH's USD price is configured as the cbETH/ETH exchange-rate feed alone, written against the real Base feed registry"
 incident = "Moonwell MIP-X43, 2026-02-15, about 1.78M USD bad debt"
 twin = "fixed"
 twin_run = "check"
+evidence = ["moonwell"]

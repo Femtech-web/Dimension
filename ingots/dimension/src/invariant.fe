@@ -1,0 +1,23 @@
+//! Economic invariants checked at runtime, for what types cannot rule out.
+//!
+//! Types fix the direction every rounding takes at a boundary. They cannot see
+//! precision lost inside a protocol's own math, such as an iterative solver.
+//! A share-value check closes that gap from the outside: whatever an operation
+//! computed, the value behind each share must not fall.
+
+use core::num::full_mul
+
+/// Value held by a pool or vault, and the shares that claim it. The units are
+/// the protocol's own (for example a StableSwap invariant and its BPT supply).
+pub struct Backing { pub value: u256, pub shares: u256 }
+
+impl Copy for Backing {}
+
+/// Whether `after` backs each share with at least as much value as `before`.
+/// Compared exactly: `after.value / after.shares >= before.value / before.shares`
+/// as a 512-bit cross-multiplication, so it cannot overflow or round.
+pub fn preserves_share_value(_ before: Backing, _ after: Backing) -> bool {
+    let (held_hi, held_lo) = full_mul(after.value, before.shares)
+    let (owed_hi, owed_lo) = full_mul(before.value, after.shares)
+    held_hi > owed_hi || (held_hi == owed_hi && held_lo >= owed_lo)
+}

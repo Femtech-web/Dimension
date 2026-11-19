@@ -14,19 +14,29 @@
       "evidence": "57990 losing exits, worst 14.8607%"
     },
     {
-      "question": "Does typed admission remove the losses at Balancer's two _upscale sites?",
+      "question": "Do the types alone remove the losses at Balancer's two _upscale sites?",
       "holds": true,
       "evidence": "swapGivenOut 48 -> 0; exitGivenOut 57990 -> 8"
     },
     {
-      "question": "Are the operations the typed kernel does not change identical in both kernels?",
+      "question": "Are the operations the types do not change identical with and without them?",
       "holds": true,
-      "evidence": "swapGivenIn, exitGivenIn, joinGivenIn and joinGivenOut counts match"
+      "evidence": "swapGivenIn, exitGivenIn, joinGivenIn and joinGivenOut counts match between faithful and typed"
     },
     {
-      "question": "Can a repeated-exit attacker gain against the faithful kernel but not the typed one?",
+      "question": "With the runtime guard added, does any operation lose value per BPT or store an invariant its balances do not back?",
       "holds": true,
-      "evidence": "pool 300/300: faithful -0.743 D, typed -95.011 D; pool 8/8: faithful +1.386 D, typed -2.493 D; pool 1000/1000: faithful +20.923 D, typed -151.416 D"
+      "evidence": "guarded: 0 losses and 0 stored-invariant violations in every operation kind"
+    },
+    {
+      "question": "Does the guard reject exactly the operations that would have lost value, and nothing else?",
+      "holds": true,
+      "evidence": "exitGivenOut 8, joinGivenIn 9 rejected; each equals the typed losses"
+    },
+    {
+      "question": "Can a repeated-exit attacker gain against the faithful kernel, and is it always a loss with Dimension?",
+      "holds": true,
+      "evidence": "pool 300/300: faithful -0.743 D, typed -95.011 D, guarded -95.011 D; pool 8/8: faithful +1.386 D, typed -2.493 D, guarded -2.493 D; pool 1000/1000: faithful +20.923 D, typed -151.416 D, guarded -151.416 D"
     }
   ],
   "states": 4608,
@@ -231,6 +241,106 @@
           }
         }
       }
+    },
+    "guarded": {
+      "by_operation": {
+        "swapGivenIn": {
+          "tried": 519552,
+          "reverted": 515764,
+          "value_per_bpt_losses": 0,
+          "stored_invariant_violations": 0,
+          "worst_loss": {
+            "ppb": 0,
+            "rate": 0,
+            "amp": 0,
+            "b0": 0,
+            "b1": 0,
+            "supply_x2": 0,
+            "side": 0,
+            "amount": 0
+          }
+        },
+        "swapGivenOut": {
+          "tried": 437760,
+          "reverted": 288,
+          "value_per_bpt_losses": 0,
+          "stored_invariant_violations": 0,
+          "worst_loss": {
+            "ppb": 0,
+            "rate": 0,
+            "amp": 0,
+            "b0": 0,
+            "b1": 0,
+            "supply_x2": 0,
+            "side": 0,
+            "amount": 0
+          }
+        },
+        "exitGivenIn": {
+          "tried": 613622,
+          "reverted": 611486,
+          "value_per_bpt_losses": 0,
+          "stored_invariant_violations": 0,
+          "worst_loss": {
+            "ppb": 0,
+            "rate": 0,
+            "amp": 0,
+            "b0": 0,
+            "b1": 0,
+            "supply_x2": 0,
+            "side": 0,
+            "amount": 0
+          }
+        },
+        "exitGivenOut": {
+          "tried": 437760,
+          "reverted": 296,
+          "value_per_bpt_losses": 0,
+          "stored_invariant_violations": 0,
+          "worst_loss": {
+            "ppb": 0,
+            "rate": 0,
+            "amp": 0,
+            "b0": 0,
+            "b1": 0,
+            "supply_x2": 0,
+            "side": 0,
+            "amount": 0
+          }
+        },
+        "joinGivenIn": {
+          "tried": 519552,
+          "reverted": 9,
+          "value_per_bpt_losses": 0,
+          "stored_invariant_violations": 0,
+          "worst_loss": {
+            "ppb": 0,
+            "rate": 0,
+            "amp": 0,
+            "b0": 0,
+            "b1": 0,
+            "supply_x2": 0,
+            "side": 0,
+            "amount": 0
+          }
+        },
+        "joinGivenOut": {
+          "tried": 613622,
+          "reverted": 0,
+          "value_per_bpt_losses": 0,
+          "stored_invariant_violations": 0,
+          "worst_loss": {
+            "ppb": 0,
+            "rate": 0,
+            "amp": 0,
+            "b0": 0,
+            "b1": 0,
+            "supply_x2": 0,
+            "side": 0,
+            "amount": 0
+          }
+        }
+      }
     }
   },
   "greedy_attacks": [
@@ -251,6 +361,14 @@
         "attacker_gain_wad": -742890152831783239
       },
       "typed": {
+        "steps": 25,
+        "value_per_bpt_start_wad": 1000000000000000000,
+        "value_per_bpt_end_wad": 1437869822485207100,
+        "withdrawn": 298,
+        "bpt_burned": 448,
+        "attacker_gain_wad": -95010658100021439466
+      },
+      "guarded": {
         "steps": 25,
         "value_per_bpt_start_wad": 1000000000000000000,
         "value_per_bpt_end_wad": 1437869822485207100,
@@ -282,6 +400,14 @@
         "withdrawn": 6,
         "bpt_burned": 15,
         "attacker_gain_wad": -2492955465587044534
+      },
+      "guarded": {
+        "steps": 3,
+        "value_per_bpt_start_wad": 680000000000000000,
+        "value_per_bpt_end_wad": 900000000000000000,
+        "withdrawn": 6,
+        "bpt_burned": 15,
+        "attacker_gain_wad": -2492955465587044534
       }
     },
     {
@@ -301,6 +427,14 @@
         "attacker_gain_wad": 20923420672782551391
       },
       "typed": {
+        "steps": 75,
+        "value_per_bpt_start_wad": 1000000000000000000,
+        "value_per_bpt_end_wad": 1195086705202312138,
+        "withdrawn": 998,
+        "bpt_burned": 1517,
+        "attacker_gain_wad": -151416370536805989678
+      },
+      "guarded": {
         "steps": 75,
         "value_per_bpt_start_wad": 1000000000000000000,
         "value_per_bpt_end_wad": 1195086705202312138,

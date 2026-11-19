@@ -1,4 +1,5 @@
-# Differential tests: Balancer V2's Solidity (third_party/) against the Fe port.
+# Reference tests: Balancer V2's Solidity (third_party/) against the Fe port, the Fe
+# contracts on an EVM, and both demos on mainnet and Base forks.
 [profile.default]
 src = "src"
 test = "test"
@@ -11,7 +12,11 @@ optimizer_runs = 9999
 # Fe emits PUSH0 and MCOPY, so tests execute under Cancun; solc 0.7 compiles for its own latest target.
 evm_version = "cancun"
 allow_paths = ["../../third_party"]
-fs_permissions = [{ access = "read", path = "../../ingots/balancer_v2/out" }, { access = "read-write", path = "cache" }]
+fs_permissions = [
+  { access = "read", path = "../../ingots/balancer_v2/out" },
+  { access = "read", path = "../../ingots/moonwell/out" },
+  { access = "read-write", path = "cache" },
+]
 remappings = [
   "@balancer-labs/v2-solidity-utils/=../../third_party/balancer-v2/pkg/solidity-utils/",
   "@balancer-labs/v2-interfaces/=../../third_party/balancer-v2/pkg/interfaces/",

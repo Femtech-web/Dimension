@@ -1,0 +1,53 @@
+//! `CbethUsdOracle` is the cbETH market's price as Dimension configures it.
+//! `DeclaredCbethUsdFeed` is a single registry entry that declares some feed
+//! to be cbETH/USD, deployed on its own: its constructor binds the entry and
+//! `usdPrice()` reads it, so a fork test can try a declaration, right or wrong,
+//! against the real feed it names.
+
+#![cfg(target = "evm")]
+
+use std::abi::sol
+use std::evm::{Call, Ctx}
+use dimension::value::oracle::{Feed, feed, read, verify}
+use super::pricing::ViaEth
+use super::registry::{CBETH, CBETH_ETH, ETH_USD, USD}
+
+/// cbETH's USD price as the market must read it.
+pub const CBETH_USD: ViaEth<CBETH> = ViaEth { leg: CBETH_ETH, eth_usd: ETH_USD }
+
+pub msg PriceOracle {
+    /// USD per whole token, 18 decimals, as Moonwell's `getUnderlyingPrice`
+    /// returns it for an 18-decimal token.
+    #[selector = sol("usdPrice()")]
+    UsdPrice -> u256,
+}
+
+pub contract CbethUsdOracle uses (call: mut Call, ctx: Ctx) {
+    init() uses (call) { CBETH_USD.verify() }
+
+    recv PriceOracle {
+        UsdPrice -> u256 uses (call, ctx) {
+            CBETH_USD.read().wad()
+        }
+    }
+}
+
+struct Declaration { feed: Feed<CBETH, USD> }
+
+pub contract DeclaredCbethUsdFeed uses (call: mut Call, ctx: Ctx) {
+    mut s: Declaration,
+
+    init(addr: Address, decimals: u8, max_age: u256, min_wad: u256, max_wad: u256)
+    uses (call, mut s)
+    {
+        let declared = feed<CBETH, USD>(addr, decimals, max_age, min_wad, max_wad)
+        verify(declared)
+        s.feed = declared
+    }
+
+    recv PriceOracle {
+        UsdPrice -> u256 uses (call, ctx, s) {
+            read(s.feed).wad()
+        }
+    }
+}

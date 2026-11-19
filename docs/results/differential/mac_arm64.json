@@ -20,149 +20,149 @@
   "summary": {
     "functions": 22,
     "vectors": 220000,
-    "both_succeeded": 170945,
-    "both_reverted": 49055,
+    "both_succeeded": 170900,
+    "both_reverted": 49100,
     "mismatches": 0
   },
   "functions": {
     "calcBptInGivenExactTokensOut2": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 7650,
+      "both_succeeded": 7647,
       "both_reverted": {
-        "BAL#001": 695,
-        "BAL#003": 1583,
+        "BAL#001": 693,
+        "BAL#003": 1586,
         "BAL#004": 36,
-        "BAL#321": 36
+        "BAL#321": 38
       }
     },
     "calcBptInGivenExactTokensOut3": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 7435,
+      "both_succeeded": 7436,
       "both_reverted": {
-        "BAL#001": 792,
-        "BAL#003": 1689,
-        "BAL#004": 22,
+        "BAL#001": 788,
+        "BAL#003": 1691,
+        "BAL#004": 23,
         "BAL#321": 62
       }
     },
     "calcBptOutGivenExactTokensIn2": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 7355,
+      "both_succeeded": 7337,
       "both_reverted": {
-        "BAL#001": 1624,
-        "BAL#003": 993,
-        "BAL#321": 28
+        "BAL#001": 1633,
+        "BAL#003": 1005,
+        "BAL#321": 25
       }
     },
     "calcBptOutGivenExactTokensIn3": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 7255,
+      "both_succeeded": 7187,
       "both_reverted": {
-        "BAL#001": 1557,
-        "BAL#003": 1143,
-        "BAL#321": 45
+        "BAL#001": 1605,
+        "BAL#003": 1160,
+        "BAL#321": 48
       }
     },
     "calcInGivenOut2": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 7602,
+      "both_succeeded": 7625,
       "both_reverted": {
-        "BAL#001": 876,
-        "BAL#003": 1503,
-        "BAL#004": 19
+        "BAL#001": 875,
+        "BAL#003": 1480,
+        "BAL#004": 20
       }
     },
     "calcInGivenOut3": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 7388,
+      "both_succeeded": 7378,
       "both_reverted": {
-        "BAL#001": 868,
-        "BAL#003": 1701,
-        "BAL#004": 43
+        "BAL#001": 886,
+        "BAL#003": 1694,
+        "BAL#004": 42
       }
     },
     "calcOutGivenIn2": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 7368,
+      "both_succeeded": 7359,
       "both_reverted": {
-        "BAL#001": 1011,
-        "BAL#003": 1615,
+        "BAL#001": 1040,
+        "BAL#003": 1595,
         "BAL#004": 6
       }
     },
     "calcOutGivenIn3": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 7218,
+      "both_succeeded": 7216,
       "both_reverted": {
-        "BAL#001": 943,
-        "BAL#003": 1805,
-        "BAL#004": 34
+        "BAL#001": 940,
+        "BAL#003": 1809,
+        "BAL#004": 35
       }
     },
     "calcTokenInGivenExactBptOut2": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 8237,
+      "both_succeeded": 8211,
       "both_reverted": {
-        "BAL#001": 123,
-        "BAL#003": 1635,
+        "BAL#001": 131,
+        "BAL#003": 1653,
         "BAL#004": 5
       }
     },
     "calcTokenInGivenExactBptOut3": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 8039,
+      "both_succeeded": 8046,
       "both_reverted": {
-        "BAL#001": 179,
-        "BAL#003": 1739,
-        "BAL#004": 43
+        "BAL#001": 159,
+        "BAL#003": 1755,
+        "BAL#004": 40
       }
     },
     "calcTokenOutGivenExactBptIn2": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 6607,
+      "both_succeeded": 6576,
       "both_reverted": {
-        "BAL#001": 1555,
-        "BAL#003": 1619,
-        "BAL#004": 219
+        "BAL#001": 1564,
+        "BAL#003": 1637,
+        "BAL#004": 223
       }
     },
     "calcTokenOutGivenExactBptIn3": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 6543,
+      "both_succeeded": 6549,
       "both_reverted": {
-        "BAL#001": 1424,
-        "BAL#003": 1782,
-        "BAL#004": 251
+        "BAL#001": 1402,
+        "BAL#003": 1792,
+        "BAL#004": 257
       }
     },
     "calculateInvariant2": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 8232,
+      "both_succeeded": 8216,
       "both_reverted": {
-        "BAL#003": 1732,
-        "BAL#321": 36
+        "BAL#003": 1753,
+        "BAL#321": 31
       }
     },
     "calculateInvariant3": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 8047,
+      "both_succeeded": 8075,
       "both_reverted": {
-        "BAL#003": 1900,
-        "BAL#321": 53
+        "BAL#003": 1870,
+        "BAL#321": 55
       }
     },
     "complement": {
@@ -174,36 +174,36 @@
     "divDown": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 8116,
+      "both_succeeded": 8133,
       "both_reverted": {
         "BAL#004": 126,
-        "BAL#005": 1758
+        "BAL#005": 1741
       }
     },
     "divUp": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 8116,
+      "both_succeeded": 8133,
       "both_reverted": {
         "BAL#004": 126,
-        "BAL#005": 1758
+        "BAL#005": 1741
       }
     },
     "getTokenBalance2": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 8378,
+      "both_succeeded": 8398,
       "both_reverted": {
-        "BAL#003": 1616,
+        "BAL#003": 1596,
         "BAL#004": 6
       }
     },
     "getTokenBalance3": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 8259,
+      "both_succeeded": 8218,
       "both_reverted": {
-        "BAL#003": 1705,
+        "BAL#003": 1746,
         "BAL#004": 36
       }
     },
@@ -218,17 +218,17 @@
     "mulDown": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 6613,
+      "both_succeeded": 6643,
       "both_reverted": {
-        "BAL#003": 3387
+        "BAL#003": 3357
       }
     },
     "mulUp": {
       "passed": true,
       "vectors": 10000,
-      "both_succeeded": 6613,
+      "both_succeeded": 6643,
       "both_reverted": {
-        "BAL#003": 3387
+        "BAL#003": 3357
       }
     }
   }

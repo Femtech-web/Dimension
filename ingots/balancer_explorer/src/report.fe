@@ -4,15 +4,14 @@
 #![cfg(target = "native")]
 
 use std::io::Stdout
-use super::scenario::KIND_NAMES
 use super::attack::{Attack, greedy}
-use super::scenario::Scenario
+use super::scenario::{FAITHFUL, GUARDED, KIND_NAMES, Scenario, TYPED}
 use super::search::{AMOUNT_CAP, Report, Tally}
 
 fn tally(_ name: String<8>, _ t: Tally, last: bool) uses (out: mut Stdout) {
     println!("    \"", name, "\": {")
-    var k: usize = 0
     println!("      \"by_operation\": {")
+    var k: usize = 0
     while k < 6 {
         let w = t.worst[k]
         print!(
@@ -49,40 +48,6 @@ fn tally(_ name: String<8>, _ t: Tally, last: bool) uses (out: mut Stdout) {
     }
     println!("      }")
     println!(if last { "    }" } else { "    }," })
-}
-
-pub fn print(_ r: Report) uses (out: mut Stdout) {
-    println!("{")
-    println!("  \"states\": ", r.states, ",")
-    println!("  \"amount_cap\": ", AMOUNT_CAP, ",")
-    println!("  \"kernels\": {")
-    tally("faithful", r.faithful, last: false)
-    tally("typed", r.typed, last: true)
-    println!("  },")
-    println!("  \"greedy_attacks\": [")
-    attack(
-        Scenario { rate: 1_058_132_408_689_971_699, amp: 50_000, fee: 0 },
-        b0: 300,
-        b1: 300,
-        supply_x2: 2,
-        last: false,
-    )
-    attack(
-        Scenario { rate: 1_150_000_000_000_000_000, amp: 50_000, fee: 0 },
-        b0: 8,
-        b1: 8,
-        supply_x2: 3,
-        last: false,
-    )
-    attack(
-        Scenario { rate: 1_210_000_000_000_000_000, amp: 200_000, fee: 0 },
-        b0: 1_000,
-        b1: 1_000,
-        supply_x2: 2,
-        last: true,
-    )
-    println!("  ]")
-    println!("}")
 }
 
 fn side(_ name: String<8>, _ a: Attack, last: bool) uses (out: mut Stdout) {
@@ -135,14 +100,70 @@ uses (out: mut Stdout)
             supply_x2,
             steps,
             cap: AMOUNT_CAP,
-            typed: false,
+            kernel: FAITHFUL,
         ),
         last: false,
     )
     side(
         "typed",
-        greedy(s, b0, b1, supply_x2, steps, cap: AMOUNT_CAP, typed: true),
+        greedy(
+            s,
+            b0,
+            b1,
+            supply_x2,
+            steps,
+            cap: AMOUNT_CAP,
+            kernel: TYPED,
+        ),
+        last: false,
+    )
+    side(
+        "guarded",
+        greedy(
+            s,
+            b0,
+            b1,
+            supply_x2,
+            steps,
+            cap: AMOUNT_CAP,
+            kernel: GUARDED,
+        ),
         last: true,
     )
     println!(if last { "    }" } else { "    }," })
+}
+
+pub fn print(_ r: Report) uses (out: mut Stdout) {
+    println!("{")
+    println!("  \"states\": ", r.states, ",")
+    println!("  \"amount_cap\": ", AMOUNT_CAP, ",")
+    println!("  \"kernels\": {")
+    tally("faithful", r.faithful, last: false)
+    tally("typed", r.typed, last: false)
+    tally("guarded", r.guarded, last: true)
+    println!("  },")
+    println!("  \"greedy_attacks\": [")
+    attack(
+        Scenario { rate: 1_058_132_408_689_971_699, amp: 50_000, fee: 0 },
+        b0: 300,
+        b1: 300,
+        supply_x2: 2,
+        last: false,
+    )
+    attack(
+        Scenario { rate: 1_150_000_000_000_000_000, amp: 50_000, fee: 0 },
+        b0: 8,
+        b1: 8,
+        supply_x2: 3,
+        last: false,
+    )
+    attack(
+        Scenario { rate: 1_210_000_000_000_000_000, amp: 200_000, fee: 0 },
+        b0: 1_000,
+        b1: 1_000,
+        supply_x2: 2,
+        last: true,
+    )
+    println!("  ]")
+    println!("}")
 }

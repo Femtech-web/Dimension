@@ -8,6 +8,7 @@ use balancer_v2::pool::Pool
 use balancer_v2::pool::faithful
 use balancer_v2::pool::faithful::upscaled
 use balancer_v2::pool::typed
+use balancer_v2::pool::guarded
 use balancer_v2::pool::typed::Bpt
 use balancer_v2::stable::check::{Check, Record}
 use balancer_v2::stable::stable_math as sm
@@ -122,6 +123,7 @@ pub fn apply_typed(_ pool: mut Pool<2>, op: Op) uses (check: mut Check) {
                     amount_in: given<RATED, In>(amount),
                     factor_in: r,
                     factor_out: p,
+                    guard: false,
                 )
             } else {
                 let _ = typed::swap_given_in(
@@ -131,6 +133,7 @@ pub fn apply_typed(_ pool: mut Pool<2>, op: Op) uses (check: mut Check) {
                     amount_in: given<PLAIN, In>(amount),
                     factor_in: p,
                     factor_out: r,
+                    guard: false,
                 )
             }
         },
@@ -143,9 +146,136 @@ pub fn apply_typed(_ pool: mut Pool<2>, op: Op) uses (check: mut Check) {
                     amount_out: given<PLAIN, Out>(amount),
                     factor_in: r,
                     factor_out: p,
+                    guard: false,
                 )
             } else {
                 let _ = typed::swap_given_out(
+                    mut pool,
+                    i: 1,
+                    j: 0,
+                    amount_out: given<RATED, Out>(amount),
+                    factor_in: p,
+                    factor_out: r,
+                    guard: false,
+                )
+            }
+        },
+        Op::ExitGivenIn { j, bpt } => {
+            if j == 0 {
+                let _ = typed::exit_given_in(
+                    mut pool,
+                    j: 0,
+                    bpt_in: given<Bpt, In>(bpt),
+                    factor: r,
+                    guard: false,
+                )
+            } else {
+                let _ = typed::exit_given_in(
+                    mut pool,
+                    j: 1,
+                    bpt_in: given<Bpt, In>(bpt),
+                    factor: p,
+                    guard: false,
+                )
+            }
+        },
+        Op::ExitGivenOut { j, amount } => {
+            if j == 0 {
+                let _ = typed::exit_given_out(
+                    mut pool,
+                    j: 0,
+                    amount_out: given<RATED, Out>(amount),
+                    factor: r,
+                    guard: false,
+                )
+            } else {
+                let _ = typed::exit_given_out(
+                    mut pool,
+                    j: 1,
+                    amount_out: given<PLAIN, Out>(amount),
+                    factor: p,
+                    guard: false,
+                )
+            }
+        },
+        Op::JoinGivenIn { i, amount } => {
+            if i == 0 {
+                let _ = typed::join_given_in(
+                    mut pool,
+                    i: 0,
+                    amount_in: given<RATED, In>(amount),
+                    factor: r,
+                    guard: false,
+                )
+            } else {
+                let _ = typed::join_given_in(
+                    mut pool,
+                    i: 1,
+                    amount_in: given<PLAIN, In>(amount),
+                    factor: p,
+                    guard: false,
+                )
+            }
+        },
+        Op::JoinGivenOut { i, bpt } => {
+            if i == 0 {
+                let _ = typed::join_given_out(
+                    mut pool,
+                    i: 0,
+                    bpt_out: given<Bpt, Out>(bpt),
+                    factor: r,
+                    guard: false,
+                )
+            } else {
+                let _ = typed::join_given_out(
+                    mut pool,
+                    i: 1,
+                    bpt_out: given<Bpt, Out>(bpt),
+                    factor: p,
+                    guard: false,
+                )
+            }
+        },
+    }
+}
+
+pub fn apply_guarded(_ pool: mut Pool<2>, op: Op) uses (check: mut Check) {
+    let r = rated_factor(pool)
+    let p = plain_factor()
+    match op {
+        Op::SwapGivenIn { i, amount } => {
+            if i == 0 {
+                let _ = guarded::swap_given_in(
+                    mut pool,
+                    i: 0,
+                    j: 1,
+                    amount_in: given<RATED, In>(amount),
+                    factor_in: r,
+                    factor_out: p,
+                )
+            } else {
+                let _ = guarded::swap_given_in(
+                    mut pool,
+                    i: 1,
+                    j: 0,
+                    amount_in: given<PLAIN, In>(amount),
+                    factor_in: p,
+                    factor_out: r,
+                )
+            }
+        },
+        Op::SwapGivenOut { i, amount } => {
+            if i == 0 {
+                let _ = guarded::swap_given_out(
+                    mut pool,
+                    i: 0,
+                    j: 1,
+                    amount_out: given<PLAIN, Out>(amount),
+                    factor_in: r,
+                    factor_out: p,
+                )
+            } else {
+                let _ = guarded::swap_given_out(
                     mut pool,
                     i: 1,
                     j: 0,
@@ -157,21 +287,31 @@ pub fn apply_typed(_ pool: mut Pool<2>, op: Op) uses (check: mut Check) {
         },
         Op::ExitGivenIn { j, bpt } => {
             if j == 0 {
-                let _ = typed::exit_given_in(mut pool, j: 0, bpt_in: given<Bpt, In>(bpt), factor: r)
+                let _ = guarded::exit_given_in(
+                    mut pool,
+                    j: 0,
+                    bpt_in: given<Bpt, In>(bpt),
+                    factor: r,
+                )
             } else {
-                let _ = typed::exit_given_in(mut pool, j: 1, bpt_in: given<Bpt, In>(bpt), factor: p)
+                let _ = guarded::exit_given_in(
+                    mut pool,
+                    j: 1,
+                    bpt_in: given<Bpt, In>(bpt),
+                    factor: p,
+                )
             }
         },
         Op::ExitGivenOut { j, amount } => {
             if j == 0 {
-                let _ = typed::exit_given_out(
+                let _ = guarded::exit_given_out(
                     mut pool,
                     j: 0,
                     amount_out: given<RATED, Out>(amount),
                     factor: r,
                 )
             } else {
-                let _ = typed::exit_given_out(
+                let _ = guarded::exit_given_out(
                     mut pool,
                     j: 1,
                     amount_out: given<PLAIN, Out>(amount),
@@ -181,14 +321,14 @@ pub fn apply_typed(_ pool: mut Pool<2>, op: Op) uses (check: mut Check) {
         },
         Op::JoinGivenIn { i, amount } => {
             if i == 0 {
-                let _ = typed::join_given_in(
+                let _ = guarded::join_given_in(
                     mut pool,
                     i: 0,
                     amount_in: given<RATED, In>(amount),
                     factor: r,
                 )
             } else {
-                let _ = typed::join_given_in(
+                let _ = guarded::join_given_in(
                     mut pool,
                     i: 1,
                     amount_in: given<PLAIN, In>(amount),
@@ -198,14 +338,14 @@ pub fn apply_typed(_ pool: mut Pool<2>, op: Op) uses (check: mut Check) {
         },
         Op::JoinGivenOut { i, bpt } => {
             if i == 0 {
-                let _ = typed::join_given_out(
+                let _ = guarded::join_given_out(
                     mut pool,
                     i: 0,
                     bpt_out: given<Bpt, Out>(bpt),
                     factor: r,
                 )
             } else {
-                let _ = typed::join_given_out(
+                let _ = guarded::join_given_out(
                     mut pool,
                     i: 1,
                     bpt_out: given<Bpt, Out>(bpt),
@@ -221,16 +361,22 @@ pub fn actual_invariant(_ pool: Pool<2>) -> u256 uses (check: mut Check) {
     sm::calculate_invariant(pool.amp, upscaled(pool.balances, pool.factors))
 }
 
-/// Applies `op` to a copy of `pool` with one kernel. `None` when one of
-/// Balancer's checks failed, which on chain would have reverted the operation.
-pub fn after(_ pool: Pool<2>, op: Op, typed: bool) -> Option<Pool<2>> {
+pub const FAITHFUL: usize = 0
+pub const TYPED: usize = 1
+pub const GUARDED: usize = 2
+
+/// Applies `op` to a copy of `pool` with one kernel. `None` when a check
+/// failed (one of Balancer's, or the guard's), which on chain reverts.
+pub fn after(_ pool: Pool<2>, op: Op, kernel: usize) -> Option<Pool<2>> {
     var p = pool
     var record = Record::new()
     with (Check = mut record) {
-        if typed {
+        if kernel == FAITHFUL {
+            apply_faithful(mut p, op)
+        } else if kernel == TYPED {
             apply_typed(mut p, op)
         } else {
-            apply_faithful(mut p, op)
+            apply_guarded(mut p, op)
         }
     }
     if record.failed {

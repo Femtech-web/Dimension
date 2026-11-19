@@ -24,17 +24,26 @@ def ops(kernel: dict, name: str) -> dict:
     return kernel["by_operation"][name]
 
 
+KINDS = ("swapGivenIn", "swapGivenOut", "exitGivenIn", "exitGivenOut", "joinGivenIn", "joinGivenOut")
+
+
 def claims(report: dict) -> list[dict]:
     faithful = report["kernels"]["faithful"]
     typed = report["kernels"]["typed"]
+    guarded = report["kernels"]["guarded"]
     exits_f = ops(faithful, "exitGivenOut")["value_per_bpt_losses"]
     exits_t = ops(typed, "exitGivenOut")["value_per_bpt_losses"]
     swaps_t = ops(typed, "swapGivenOut")["value_per_bpt_losses"]
-    outside = all(
+    unchanged = all(
         ops(faithful, k)[field] == ops(typed, k)[field]
         for k in ("swapGivenIn", "exitGivenIn", "joinGivenIn", "joinGivenOut")
         for field in ("value_per_bpt_losses", "stored_invariant_violations")
     )
+    guarded_clean = all(
+        ops(guarded, k)["value_per_bpt_losses"] == 0 and ops(guarded, k)["stored_invariant_violations"] == 0 for k in KINDS
+    )
+    rejections = {k: ops(guarded, k)["reverted"] - ops(typed, k)["reverted"] for k in KINDS}
+    exact_guard = all(rejections[k] == ops(typed, k)["value_per_bpt_losses"] for k in KINDS)
     attacks = report["greedy_attacks"]
     return [
         {
@@ -43,22 +52,32 @@ def claims(report: dict) -> list[dict]:
             "evidence": f"{exits_f} losing exits, worst {ops(faithful, 'exitGivenOut')['worst_loss']['ppb'] / 1e7:.4f}%",
         },
         {
-            "question": "Does typed admission remove the losses at Balancer's two _upscale sites?",
+            "question": "Do the types alone remove the losses at Balancer's two _upscale sites?",
             "holds": swaps_t == 0 and exits_t * 1000 < exits_f,
             "evidence": f"swapGivenOut {ops(faithful, 'swapGivenOut')['value_per_bpt_losses']} -> {swaps_t}; exitGivenOut {exits_f} -> {exits_t}",
         },
         {
-            "question": "Are the operations the typed kernel does not change identical in both kernels?",
-            "holds": outside,
-            "evidence": "swapGivenIn, exitGivenIn, joinGivenIn and joinGivenOut counts match",
+            "question": "Are the operations the types do not change identical with and without them?",
+            "holds": unchanged,
+            "evidence": "swapGivenIn, exitGivenIn, joinGivenIn and joinGivenOut counts match between faithful and typed",
         },
         {
-            "question": "Can a repeated-exit attacker gain against the faithful kernel but not the typed one?",
+            "question": "With the runtime guard added, does any operation lose value per BPT or store an invariant its balances do not back?",
+            "holds": guarded_clean,
+            "evidence": "guarded: 0 losses and 0 stored-invariant violations in every operation kind",
+        },
+        {
+            "question": "Does the guard reject exactly the operations that would have lost value, and nothing else?",
+            "holds": exact_guard,
+            "evidence": ", ".join(f"{k} {rejections[k]}" for k in KINDS if rejections[k]) + " rejected; each equals the typed losses",
+        },
+        {
+            "question": "Can a repeated-exit attacker gain against the faithful kernel, and is it always a loss with Dimension?",
             "holds": any(a["faithful"]["attacker_gain_wad"] > 0 for a in attacks)
-            and all(a["typed"]["attacker_gain_wad"] < 0 for a in attacks),
+            and all(a[k]["attacker_gain_wad"] < 0 for a in attacks for k in ("typed", "guarded")),
             "evidence": "; ".join(
                 f"pool {a['b0']}/{a['b1']}: faithful {a['faithful']['attacker_gain_wad'] / 1e18:+.3f} D, "
-                f"typed {a['typed']['attacker_gain_wad'] / 1e18:+.3f} D"
+                f"typed {a['typed']['attacker_gain_wad'] / 1e18:+.3f} D, guarded {a['guarded']['attacker_gain_wad'] / 1e18:+.3f} D"
                 for a in attacks
             ),
         },

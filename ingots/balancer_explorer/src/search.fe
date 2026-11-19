@@ -10,7 +10,7 @@
 //!   Quint model of this exploit checks).
 
 use balancer_v2::pool::Pool
-use super::scenario::{Op, Scenario, after, invariant, kind, pool}
+use super::scenario::{FAITHFUL, GUARDED, Op, Scenario, TYPED, after, invariant, kind, pool}
 
 pub const RATES: [u256; 3] = [
     1_058_132_408_689_971_699,
@@ -87,7 +87,7 @@ pub fn empty() -> Tally {
     }
 }
 
-pub struct Report { pub states: u256, pub faithful: Tally, pub typed: Tally }
+pub struct Report { pub states: u256, pub faithful: Tally, pub typed: Tally, pub guarded: Tally }
 
 /// Value-per-BPT loss from `before` to `after`, in parts per billion; 0 if the
 /// value did not fall.
@@ -128,13 +128,13 @@ fn record(
     before: Pool<2>,
     d0: u256,
     op: Op,
-    typed: bool,
+    kernel: usize,
     s: Scenario,
     supply_x2: u256,
 ) {
     let k = kind(op)
     t.tried[k] += 1
-    let next = match after(before, op, typed) {
+    let next = match after(before, op, kernel) {
         Option::Some(p) => p,
         Option::None => {
             t.reverted[k] += 1
@@ -223,7 +223,7 @@ fn explore_state(_ r: mut Report, s: Scenario, b0: u256, b1: u256, supply_x2: u2
                         before: start,
                         d0,
                         op: ops[k],
-                        typed: false,
+                        kernel: FAITHFUL,
                         s,
                         supply_x2,
                     )
@@ -232,7 +232,16 @@ fn explore_state(_ r: mut Report, s: Scenario, b0: u256, b1: u256, supply_x2: u2
                         before: start,
                         d0,
                         op: ops[k],
-                        typed: true,
+                        kernel: TYPED,
+                        s,
+                        supply_x2,
+                    )
+                    record(
+                        mut r.guarded,
+                        before: start,
+                        d0,
+                        op: ops[k],
+                        kernel: GUARDED,
                         s,
                         supply_x2,
                     )
@@ -265,7 +274,7 @@ pub fn run_grid<const R: usize, const A: usize, const B: usize, const S: usize>(
     supplies_x2: [u256; S],
     cap: u256,
 ) -> Report {
-    var r = Report { states: 0, faithful: empty(), typed: empty() }
+    var r = Report { states: 0, faithful: empty(), typed: empty(), guarded: empty() }
     var ri: usize = 0
     while ri < R {
         var ai: usize = 0

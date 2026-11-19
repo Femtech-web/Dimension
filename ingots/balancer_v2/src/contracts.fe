@@ -1,0 +1,511 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! The three pool kernels as deployable contracts, with the token layout of the
+//! osETH/wETH pool drained on 2025-11-03: a plain token at index 0 (WETH) and a
+//! rate-bearing token at index 1 (osETH). The pool's state lives in storage;
+//! each operation loads it, runs the kernel and stores it back.
+//!
+//! `FaithfulPool` reads its rate provider unchecked and rounds as Balancer V2.
+//! `TypedPool` and `GuardedPool` read it through Dimension's verified boundary
+//! and run the typed and guarded kernels.
+
+#![cfg(target = "evm")]
+
+use std::abi::sol
+use std::evm::Call
+use dimension::{Asset, In, Out, ScalingFactor, given, scaling_factor}
+use dimension::value::oracle::{RateProvider, rate_source, read_rate}
+use super::pool::Pool
+use super::pool::faithful
+use super::pool::faithful::upscaled
+use super::pool::typed
+use super::pool::typed::Bpt
+use super::stable::check::{Check, Revert}
+use super::stable::stable_math as sm
+
+pub struct PLAIN {}
+pub struct RATED {}
+
+impl Asset for PLAIN {
+    const DECIMALS: u256 = 18
+}
+impl Asset for RATED {
+    const DECIMALS: u256 = 18
+}
+
+const ONE: u256 = 1_000_000_000_000_000_000
+// The band a rate-bearing staking token's rate must fall in.
+const MIN_RATE: u256 = ONE
+const MAX_RATE: u256 = 2 * ONE
+
+pub msg PoolAbi {
+    #[selector = sol(
+        "initialize(uint256[2],uint256,uint256,uint256,uint256,address)",
+    )]
+    Initialize {
+        balances: [u256; 2],
+        amp: u256,
+        fee: u256,
+        supply: u256,
+        stored_invariant: u256,
+        rate_provider: Address,
+    },
+    #[selector = sol("swapGivenIn(uint256,uint256)")]
+    SwapGivenIn { i: u256, amount: u256 } -> u256,
+    #[selector = sol("swapGivenOut(uint256,uint256)")]
+    SwapGivenOut { i: u256, amount: u256 } -> u256,
+    #[selector = sol("exitGivenOut(uint256,uint256)")]
+    ExitGivenOut { j: u256, amount: u256 } -> u256,
+    #[selector = sol("exitGivenIn(uint256,uint256)")]
+    ExitGivenIn { j: u256, bpt: u256 } -> u256,
+    #[selector = sol("joinGivenIn(uint256,uint256)")]
+    JoinGivenIn { i: u256, amount: u256 } -> u256,
+    #[selector = sol("joinGivenOut(uint256,uint256)")]
+    JoinGivenOut { i: u256, bpt: u256 } -> u256,
+    /// Balancer's `getRate()`: the invariant of the actual balances per BPT.
+    #[selector = sol("getRate()")]
+    GetRate -> u256,
+    #[selector = sol("getState()")]
+    GetState -> ([u256; 2], [u256; 2], u256, u256),
+}
+
+struct PoolStorage { pool: Pool<2>, rate_provider: Address }
+
+fn idx(_ i: u256) -> usize {
+    i.downcast().unwrap()
+}
+
+fn raw_rate(_ provider: Address) -> u256 uses (call: mut Call) {
+    call.static(
+        addr: provider,
+        gas: 100_000,
+        message: RateProvider::GetRate {},
+    )
+}
+
+fn rated_factor(_ provider: Address) -> ScalingFactor<RATED>
+uses (call: mut Call)
+{
+    scaling_factor<RATED>()
+        .with_rate(
+            read_rate(
+                rate_source<RATED>(provider, min_wad: MIN_RATE, max_wad: MAX_RATE),
+            ),
+        )
+}
+
+fn rate_per_bpt(_ p: Pool<2>) -> u256 {
+    with (Check = Revert {}) {
+        sm::calculate_invariant(p.amp, upscaled(p.balances, p.factors)) * ONE / p.supply
+    }
+}
+
+// The typed kernel takes each amount with its token's type, so the token index
+// a caller names selects the type here, once. `guard` switches on Dimension's
+// runtime share-value check.
+
+fn typed_swap_given_in(
+    _ p: mut Pool<2>,
+    i: usize,
+    amount: u256,
+    r: ScalingFactor<RATED>,
+    guard: bool,
+) -> u256 {
+    let w = scaling_factor<PLAIN>()
+    with (Check = Revert {}) {
+        if i == 0 {
+            typed::swap_given_in(
+                mut p,
+                i: 0,
+                j: 1,
+                amount_in: given<PLAIN, In>(amount),
+                factor_in: w,
+                factor_out: r,
+                guard,
+            )
+                .value()
+        } else {
+            typed::swap_given_in(
+                mut p,
+                i: 1,
+                j: 0,
+                amount_in: given<RATED, In>(amount),
+                factor_in: r,
+                factor_out: w,
+                guard,
+            )
+                .value()
+        }
+    }
+}
+
+fn typed_swap_given_out(
+    _ p: mut Pool<2>,
+    i: usize,
+    amount: u256,
+    r: ScalingFactor<RATED>,
+    guard: bool,
+) -> u256 {
+    let w = scaling_factor<PLAIN>()
+    with (Check = Revert {}) {
+        if i == 0 {
+            typed::swap_given_out(
+                mut p,
+                i: 0,
+                j: 1,
+                amount_out: given<RATED, Out>(amount),
+                factor_in: w,
+                factor_out: r,
+                guard,
+            )
+                .value()
+        } else {
+            typed::swap_given_out(
+                mut p,
+                i: 1,
+                j: 0,
+                amount_out: given<PLAIN, Out>(amount),
+                factor_in: r,
+                factor_out: w,
+                guard,
+            )
+                .value()
+        }
+    }
+}
+
+fn typed_exit_given_out(
+    _ p: mut Pool<2>,
+    j: usize,
+    amount: u256,
+    r: ScalingFactor<RATED>,
+    guard: bool,
+) -> u256 {
+    let w = scaling_factor<PLAIN>()
+    with (Check = Revert {}) {
+        if j == 0 {
+            typed::exit_given_out(
+                mut p,
+                j: 0,
+                amount_out: given<PLAIN, Out>(amount),
+                factor: w,
+                guard,
+            )
+                .value()
+        } else {
+            typed::exit_given_out(
+                mut p,
+                j: 1,
+                amount_out: given<RATED, Out>(amount),
+                factor: r,
+                guard,
+            )
+                .value()
+        }
+    }
+}
+
+fn typed_exit_given_in(
+    _ p: mut Pool<2>,
+    j: usize,
+    bpt: u256,
+    r: ScalingFactor<RATED>,
+    guard: bool,
+) -> u256 {
+    let w = scaling_factor<PLAIN>()
+    let b = given<Bpt, In>(bpt)
+    with (Check = Revert {}) {
+        if j == 0 {
+            typed::exit_given_in(mut p, j: 0, bpt_in: b, factor: w, guard).value()
+        } else {
+            typed::exit_given_in(mut p, j: 1, bpt_in: b, factor: r, guard).value()
+        }
+    }
+}
+
+fn typed_join_given_in(
+    _ p: mut Pool<2>,
+    i: usize,
+    amount: u256,
+    r: ScalingFactor<RATED>,
+    guard: bool,
+) -> u256 {
+    let w = scaling_factor<PLAIN>()
+    with (Check = Revert {}) {
+        if i == 0 {
+            typed::join_given_in(
+                mut p,
+                i: 0,
+                amount_in: given<PLAIN, In>(amount),
+                factor: w,
+                guard,
+            )
+                .value()
+        } else {
+            typed::join_given_in(
+                mut p,
+                i: 1,
+                amount_in: given<RATED, In>(amount),
+                factor: r,
+                guard,
+            )
+                .value()
+        }
+    }
+}
+
+fn typed_join_given_out(
+    _ p: mut Pool<2>,
+    i: usize,
+    bpt: u256,
+    r: ScalingFactor<RATED>,
+    guard: bool,
+) -> u256 {
+    let w = scaling_factor<PLAIN>()
+    let b = given<Bpt, Out>(bpt)
+    with (Check = Revert {}) {
+        if i == 0 {
+            typed::join_given_out(mut p, i: 0, bpt_out: b, factor: w, guard).value()
+        } else {
+            typed::join_given_out(mut p, i: 1, bpt_out: b, factor: r, guard).value()
+        }
+    }
+}
+
+pub contract FaithfulPool uses (call: mut Call) {
+    mut s: PoolStorage,
+
+    recv PoolAbi {
+        Initialize { balances, amp, fee, supply, stored_invariant, rate_provider }
+        uses (call, mut s)
+        {
+            // Balancer reads its rate provider without bounds.
+            s.pool = Pool {
+                balances,
+                factors: [ONE, raw_rate(rate_provider)],
+                supply,
+                amp,
+                fee,
+                stored_invariant,
+            }
+            s.rate_provider = rate_provider
+        }
+        SwapGivenIn { i, amount } -> u256 uses (call, mut s) {
+            var p = s.pool
+            p.factors[1] = raw_rate(s.rate_provider)
+            let out = with (Check = Revert {}) {
+                faithful::swap_given_in(mut p, i: idx(i), j: 1 - idx(i), amount_in: amount)
+            }
+            s.pool = p
+            out
+        }
+        SwapGivenOut { i, amount } -> u256 uses (call, mut s) {
+            var p = s.pool
+            p.factors[1] = raw_rate(s.rate_provider)
+            let charged = with (Check = Revert {}) {
+                faithful::swap_given_out(mut p, i: idx(i), j: 1 - idx(i), amount_out: amount)
+            }
+            s.pool = p
+            charged
+        }
+        ExitGivenOut { j, amount } -> u256 uses (call, mut s) {
+            var p = s.pool
+            p.factors[1] = raw_rate(s.rate_provider)
+            let bpt = with (Check = Revert {}) {
+                faithful::exit_given_out(mut p, j: idx(j), amount_out: amount)
+            }
+            s.pool = p
+            bpt
+        }
+        ExitGivenIn { j, bpt } -> u256 uses (call, mut s) {
+            var p = s.pool
+            p.factors[1] = raw_rate(s.rate_provider)
+            let out = with (Check = Revert {}) {
+                faithful::exit_given_in(mut p, j: idx(j), bpt_in: bpt)
+            }
+            s.pool = p
+            out
+        }
+        JoinGivenIn { i, amount } -> u256 uses (call, mut s) {
+            var p = s.pool
+            p.factors[1] = raw_rate(s.rate_provider)
+            let bpt = with (Check = Revert {}) {
+                faithful::join_given_in(mut p, i: idx(i), amount_in: amount)
+            }
+            s.pool = p
+            bpt
+        }
+        JoinGivenOut { i, bpt } -> u256 uses (call, mut s) {
+            var p = s.pool
+            p.factors[1] = raw_rate(s.rate_provider)
+            let charged = with (Check = Revert {}) {
+                faithful::join_given_out(mut p, i: idx(i), bpt_out: bpt)
+            }
+            s.pool = p
+            charged
+        }
+        GetRate -> u256 uses (s) {
+            rate_per_bpt(s.pool)
+        }
+        GetState -> ([u256; 2], [u256; 2], u256, u256)
+        uses (s)
+        {
+            (s.pool.balances, s.pool.factors, s.pool.supply, s.pool.stored_invariant)
+        }
+    }
+}
+
+/// The typed kernel: amounts typed by Dimension, rate read through its boundary.
+pub contract TypedPool uses (call: mut Call) {
+    mut s: PoolStorage,
+
+    recv PoolAbi {
+        Initialize { balances, amp, fee, supply, stored_invariant, rate_provider }
+        uses (call, mut s)
+        {
+            let factor = rated_factor(rate_provider)
+            s.pool = Pool {
+                balances,
+                factors: [ONE, factor.value()],
+                supply,
+                amp,
+                fee,
+                stored_invariant,
+            }
+            s.rate_provider = rate_provider
+        }
+        SwapGivenIn { i, amount } -> u256 uses (call, mut s) {
+            var p = s.pool
+            let r = rated_factor(s.rate_provider)
+            p.factors[1] = r.value()
+            let out = typed_swap_given_in(mut p, i: idx(i), amount, r, guard: false)
+            s.pool = p
+            out
+        }
+        SwapGivenOut { i, amount } -> u256 uses (call, mut s) {
+            var p = s.pool
+            let r = rated_factor(s.rate_provider)
+            p.factors[1] = r.value()
+            let charged = typed_swap_given_out(mut p, i: idx(i), amount, r, guard: false)
+            s.pool = p
+            charged
+        }
+        ExitGivenOut { j, amount } -> u256 uses (call, mut s) {
+            var p = s.pool
+            let r = rated_factor(s.rate_provider)
+            p.factors[1] = r.value()
+            let bpt = typed_exit_given_out(mut p, j: idx(j), amount, r, guard: false)
+            s.pool = p
+            bpt
+        }
+        ExitGivenIn { j, bpt } -> u256 uses (call, mut s) {
+            var p = s.pool
+            let r = rated_factor(s.rate_provider)
+            p.factors[1] = r.value()
+            let out = typed_exit_given_in(mut p, j: idx(j), bpt, r, guard: false)
+            s.pool = p
+            out
+        }
+        JoinGivenIn { i, amount } -> u256 uses (call, mut s) {
+            var p = s.pool
+            let r = rated_factor(s.rate_provider)
+            p.factors[1] = r.value()
+            let bpt = typed_join_given_in(mut p, i: idx(i), amount, r, guard: false)
+            s.pool = p
+            bpt
+        }
+        JoinGivenOut { i, bpt } -> u256 uses (call, mut s) {
+            var p = s.pool
+            let r = rated_factor(s.rate_provider)
+            p.factors[1] = r.value()
+            let charged = typed_join_given_out(mut p, i: idx(i), bpt, r, guard: false)
+            s.pool = p
+            charged
+        }
+        GetRate -> u256 uses (s) {
+            rate_per_bpt(s.pool)
+        }
+        GetState -> ([u256; 2], [u256; 2], u256, u256)
+        uses (s)
+        {
+            (s.pool.balances, s.pool.factors, s.pool.supply, s.pool.stored_invariant)
+        }
+    }
+}
+
+/// The typed kernel behind Dimension's runtime share-value guard.
+pub contract GuardedPool uses (call: mut Call) {
+    mut s: PoolStorage,
+
+    recv PoolAbi {
+        Initialize { balances, amp, fee, supply, stored_invariant, rate_provider }
+        uses (call, mut s)
+        {
+            let factor = rated_factor(rate_provider)
+            s.pool = Pool {
+                balances,
+                factors: [ONE, factor.value()],
+                supply,
+                amp,
+                fee,
+                stored_invariant,
+            }
+            s.rate_provider = rate_provider
+        }
+        SwapGivenIn { i, amount } -> u256 uses (call, mut s) {
+            var p = s.pool
+            let r = rated_factor(s.rate_provider)
+            p.factors[1] = r.value()
+            let out = typed_swap_given_in(mut p, i: idx(i), amount, r, guard: true)
+            s.pool = p
+            out
+        }
+        SwapGivenOut { i, amount } -> u256 uses (call, mut s) {
+            var p = s.pool
+            let r = rated_factor(s.rate_provider)
+            p.factors[1] = r.value()
+            let charged = typed_swap_given_out(mut p, i: idx(i), amount, r, guard: true)
+            s.pool = p
+            charged
+        }
+        ExitGivenOut { j, amount } -> u256 uses (call, mut s) {
+            var p = s.pool
+            let r = rated_factor(s.rate_provider)
+            p.factors[1] = r.value()
+            let bpt = typed_exit_given_out(mut p, j: idx(j), amount, r, guard: true)
+            s.pool = p
+            bpt
+        }
+        ExitGivenIn { j, bpt } -> u256 uses (call, mut s) {
+            var p = s.pool
+            let r = rated_factor(s.rate_provider)
+            p.factors[1] = r.value()
+            let out = typed_exit_given_in(mut p, j: idx(j), bpt, r, guard: true)
+            s.pool = p
+            out
+        }
+        JoinGivenIn { i, amount } -> u256 uses (call, mut s) {
+            var p = s.pool
+            let r = rated_factor(s.rate_provider)
+            p.factors[1] = r.value()
+            let bpt = typed_join_given_in(mut p, i: idx(i), amount, r, guard: true)
+            s.pool = p
+            bpt
+        }
+        JoinGivenOut { i, bpt } -> u256 uses (call, mut s) {
+            var p = s.pool
+            let r = rated_factor(s.rate_provider)
+            p.factors[1] = r.value()
+            let charged = typed_join_given_out(mut p, i: idx(i), bpt, r, guard: true)
+            s.pool = p
+            charged
+        }
+        GetRate -> u256 uses (s) {
+            rate_per_bpt(s.pool)
+        }
+        GetState -> ([u256; 2], [u256; 2], u256, u256)
+        uses (s)
+        {
+            (s.pool.balances, s.pool.factors, s.pool.supply, s.pool.stored_invariant)
+        }
+    }
+}

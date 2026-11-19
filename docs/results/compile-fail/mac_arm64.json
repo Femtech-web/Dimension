@@ -8,10 +8,10 @@
   },
   "platform": "mac_arm64",
   "summary": {
-    "cases": 15,
-    "ok": 15,
+    "cases": 16,
+    "ok": 16,
     "by_kind": {
-      "compile_fail": 15
+      "compile_fail": 16
     }
   },
   "cases": [
@@ -254,23 +254,26 @@
       "id": "compile_fail/moonwell_component_feed_in_usd_market",
       "kind": "compile_fail",
       "layer": "compile-time",
-      "mechanism": "A market whose collateral must be priced in USD is configured with the cbETH/ETH component feed",
+      "mechanism": "cbETH's USD price is configured as the cbETH/ETH exchange-rate feed alone, written against the real Base feed registry",
       "incident": "Moonwell MIP-X43, 2026-02-15, about 1.78M USD bad debt",
       "ok": true,
       "problems": [],
       "observed": {
         "error_code": "8-0000",
         "message": "type mismatch",
-        "diagnostics_sha256": "bec5bcf9efded37e355c63f135efaa49dcedb4a571a54618675cac809f9e6af4",
+        "diagnostics_sha256": "6e4de43c7f20447c0753e39c901f5d06e5d24ad9e89617a3fd440e0865a88dbd",
         "twin": {
           "mode": "check",
           "fix": [
-            "-pub struct Market<T> { pub usd_feed: Feed<T, USD> }",
-            "+pub struct Market<T> { pub leg: Feed<T, ETH>, pub eth_usd: Feed<ETH, USD> }",
-            "-// MIP-X43 activated the cbETH/ETH exchange-rate feed for the cbETH market.",
-            "-const CBETH_MARKET: Market<CBETH> = Market { usd_feed: CBETH_ETH }",
-            "+// The fix: price cbETH in USD through both legs of the composite.",
-            "+const CBETH_MARKET: Market<CBETH> = Market { leg: CBETH_ETH, eth_usd: ETH_USD }"
+            "-use dimension::value::oracle::Feed",
+            "-use moonwell::registry::{CBETH, CBETH_ETH, USD}",
+            "+use moonwell::pricing::ViaEth",
+            "+use moonwell::registry::{CBETH, CBETH_ETH, ETH_USD}",
+            "-// MIP-X43 listed cbETH with the markets priced by one USD feed, and gave it",
+            "-// the cbETH/ETH exchange rate as that feed.",
+            "-pub const CBETH_USD: Feed<CBETH, USD> = CBETH_ETH",
+            "+// The fix: price cbETH in USD through both legs, as the composite oracle did.",
+            "+pub const CBETH_USD: ViaEth<CBETH> = ViaEth { leg: CBETH_ETH, eth_usd: ETH_USD }"
           ],
           "ok": true
         }
@@ -360,6 +363,35 @@
           "mode": "test",
           "fix": [
             "+fe.toml: dimension = { ..., allow_unsafe = true }"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/typed_pool_with_balancer_upscale",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Inside the typed pool, one line of Balancer V2 is put back: the amount out is scaled with _upscale's floor rounding and handed to StableMath",
+      "incident": "Balancer V2, 2025-11-03, about 95M to 128M USD",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "8-0000",
+        "message": "type mismatch",
+        "diagnostics_sha256": "7e1d1217e0a91aa3b1d73ff2bd570ce07e87d9aa1c7ba8e04a04a742e50ddf2d",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::{Given, In, Out, Quantity, ScalingFactor, Settled, scaling_factor, settle}",
+            "+use dimension::{Given, In, Out, Quantity, ScalingFactor, Settled, admit, scaling_factor, settle}",
+            "-use balancer_v2::pool::faithful::{upscale, upscaled}",
+            "+use balancer_v2::pool::faithful::upscaled",
+            "-    // Balancer V2's _upscale: always mulDown, whichever way the amount moves.",
+            "-    let scaled_out = upscale(amount_out.value(), factor.value())",
+            "+    // The fix: admit the amount leaving the pool; its direction picks the rounding.",
+            "+    let scaled_out = admit(amount_out, factor)"
           ],
           "passed": 1,
           "ok": true

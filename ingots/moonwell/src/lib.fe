@@ -1,0 +1,8 @@
+//! Moonwell's cbETH market on Base, priced through Dimension.
+//!
+//! `registry` declares the two Chainlink feeds the market needs, once each and
+//! with the pair each prices. `pricing` composes them into the cbETH/USD price
+//! the market values collateral at, and `contracts` deploys that price. On
+//! 2026-02-15 MIP-X43 gave the market the cbETH/ETH exchange rate as its USD
+//! feed, and for eight days Moonwell priced cbETH at about 1.12 USD. Written
+//! against this registry, that configuration does not compile.

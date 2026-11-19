@@ -24,10 +24,10 @@
       "problems": [],
       "observed": {
         "sonatina": {
-          "passed": 11
+          "passed": 14
         },
         "native": {
-          "passed": 11
+          "passed": 14
         }
       }
     },
@@ -51,12 +51,12 @@
       "id": "oracle",
       "kind": "test",
       "layer": "bind-time and runtime",
-      "mechanism": "The oracle boundary against a mock Chainlink feed: declared decimals, positive, fresh and in-band answers, and composite pricing",
+      "mechanism": "The boundaries against a mock Chainlink feed and a mock rate provider: declared decimals, positive, fresh and in-band answers, banded rates, and composite pricing",
       "ok": true,
       "problems": [],
       "observed": {
         "sonatina": {
-          "passed": 7
+          "passed": 9
         }
       }
     }

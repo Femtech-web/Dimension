@@ -49,7 +49,7 @@ def run_forge(runs: int | None) -> dict:
     # executes exactly the configured vectors.
     shutil.rmtree(REFERENCE / "cache" / "fuzz", ignore_errors=True)
     proc = subprocess.run(
-        ["forge", "test", "--json"], cwd=REFERENCE, env=env, capture_output=True, text=True, timeout=3600
+        ["forge", "test", "--json", "--match-contract", "StableMathDifferential"], cwd=REFERENCE, env=env, capture_output=True, text=True, timeout=3600
     )
     try:
         return json.loads(proc.stdout[proc.stdout.index("{"):])

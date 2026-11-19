@@ -1,0 +1,46 @@
+use dimension::{Asset, Out, given, scaling_factor}
+use dimension::value::testing::assume_rate
+use balancer_v2::pool::{Pool, faithful, typed}
+use balancer_v2::pool::faithful::upscaled
+use balancer_v2::stable::check::{Check, Revert}
+use balancer_v2::stable::stable_math as sm
+use super::exit_given_out
+
+pub struct OSETH {}
+
+impl Asset for OSETH {
+    const DECIMALS: u256 = 18
+}
+
+const ONE: u256 = 1_000_000_000_000_000_000
+const RATE: u256 = 1_210_000_000_000_000_000
+
+fn pool() -> Pool<2> uses (check: mut Check) {
+    let balances = [1_000, 1_000]
+    let factors = [RATE, ONE]
+    let invariant = sm::calculate_invariant(200_000, upscaled(balances, factors))
+    Pool { balances, factors, supply: invariant, amp: 200_000, fee: 0, stored_invariant: invariant }
+}
+
+#[test]
+fn charges_what_the_typed_pool_charges_and_more_than_balancer() {
+    with (Check = Revert {}) {
+        let factor = scaling_factor<OSETH>().with_rate(unsafe { assume_rate(RATE) })
+        var fixed = pool()
+        var kernel = pool()
+        var balancer = pool()
+        let mine = exit_given_out(mut fixed, j: 0, amount_out: given<OSETH, Out>(17), factor)
+        let typed = typed::exit_given_out(
+            mut kernel,
+            j: 0,
+            amount_out: given<OSETH, Out>(17),
+            factor,
+            guard: false,
+        )
+        // Balancer V2 scales 17 out to 20 internal units; the pool pays out 20.57.
+        assert(mine.value() == typed.value())
+        assert(
+            mine.value() > faithful::exit_given_out(mut balancer, j: 0, amount_out: 17),
+        )
+    }
+}

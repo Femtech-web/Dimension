@@ -24,3 +24,26 @@ jobs:
         with:
           name: results-linux_amd64
           path: docs/results/
+
+  forks:
+    # Both demos on forks of the real chains, through public RPCs unless these
+    # secrets name others. Public endpoints rate-limit, so this job cannot fail the run.
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    env:
+      MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
+      BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.4.4
+      - run: make fidelity moonwell
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-forks-linux_amd64
+          path: docs/results/

@@ -34,7 +34,7 @@ pub fn greedy(
     supply_x2: u256,
     steps: u256,
     cap: u256,
-    typed: bool,
+    kernel: usize,
 ) -> Attack {
     var record = balancer_v2::stable::check::Record::new()
     var p: Pool<2> = with (balancer_v2::stable::check::Check = mut record) {
@@ -57,7 +57,7 @@ pub fn greedy(
         var best_d1: u256 = 0
         var a: u256 = 1
         while a <= cap && a * 2 <= p.balances[0] {
-            match after(p, op: Op::ExitGivenOut { j: 0, amount: a }, typed) {
+            match after(p, op: Op::ExitGivenOut { j: 0, amount: a }, kernel) {
                 Option::Some(next) => {
                     match invariant(next) {
                         Option::Some(d1) => {

@@ -5,6 +5,7 @@
 //! boundary; and risk parameters are checked when the code compiles.
 
 pub use self::asset::Asset
+pub use self::invariant::{Backing, preserves_share_value}
 pub use self::flow::{
     Admitted,
     Collateral,

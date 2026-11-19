@@ -1,0 +1,9 @@
+kind = "compile_fail"
+expect_code = "8-0000"
+consequential_codes = ["2-0010", "8-0031"]
+layer = "compile-time"
+mechanism = "Inside the typed pool, one line of Balancer V2 is put back: the amount out is scaled with _upscale's floor rounding and handed to StableMath"
+incident = "Balancer V2, 2025-11-03, about 95M to 128M USD"
+twin = "fixed"
+twin_run = "test"
+evidence = ["fidelity", "evm"]

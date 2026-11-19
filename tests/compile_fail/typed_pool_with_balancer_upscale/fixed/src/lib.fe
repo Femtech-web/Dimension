@@ -1,0 +1,34 @@
+use dimension::{Given, In, Out, Quantity, ScalingFactor, Settled, admit, scaling_factor, settle}
+use balancer_v2::pool::Pool
+use balancer_v2::pool::faithful::upscaled
+use balancer_v2::pool::typed::{Bpt, math}
+use balancer_v2::stable::check::Check
+use balancer_v2::stable::fixed_point as fp
+
+// The typed pool's exit_given_out, without the share-value guard.
+pub fn exit_given_out<T, const N: usize>(
+    _ pool: mut Pool<N>,
+    j: usize,
+    amount_out: Quantity<T, Out, Given>,
+    factor: ScalingFactor<T>,
+) -> Quantity<Bpt, In, Settled>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    var balances = upscaled(pool.balances, pool.factors)
+    // The fix: admit the amount leaving the pool; its direction picks the rounding.
+    let scaled_out = admit(amount_out, factor)
+    let pre_invariant = math::invariant(pool.amp, balances)
+    let bpt_in = math::bpt_in_given_exact_token_out(
+        pool,
+        balances,
+        index: j,
+        amount_out: scaled_out,
+        invariant: pre_invariant,
+    )
+    balances[j] = fp::sub(balances[j], scaled_out.value())
+    pool.supply = fp::sub(pool.supply, bpt_in.value())
+    pool.stored_invariant = math::invariant(pool.amp, balances)
+    pool.balances[j] = fp::sub(pool.balances[j], amount_out.value())
+    settle(bpt_in, scaling_factor<Bpt>())
+}

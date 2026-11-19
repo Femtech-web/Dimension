@@ -1,0 +1,78 @@
+{
+  "schema": "dimension.evm/v1",
+  "question": "What do Dimension's layers do, and cost, in contracts deployed on a real EVM?",
+  "fe": {
+    "version": "26.6.0",
+    "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110"
+  },
+  "forge": "forge Version: 1.4.4-stable",
+  "platform": "mac_arm64",
+  "attack": {
+    "setup": "1,000 wei of each token, rate 1.21, amp 200, no fees; greedy GIVEN_OUT exits of the rated token",
+    "faithful": {
+      "exits": 51,
+      "value_per_bpt_start_wad": 1000000000000000000,
+      "value_per_bpt_end_wad": 966233766233766233,
+      "value_per_bpt_change": "-3.38%",
+      "holder_loss_wad": 26
+    },
+    "typed": {
+      "exits": 75,
+      "value_per_bpt_start_wad": 1000000000000000000,
+      "value_per_bpt_end_wad": 1195086705202312138,
+      "value_per_bpt_change": "+19.51%",
+      "holder_loss_wad": -135
+    },
+    "guarded": {
+      "exits": 75,
+      "value_per_bpt_start_wad": 1000000000000000000,
+      "value_per_bpt_end_wad": 1195086705202312138,
+      "value_per_bpt_change": "+19.51%",
+      "holder_loss_wad": -135
+    }
+  },
+  "gas": {
+    "setup": "osETH/wETH pool balances before the exploit (4,922.36 WETH, 6,851.58 osETH), amp 200, fee 0.01%, 10 tokens out",
+    "per_operation": {
+      "faithful": {
+        "swapGivenOut": 15669,
+        "exitGivenOut": 21116
+      },
+      "typed": {
+        "swapGivenOut": 16695,
+        "exitGivenOut": 21478
+      },
+      "guarded": {
+        "swapGivenOut": 23130,
+        "exitGivenOut": 22313
+      }
+    },
+    "relative_to_faithful": {
+      "typed": {
+        "swapGivenOut": "+6.5%",
+        "exitGivenOut": "+1.7%"
+      },
+      "guarded": {
+        "swapGivenOut": "+47.6%",
+        "exitGivenOut": "+5.7%"
+      }
+    }
+  },
+  "runtime_bytecode_bytes": {
+    "faithful": 7414,
+    "typed": 9233,
+    "guarded": 9675
+  },
+  "claims": [
+    {
+      "question": "Deployed on an EVM, does the faithful pool let a repeated-exit attacker take value from LPs?",
+      "holds": true,
+      "evidence": "value per BPT -3.38% over 51 exits"
+    },
+    {
+      "question": "Do the typed and guarded pools keep the value behind each BPT under the same attack?",
+      "holds": true,
+      "evidence": "typed +19.51%, guarded +19.51%"
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! StableMath as the typed kernel calls it. Each amount that moves must arrive
+//! admitted and each result comes back owed, so an amount reaches the math only
+//! after `admit` has rounded it for its direction, and a result can leave the
+//! pool only through `settle`. The typed kernel calls StableMath nowhere else.
+
+use dimension::{Admitted, In, Out, Owed, Quantity, owed}
+use super::Bpt
+use super::super::Pool
+use super::super::super::stable::stable_math as sm
+use super::super::super::stable::check::Check
+
+/// The invariant of upscaled balances. Balances are held, not moving, so they
+/// are not typed.
+pub fn invariant<const N: usize>(_ amp: u256, _ balances: [u256; N]) -> u256
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    sm::calculate_invariant(amp, balances)
+}
+
+pub fn out_given_in<TIn, TOut, const N: usize>(
+    _ pool: Pool<N>,
+    _ balances: [u256; N],
+    index_in: usize,
+    index_out: usize,
+    amount_in: Quantity<TIn, In, Admitted>,
+    invariant: u256,
+) -> Quantity<TOut, Out, Owed>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    owed<TOut, Out>(
+        sm::calc_out_given_in(
+            pool.amp,
+            balances,
+            index_in,
+            index_out,
+            amount_in: amount_in.value(),
+            invariant,
+        ),
+    )
+}
+
+pub fn in_given_out<TIn, TOut, const N: usize>(
+    _ pool: Pool<N>,
+    _ balances: [u256; N],
+    index_in: usize,
+    index_out: usize,
+    amount_out: Quantity<TOut, Out, Admitted>,
+    invariant: u256,
+) -> Quantity<TIn, In, Owed>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    owed<TIn, In>(
+        sm::calc_in_given_out(
+            pool.amp,
+            balances,
+            index_in,
+            index_out,
+            amount_out: amount_out.value(),
+            invariant,
+        ),
+    )
+}
+
+pub fn bpt_in_given_exact_token_out<T, const N: usize>(
+    _ pool: Pool<N>,
+    _ balances: [u256; N],
+    index: usize,
+    amount_out: Quantity<T, Out, Admitted>,
+    invariant: u256,
+) -> Quantity<Bpt, In, Owed>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    var amounts: [u256; N] = [0; N]
+    amounts[index] = amount_out.value()
+    owed<Bpt, In>(
+        sm::calc_bpt_in_given_exact_tokens_out(
+            pool.amp,
+            balances,
+            amounts_out: amounts,
+            bpt_total_supply: pool.supply,
+            current_invariant: invariant,
+            swap_fee: pool.fee,
+        ),
+    )
+}
+
+pub fn token_out_given_exact_bpt_in<T, const N: usize>(
+    _ pool: Pool<N>,
+    _ balances: [u256; N],
+    index: usize,
+    bpt_in: Quantity<Bpt, In, Admitted>,
+    invariant: u256,
+) -> Quantity<T, Out, Owed>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    owed<T, Out>(
+        sm::calc_token_out_given_exact_bpt_in(
+            pool.amp,
+            balances,
+            index,
+            bpt_amount_in: bpt_in.value(),
+            bpt_total_supply: pool.supply,
+            current_invariant: invariant,
+            swap_fee: pool.fee,
+        ),
+    )
+}
+
+pub fn bpt_out_given_exact_token_in<T, const N: usize>(
+    _ pool: Pool<N>,
+    _ balances: [u256; N],
+    index: usize,
+    amount_in: Quantity<T, In, Admitted>,
+    invariant: u256,
+) -> Quantity<Bpt, Out, Owed>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    var amounts: [u256; N] = [0; N]
+    amounts[index] = amount_in.value()
+    owed<Bpt, Out>(
+        sm::calc_bpt_out_given_exact_tokens_in(
+            pool.amp,
+            balances,
+            amounts_in: amounts,
+            bpt_total_supply: pool.supply,
+            current_invariant: invariant,
+            swap_fee: pool.fee,
+        ),
+    )
+}
+
+pub fn token_in_given_exact_bpt_out<T, const N: usize>(
+    _ pool: Pool<N>,
+    _ balances: [u256; N],
+    index: usize,
+    bpt_out: Quantity<Bpt, Out, Admitted>,
+    invariant: u256,
+) -> Quantity<T, In, Owed>
+uses (check: mut Check)
+where N >= 2, N <= 5
+{
+    owed<T, In>(
+        sm::calc_token_in_given_exact_bpt_out(
+            pool.amp,
+            balances,
+            index,
+            bpt_amount_out: bpt_out.value(),
+            bpt_total_supply: pool.supply,
+            current_invariant: invariant,
+            swap_fee: pool.fee,
+        ),
+    )
+}

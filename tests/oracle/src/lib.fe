@@ -3,7 +3,16 @@
 
 use std::evm::{Call, Ctx, Evm}
 use dimension::{Asset, Price, WAD}
-use dimension::value::oracle::{AggregatorV3, Feed, feed, read, verify}
+use dimension::value::oracle::{
+    AggregatorV3,
+    Feed,
+    RateProvider,
+    feed,
+    rate_source,
+    read,
+    read_rate,
+    verify,
+}
 
 pub struct USD {}
 pub struct ETH {}
@@ -173,5 +182,53 @@ uses (evm: mut Evm, call: mut Call, ctx: Ctx)
     let now = ctx.timestamp().as_seconds()
     let _ = read(
         eth_usd_feed(deploy(0, updated_at: now, decimals: 8, salt: 8)),
+    )
+}
+
+struct RateState { rate: u256 }
+
+pub contract MockRateProvider {
+    mut s: RateState,
+
+    init(rate: u256) uses (mut s) { s.rate = rate }
+
+    recv RateProvider {
+        GetRate -> u256 uses (s) {
+            s.rate
+        }
+    }
+}
+
+pub struct WSTETH {}
+
+impl Asset for WSTETH {
+    const DECIMALS: u256 = 18
+}
+
+#[test]
+fn reads_a_rate_inside_its_band() uses (evm: mut Evm, call: mut Call) {
+    let provider = evm
+        .create2<MockRateProvider>(
+            value: Wei::zero(),
+            args: (1_058_132_408_689_971_699,),
+            salt: 20,
+        )
+    let rate = read_rate(
+        rate_source<WSTETH>(provider, min_wad: WAD, max_wad: 2 * WAD),
+    )
+    assert(rate.wad() == 1_058_132_408_689_971_699)
+}
+
+#[test(should_revert, selector = 0xde3e36a5)]
+fn rejects_a_rate_outside_its_band() uses (evm: mut Evm, call: mut Call) {
+    // A provider returning 0.5 for a token that only ever appreciates against its unit.
+    let provider = evm
+        .create2<MockRateProvider>(
+            value: Wei::zero(),
+            args: (500_000_000_000_000_000,),
+            salt: 21,
+        )
+    let _ = read_rate(
+        rate_source<WSTETH>(provider, min_wad: WAD, max_wad: 2 * WAD),
     )
 }
