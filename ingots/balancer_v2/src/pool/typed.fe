@@ -15,8 +15,10 @@
 //! amount's direction is checked once more against what the pool does with it:
 //! an amount labelled as arriving cannot be paid out of a balance, and BPT
 //! labelled as coming back cannot be issued. These are Dimension's `Held` and
-//! `Supply` operations for balances kept in an array by token index: the index
-//! is tied to its token at run time, by `check_factor`, not by type.
+//! `Supply` operations for balances kept in an array by token index: direction
+//! and units are typed, and `check_factor` checks at run time only that an
+//! amount's scaling factor is the one at its index, which tokens with the same
+//! factor share.
 //!
 //! With `guard`, each operation also enforces Dimension's runtime share-value
 //! check (see `pool::guarded`). It reuses the invariant the operation already

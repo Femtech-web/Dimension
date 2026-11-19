@@ -1,0 +1,9 @@
+//! The re-exported label, reached through an aliased module.
+
+use dimension::{Given, In, Quantity}
+use super::USDC
+use super::aliases as a
+
+pub fn deposit_again(_ raw: u256) -> Quantity<USDC, In, Given> {
+    a::label(raw)
+}

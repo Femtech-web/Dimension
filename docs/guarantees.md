@@ -56,8 +56,11 @@ What they do not establish:
   `make consumer` requires that list to equal the compiler's.
 - **That the tokens moved.** Dimension checks the books against the labels.
   That a token transfer matches each entry is the protocol's own code. The
-  Balancer pool keeps balances in an array by token, so there each index is
-  tied to its token at run time (`check_factor`), not by type.
+  Balancer pool keeps balances in an array by token index, outside `Held<T>`:
+  there the direction and units are typed, and `check_factor` checks at run
+  time that an amount's scaling factor is the one at its index. Tokens with the
+  same factor, such as two 18-decimal tokens at the same rate, are not told
+  apart.
 - **That StableMath is precise.** Its own rounding inside the invariant
   solvers is outside the scaling boundary. See the residuals below.
 - **That no attack exists.** The recorded attack cannot run. That no other
@@ -171,8 +174,10 @@ Dimension's trust rests on protocol code living in ingots that cannot reach
 `unsafe` code always compiles, and a pointer cast there can forge any value.
 [`tests/unsafe_root`](../tests/unsafe_root/src/lib.fe) does it against
 Dimension's own `Price`, and values collateral with the forged price, on both
-backends. So `dimension check` fails any project whose sources contain `unsafe`
-(`make consumer` requires it to catch exactly this forgery), and
+backends. So `dimension check` fails any project whose sources contain `unsafe`,
+read with Fe's lexical rules and confirmed against the compiler, failing when it
+cannot confirm (`make consumer` requires it to catch exactly this forgery, also
+with the strings `"/*"` and `"*/"` around it), and
 `make unsafe-policy` does the same for this repository's protocol ingots.
 `balancer_explorer` sets `allow_unsafe` on Dimension, because it feeds rates to
 the typed kernel in simulation. It builds no contract.

@@ -1,0 +1,7 @@
+//! A call of the unrelated `label`, which is not a label.
+
+use super::numbers::label
+
+pub fn identity(_ raw: u256) -> u256 {
+    label(raw)
+}

@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 from pathlib import Path
 
 from harness.toolchain import ROOT, resolve
@@ -59,6 +60,33 @@ pub fn forged(_ wad: u256) -> Price<ETH, USD> {
     unsafe { *p = wad }
     let q: *Price<ETH, USD> = p as *Price<ETH, USD>
     unsafe { *q }
+}
+"""
+
+
+# The same forgery between two strings that look like a block comment, which Fe
+# does not have: a reader that took them for one would miss the unsafe code.
+HIDDEN = (
+    'pub fn opening() -> String<2> {\n    "/*"\n}\n\n'
+    + FORGE.replace("use dimension::Price\n", "")
+    + '\npub fn closing() -> String<2> {\n    "*/"\n}\n'
+)
+HIDDEN = "use dimension::Price\n\n" + HIDDEN
+
+# A feed built inside a function, where feed-check cannot read it.
+UNREAD_FEED = """use dimension::value::oracle::{Feed, feed}
+
+pub struct ETH {}
+pub struct USD {}
+
+pub fn eth_usd() -> Feed<ETH, USD> {
+    feed(
+        Address::new(0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70),
+        decimals: 8,
+        max_age: 1_800,
+        min_wad: 1,
+        max_wad: 2,
+    )
 }
 """
 
@@ -105,6 +133,8 @@ def failures(rows: dimension.Checklist) -> set[str]:
 def main() -> int:
     fe = resolve()
     rev = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+    manifest = subprocess.run(["git", "show", f"{rev}:ingots/dimension/fe.toml"], cwd=ROOT, capture_output=True, text=True, check=True).stdout
+    version = tomllib.loads(manifest)["ingot"]["version"]
     with tempfile.TemporaryDirectory(prefix="dimension-consumer-") as tmp:
         quickstart = Path(tmp) / "quickstart"
         with contextlib.redirect_stdout(io.StringIO()):
@@ -121,6 +151,12 @@ def main() -> int:
         )
         unsafe_code = dimension.checklist(
             variant(quickstart, Path(tmp) / "unsafe-code", source=("forge.fe", FORGE)), None, None, str(fe.binary)
+        )
+        hidden = dimension.checklist(
+            variant(quickstart, Path(tmp) / "hidden-unsafe", source=("forge.fe", HIDDEN)), None, None, str(fe.binary)
+        )
+        unread_feed = dimension.checklist(
+            variant(quickstart, Path(tmp) / "unread-feed", source=("feeds.fe", UNREAD_FEED)), None, None, str(fe.binary)
         )
     compared = {}
     for ingot in LABELLED:
@@ -139,7 +175,12 @@ def main() -> int:
     labelled = listed == ["given<USDC, In>", "owed<USDC, Out>", "owed<USDC, In>"]
     judged = [row for row in checked.rows if row[0] != "note"]
     warned = [name for status, name, _ in judged if status == "warn"]
-    caught = failures(unsafe_dep) == {"allow_unsafe"} and failures(unsafe_code) == {"unsafe code"}
+    caught = (
+        failures(unsafe_dep) == {"allow_unsafe"}
+        and failures(unsafe_code) == {"unsafe code"}
+        and failures(hidden) == {"unsafe code"}
+        and failures(unread_feed) == {"feeds"}
+    )
     claims = [
         {
             "question": "Can a new project depend on Dimension from git, and does it get Dimension's checks?",
@@ -155,20 +196,22 @@ def main() -> int:
             + (f", warnings on {', '.join(warned)}" if warned else ", no warnings")
             + f"; its {len(listed)} labels listed for review ({', '.join(listed)}); "
             f"with allow_unsafe set on Dimension it fails {', '.join(sorted(failures(unsafe_dep))) or 'nothing'}; "
-            f"with a price forged by a pointer cast, which compiles, it fails {', '.join(sorted(failures(unsafe_code))) or 'nothing'}",
+            f"with a price forged by a pointer cast, which compiles, it fails {', '.join(sorted(failures(unsafe_code))) or 'nothing'}; "
+            f"with the forgery between the strings \"/*\" and \"*/\", it fails {', '.join(sorted(failures(hidden))) or 'nothing'}; "
+            f"with a feed built where feed-check cannot read it, it fails {', '.join(sorted(failures(unread_feed))) or 'nothing'}",
         },
         {
             "question": "Does `dimension check` list exactly the label calls the compiler finds, however they are written?",
             "holds": agree,
             "evidence": "identical to the compiler's list in every ingot: "
             + ", ".join(f"{ingot} {len(cli)}" + ("" if cli == compiler else f" (compiler {len(compiler)})") for ingot, (cli, compiler) in compared.items())
-            + ". tests/labels writes them every way Fe allows: type inferred, aliased, re-exported and renamed in another file, through a module path, generic in the direction, a holding and a supply, and decoys: a comment, a string, and a local function sharing a label's name",
+            + ". tests/labels writes them in every form found so far: type inferred, aliased, re-exported and renamed in another file, through an aliased module and a module path, generic in the direction, a holding and a supply, and decoys: a comment, a string, a local function sharing a label's name, and an unrelated function sharing a re-exported one",
         },
     ]
     report = {
         "schema": SCHEMA,
         "question": "Does Dimension work as a dependency of someone else's project?",
-        "dependency": {"source": "this repository's git history", "rev": rev, "name": "dimension", "version": "0.1.0"},
+        "dependency": {"source": "this repository's git history", "rev": rev, "name": "dimension", "version": version},
         "fe": {"version": fe.version, "commit": fe.commit},
         "platform": fe.platform,
         "labels": {ingot: {"cli": cli, "compiler": compiler} for ingot, (cli, compiler) in compared.items()},

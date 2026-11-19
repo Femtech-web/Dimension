@@ -314,7 +314,7 @@ run.
 the check meant to catch each. A mutant counts as caught only if that check
 fails for the reason expected of it. A failure for any other reason, such as a
 network error, is reported as inconclusive and fails the run. `FORKS=1` adds
-the two that need a fork. **All 17 are caught:**
+the two that need a fork. **All 21 are caught:**
 
 | Bug planted | Caught by |
 |---|---|
@@ -329,6 +329,7 @@ the two that need a fork. **All 17 are caught:**
 | `unsafe` in a protocol ingot | the unsafe policy |
 | Protocol fees skipped on joins and exits | the replay: 94 of 121 steps match instead of 121 |
 | ETH/USD declared with 18 decimals | the Moonwell fork: the oracle no longer deploys |
+| A holding that takes any direction, any token, or internal units; a supply that can be credited | the compile-fail suite: the label lie, the wrong token, internal units and the credited supply compile |
 
 One more experiment shows the layers are independent. Make `Out` admit with
 `Floor`, and the typed kernel loses exactly as Balancer did (57,990 exits),
@@ -382,11 +383,19 @@ python3 cli/dimension.py check ../my-protocol --network base    # the checklist 
 
 `check` fails a project that could forge or misprice what Dimension trusts:
 `allow_unsafe` granted to any dependency, any `unsafe` code, code that does not
-compile, or a Chainlink feed that is not the feed it is declared to be, checked
-against Chainlink's directory and the chain by
-[`feed_check.py`](cli/feed_check.py). It warns on a dependency not pinned to a
-release, and on an untested Fe version. And it lists every label, each place a
-raw number gets its direction, for review.
+compile, a feed built where it cannot be read, or a Chainlink feed that is not
+the feed it is declared to be, checked against Chainlink's directory and the
+chain by [`feed_check.py`](cli/feed_check.py). It warns on a dependency not
+pinned to a release, and on an untested Fe version. And it lists every label,
+each place a raw number gets its meaning, for review.
+
+Its findings come from the compiler wherever the compiler can give them. Labels
+and feeds are the calls the compiler's own index (`fe scip`) resolves to
+Dimension's functions, whatever name they are made under. `unsafe` is read with
+Fe's lexical rules, then confirmed against the compiler twice: every symbol the
+compiler indexes must be code to `check` too, and the project must still
+compile with its comments blanked. If either fails, `check` fails rather than
+report no `unsafe` code.
 
 The library's own page is [`ingots/dimension`](ingots/dimension), and its
 security policy is [SECURITY.md](SECURITY.md). `make consumer` checks this path
@@ -419,8 +428,10 @@ pass it, and fail it once `allow_unsafe` or `unsafe` code is added.
 - **The books, not the transfers.** Dimension checks that a protocol's
   accounting moves the way its amounts are labelled. That the tokens really
   moved is the token contract's and the protocol's own code. The Balancer pool
-  keeps its balances in an array by token, so there each index is tied to its
-  token at run time, not by type.
+  keeps its balances in an array by token index, outside `Held<T>`: there the
+  direction and units are typed, and `check_factor` checks at run time that an
+  amount's scaling factor is the one at its index. Tokens with the same factor,
+  such as two 18-decimal tokens at the same rate, are not told apart.
 - **`unsafe` code in your own ingot can forge any value.** `allow_unsafe`
   gates dependencies, not the root, so a pointer cast in a deployed ingot can
   build a `Price` no read produced; [`tests/unsafe_root`](tests/unsafe_root)

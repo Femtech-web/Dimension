@@ -1,0 +1,5 @@
+//! An unrelated function with the same name as the re-exported label.
+
+pub fn label(_ raw: u256) -> u256 {
+    raw
+}

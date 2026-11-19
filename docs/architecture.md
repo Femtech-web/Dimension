@@ -22,7 +22,7 @@ tests/
   unsafe_root/               the one forgery the compiler allows, which `dimension check` fails
   compile_fail/              21 rejected constructions, each with a corrected twin
   zero_cost/                 typed code next to the same code by hand, measured by `make evm`
-  labels/                    label calls written every way Fe allows, for `make consumer`
+  labels/                    label calls written in many forms, for `make consumer`
   feeds/                     wrong feed declarations that compile, for `make feeds`
   compiler_findings/         the reproducer filed as argotorg/fe#2043
   probes/                    20 language-feasibility probes on an early prototype, kept as recorded

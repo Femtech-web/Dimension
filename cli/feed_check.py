@@ -53,7 +53,8 @@ _FEED = re.compile(
     r"min_wad:\s*(?P<min_wad>[^,]+),\s*max_wad:\s*(?P<max_wad>[^,)]+?)\s*,?\s*\)"
 )
 _CONST = re.compile(r"^\s*(?:pub\s+)?const\s+(\w+)\s*:\s*u\d+\s*=\s*(.+?)\s*$", re.MULTILINE)
-_DECLARED = re.compile(r":\s*Feed<")
+# A call of `feed`, the only constructor of a declaration (not a definition of one).
+_CALLS = re.compile(r"(?<![\w.])feed\s*\(")
 # Python from python.org on macOS starts with no trust store; fall back to the system's.
 _TLS = ssl.create_default_context()
 if not _TLS.get_ca_certs():
@@ -92,8 +93,36 @@ class Declared:
     source: str
 
 
+def fe_code(text: str) -> tuple[str, list[str]]:
+    """Fe source with comments and the contents of strings blanked, every offset
+    and line kept, and what could not be read. Fe 26 has `//` line comments and
+    double-quoted strings with backslash escapes, which may span lines; it has no
+    block comments, character literals or raw strings, so `/*` is never a
+    comment."""
+    out, problems, i, n = list(text), [], 0, len(text)
+    while i < n:
+        if text[i] == '"':
+            j = i + 1
+            while j < n and text[j] != '"':
+                j += 2 if text[j] == "\\" else 1
+            if j >= n:
+                problems.append(f"a string opened on line {text.count(chr(10), 0, i) + 1} never closes")
+            for k in range(i + 1, min(j, n)):
+                if out[k] != "\n":
+                    out[k] = " "
+            i = j + 1
+        elif text.startswith("//", i):
+            j = text.find("\n", i)
+            j = n if j < 0 else j
+            out[i:j] = " " * (j - i)
+            i = j
+        else:
+            i += 1
+    return "".join(out), problems
+
+
 def declarations(path: Path) -> list[Declared]:
-    text = path.read_text()
+    text, _ = fe_code(path.read_text())
     consts: dict[str, int] = {}
     for name, expr in _CONST.findall(text):
         try:
@@ -114,8 +143,13 @@ def declarations(path: Path) -> list[Declared]:
         )
         for m in _FEED.finditer(text)
     ]
-    if len(found) != len(_DECLARED.findall(text)):
-        raise SystemExit(f"{path}: {len(_DECLARED.findall(text))} Feed declarations, {len(found)} in the form `pub const N: Feed<B, Q> = feed(Address::new(0x..), decimals: .., max_age: .., min_wad: .., max_wad: ..)`")
+    calls = [text.count("\n", 0, m.start()) + 1 for m in _CALLS.finditer(text) if not re.search(r"\bfn\s*$", text[: m.start()])]
+    if len(found) != len(calls):
+        lines = sorted(set(calls) - {int(d.source.rsplit(":", 1)[1]) for d in found})
+        raise SystemExit(
+            f"{path}: {len(calls)} calls of feed, {len(found)} in the form `pub const N: Feed<B, Q> = feed(Address::new(0x..), "
+            f"decimals: .., max_age: .., min_wad: .., max_wad: ..)`; not in that form: line {', '.join(map(str, lines))}"
+        )
     return found
 
 
