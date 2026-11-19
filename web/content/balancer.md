@@ -145,10 +145,30 @@ equal to the real pool's after the real transaction, to the wei.
 Up to that point the value per share on the typed kernel had risen from 1.0273
 to 1.1856: the attack was paying the pool.
 
-What this shows, and what it does not: the attacker's own sequence cannot run
-against the typed kernels. An attacker who knew the pool rounds correctly would
-search for another sequence. The search and the greedy attacker below are the
-evidence that none pays.
+The attacker's own sequence cannot run against the typed kernels. An attacker
+who knew the pool rounds correctly would search for another, so the replay
+runs one.
+
+### An attacker who re-plans every swap
+
+From transaction 1's real state, the replay first applies the attacker's own 22
+exits, which leave 67,000 wei of each token. Then, for up to 90 exact-out
+swaps, it tries about 95 candidate amounts in both directions on each kernel,
+rolls each back, and keeps the one that leaves the value per share lowest. It
+keeps a swap even when every candidate raises that value, so a single bad step
+does not end the search. Value per share, the invariant over the actual BPT
+supply:
+
+| Kernel | Start | Lowest | After 90 swaps |
+|---|---|---|---|
+| Faithful | 1.0293 | **0.5771 (−43.9%)** | 0.5784 |
+| Typed | 1.0293 | 1.0293, the start | 1.1640 (+13.1%) |
+| Guarded | 1.0293 | 1.0293, the start | 1.1640 (+13.1%) |
+
+On Balancer's arithmetic, re-planning finds the loss again from the dust state.
+On the typed kernels, no swap it found lowered the value per share. This is
+evidence, not proof: the candidates are a fixed set, and each choice is
+greedy. The search below covers every single operation, on smaller pools.
 
 ## Three kernels, one change
 
@@ -260,6 +280,14 @@ byte-identical bytecode at `-O1`, `-O2` and `-Os` in the probes. The typed
 contract's extra cost, a nearly constant 800 to 1,000 gas, is real work the
 faithful one skips: reading its rate through the banded boundary and checking
 its factors on every operation.
+
+The guard's cost on swaps is one more invariant solve. Starting that solve from
+the invariant before the operation, which a swap barely moves, instead of from
+the balances' sum as Balancer does, was tried. It is not equivalent: at
+dust balances, Newton's integer iteration settles on a different value
+depending on where it starts. In the search it let 13 losing operations
+through, stored an invariant above what the balances back 4,880 times, and
+rejected about 3,100 harmless operations. The guard keeps Balancer's own solve.
 
 ## Limits
 

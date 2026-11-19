@@ -66,9 +66,10 @@ mutants: toolchain reference-deps ## Plant realistic bugs one at a time and requ
 
 apidoc: toolchain ## Generate the dimension API reference from its doc comments into web/public/api
 	@cd ingots/dimension && $(abspath $(FE)) doc -o $(abspath web/public/api) . static --self-contained
+	@node web/scripts/api-nav.mjs
 
 web: apidoc ## Sync the saved reports and docs into web/ and build the site (needs Node 20.9+)
-	cd web && node scripts/sync.mjs && npm ci --no-audit --no-fund && npm run build
+	cd web && node scripts/sync.mjs && npm ci --no-audit --no-fund --prefer-offline && npm run build
 
 show: toolchain ## Show one compile-fail case live: make show CASE=<name> (all cases if omitted)
 	@$(HARNESS)show $(CASE)

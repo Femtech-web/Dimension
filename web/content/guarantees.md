@@ -20,7 +20,7 @@ established, and what it does not guarantee. Status words:
 | Compile time | An oracle read in code that has not declared it calls out and reads the clock | effects: `read` requires `uses (call: mut Call, ctx: Ctx)` | compile-fail case `oracle_read_without_effects` | tested |
 | Bind time | A feed that reports different decimals than declared | `verify` in the constructor, `WrongDecimals` | oracle unit tests; on a Base fork, cbETH/ETH declared as an 8-decimal USD feed fails to deploy | verified |
 | Read time | Non-positive, future, stale or out-of-band answers; out-of-band rates | `read`, `read_rate` | oracle unit tests; on a Base fork, cbETH/ETH declared as cbETH/USD fails its first read, and a stale ETH/USD leg is refused | verified |
-| Runtime | An operation that lowers the value behind a pool share, whatever its cause | `preserves_share_value`, exact 512-bit comparison; `GuardedPool` | 0 losses over 3.14 million operations per kernel; rejects exactly the 17 that would lose; EVM attack; the attacker's own transactions revert | verified |
+| Runtime | An operation that lowers the value behind a pool share, whatever its cause | `preserves_share_value`, exact 512-bit comparison; `GuardedPool` | 0 losses over 3.14 million operations per kernel; rejects exactly the 17 that would lose; EVM attack; the attacker's own transactions revert; an attacker re-planning 90 swaps from the real dust state never lowers the value per share | verified |
 | External | That an address is the feed it is declared to be | none: a reviewed declaration | stated here | assumption |
 
 ## What the types establish, precisely
@@ -47,6 +47,10 @@ What they do not establish:
   used where a charge is required (`payout_settled_as_charge`).
 - **That StableMath is precise.** Its own rounding inside the invariant
   solvers is outside the scaling boundary. See the residuals below.
+- **That no attack exists.** The recorded attack cannot run. That no other
+  sequence pays rests on an attacker re-planning 90 swaps from the real dust
+  state, and on every single operation over 4,608 small pools: evidence, not
+  proof.
 - **Anything about arbitrary financial semantics.** Dimension encodes asset
   identity, pairs, decimals, direction and the policies stated as predicates.
   It does not prove a protocol solvent.
@@ -99,7 +103,11 @@ BPT per operation (`make evm`). The typed contract's overhead is nearly
 constant, 800 to 1,000 gas per operation, including operations the types do
 not change, such as `swapGivenIn`. It is the rate read through the banded
 boundary and the factor checks, which the faithful contract does not do. The
-guard's cost on swaps is one invariant solve. In these contracts `-Os` gives
+guard's cost on swaps is one invariant solve. Started from the invariant before
+the operation instead of from the balances' sum, that solve is not equivalent
+at dust balances: in the search it let 13 losing operations through, so the
+guard keeps Balancer's own solve ([details](balancer.md#on-a-real-evm)). In
+these contracts `-Os` gives
 larger code than `-O1` and `-O2`: a compiler observation, not a Dimension
 effect.
 

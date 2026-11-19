@@ -93,6 +93,7 @@ $ make show CASE=typed_pool_with_balancer_upscale
 | Same states, same attacks | Balancer (faithful port) | Typed | Typed + guard |
 |---|---|---|---|
 | **The attacker's own 360 steps, from the real state** | **complete: value per share 1.027 → 0.0000092** | revert at step 25 | revert at step 25 |
+| An attacker who re-plans 90 swaps from the real dust state | **value per share −43.9%** | never below its start | never below its start |
 | Exact-out exits that lower value per share | 57,990 | 8 | **0** |
 | Exact-out swaps that lower value per share | 48 | **0** | **0** |
 | Greedy attacker on a 1,000-wei pool, invariant units | **+20.923** | −151.416 | −151.416 |
@@ -104,9 +105,12 @@ reach dust: 17 wei of osETH out costs 1,071,109 wei of WETH instead of 625,492.
 The pool drifts from the state the attacker planned against, and step 25 fails
 Balancer's own `BAL#001` check, which reverts the whole batch. Up to that step
 the value per share had risen from 1.027 to 1.186: the attack was paying the
-pool. The replay shows that the attacker's own sequence cannot run. The search
-and the greedy attacker below are the evidence that no other sequence pays.
-In the search, the types remove the losses at Balancer's two rounding sites;
+pool. The replay shows that the attacker's own sequence cannot run, so it then
+starts an attacker from the same dust state that re-plans every swap, picking
+from about 95 amounts in both directions the one that leaves the value per
+share lowest. On Balancer's arithmetic it cuts that value by 43.9% in 90 swaps.
+On the typed kernels it never gets below where it started, and ends 13.1%
+above. In the search, the types remove the losses at Balancer's two rounding sites;
 the 8 that remain come from StableMath's own precision, and the guard rejects
 exactly those. [The full account →](docs/balancer.md)
 
@@ -361,13 +365,18 @@ Dimension by git, its 3 tests must pass, and a misuse must be rejected.
   feed that reports the declared decimals, with answers inside the declared
   band, passes every check.
 - **The guard costs gas:** about +48% on swaps and +6% to +8% on joins and
-  exits, so it is opt-in. The typed contract costs 800 to 1,000 gas more per
-  operation (+3% to +6%), for its checked rate read.
+  exits, so it is opt-in. On swaps that is one more invariant solve, which
+  cannot safely be shortened: started from the invariant before the
+  operation, Newton's integer iteration settles on a different value at dust
+  balances, and in the search that let 13 losing operations through. The
+  typed contract costs 800 to 1,000 gas more per operation (+3% to +6%), for
+  its checked rate read.
 - **Rounding up refuses some dust:** 1 wei out of a 2-wei balance, which
   Balancer paid out for free.
-- **The replay proves the recorded attack cannot run, not that no attack
-  exists.** That second claim rests on the search and the adaptive attacker,
-  over small pools.
+- **No attack found is not no attack possible.** The replay proves the
+  recorded attack cannot run. That no other sequence pays rests on evidence,
+  not proof: an attacker re-planning 90 swaps from the real dust state, and
+  every single operation over 4,608 small pools.
 
 All of them, with their evidence: [docs/guarantees.md](docs/guarantees.md).
 

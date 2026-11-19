@@ -1253,6 +1253,27 @@
       }
     }
   ],
+  "adaptive": {
+    "setup": "transaction 1's state, then the attacker's own 22 exits (67,000 wei of each token left); then up to 90 exact-out swaps, each chosen from about 95 candidate amounts in both directions as the one leaving the value per BPT lowest, setup moves included",
+    "faithful": {
+      "swaps": 90,
+      "value_per_bpt_start_wad": 1029274992349090474,
+      "value_per_bpt_lowest_wad": 577139828768912675,
+      "value_per_bpt_end_wad": 578401295802822999
+    },
+    "typed": {
+      "swaps": 90,
+      "value_per_bpt_start_wad": 1029290358217199501,
+      "value_per_bpt_lowest_wad": 1029290358217199501,
+      "value_per_bpt_end_wad": 1164023020250953578
+    },
+    "guarded": {
+      "swaps": 90,
+      "value_per_bpt_start_wad": 1029282675225796820,
+      "value_per_bpt_lowest_wad": 1029282675225796820,
+      "value_per_bpt_end_wad": 1164014331566768679
+    }
+  },
   "claims": [
     {
       "question": "Does the Fe port compute every step of the real exploit exactly as Balancer's Vault did?",
@@ -1268,6 +1289,11 @@
       "question": "Do the typed and guarded kernels stop the attacker's own sequence?",
       "holds": true,
       "evidence": "yes: transaction 1 reverts at step 25 with BAL#001; transaction 2 reverts at step 25 with BAL#001; transaction 3 reverts at step 22 with BAL#001. Before that, value per BPT on the typed kernel rose from 1.0273 to 1.1856"
+    },
+    {
+      "question": "From the real dust state, can an attacker who re-plans every swap against the kernel lower the value per share?",
+      "holds": true,
+      "evidence": "on Balancer's arithmetic, yes: -43.9% in 90 swaps. On the typed and guarded kernels, never below where it started; after 90 swaps it ends +13.1%"
     }
   ]
 }

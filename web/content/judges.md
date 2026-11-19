@@ -35,7 +35,7 @@ For each incident this shows:
   pool, is a type error. StableMath only accepts amounts that went through
   `admit`.
 
-`make show` with no argument runs all 16 compile-fail cases the same way.
+`make show` with no argument runs all 17 compile-fail cases the same way.
 
 ## 3. Run everything offline (about 1 minute)
 
@@ -68,7 +68,10 @@ make moonwell   # Base forks from block 42,194,662 to 42,538,949
   replays their 360 swaps on this pool through the three Fe kernels. The
   faithful kernel must compute every amount Balancer computed, and must end in
   the state the pool reached once the real transaction runs on the same fork.
-  On the typed and guarded kernels, each transaction's batch reverts.
+  On the typed and guarded kernels, each transaction's batch reverts. Then an
+  attacker re-plans 90 swaps from the real dust state: on Balancer's
+  arithmetic it cuts the value per share by 43.9%; on the typed and guarded
+  kernels it never gets below where it started.
 - **`fidelity`** loads the real osETH/wETH pool's state, at the last block
   before the attack, into the Fe port. It requires all 669 quotes to equal what
   Balancer's Vault returns.

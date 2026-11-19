@@ -28,7 +28,14 @@ const REJECTED = `$ make show CASE=typed_pool_with_balancer_upscale
 
 const rel = (v: number, base: number) => pct(((v - base) / base) * 100, 1);
 
+const ADAPTIVE = [
+  ["faithful", "Balancer (faithful)"],
+  ["typed", "Typed"],
+  ["guarded", "Guarded"],
+] as const;
+
 export default function Balancer() {
+  const adaptive = replay.adaptive;
   const rows = search();
   const gasRows = gas();
   const levels = evm.runtime_bytecode_bytes_by_level as Record<string, Record<string, number>>;
@@ -61,9 +68,49 @@ export default function Balancer() {
           pool: step {replay.attacks[0].typed.steps_completed} (counting from 0) fails Balancer&apos;s own <code>BAL#001</code> check.
         </p>
         <p className="ink2">
-          What this shows, and what it does not: the attacker&apos;s own sequence cannot run against the typed kernels.
-          An attacker who knew the pool rounds correctly would search for another; the exhaustive search and the greedy
-          attacker below are the evidence that none pays.
+          The attacker&apos;s own sequence cannot run against the typed kernels. An attacker who knew the pool rounds
+          correctly would search for another, so the replay runs one. From the dust state the attacker&apos;s own exits
+          leave, it re-plans each of {adaptive.faithful.swaps} swaps, trying about 95 amounts in both directions and
+          keeping the one that leaves the value per share lowest.
+        </p>
+        <div className="table-wrap" style={{ marginTop: 20 }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Re-planning attacker</th>
+                <th className="n">Start</th>
+                <th className="n">Lowest</th>
+                <th className="n">After {adaptive.faithful.swaps} swaps</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ADAPTIVE.map(([kernel, label]) => {
+                const a = adaptive[kernel];
+                return (
+                  <tr key={kernel}>
+                    <td>{label}</td>
+                    <td className="n">{wad(a.value_per_bpt_start_wad, 4)}</td>
+                    <td className="n">
+                      {wad(a.value_per_bpt_lowest_wad, 4)}{" "}
+                      <span className="muted">
+                        ({a.value_per_bpt_lowest_wad < a.value_per_bpt_start_wad
+                          ? rel(a.value_per_bpt_lowest_wad, a.value_per_bpt_start_wad)
+                          : "the start"})
+                      </span>
+                    </td>
+                    <td className="n">
+                      {wad(a.value_per_bpt_end_wad, 4)}{" "}
+                      <span className="muted">({rel(a.value_per_bpt_end_wad, a.value_per_bpt_start_wad)})</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p className="muted" style={{ fontSize: 14 }}>
+          Value per share: the invariant over the BPT supply. Evidence, not proof: the candidates are a fixed set and each
+          choice is greedy. The exhaustive search below covers every single operation, on smaller pools.
         </p>
         <div style={{ marginTop: 24 }}>
           <Claims claims={replay.claims} />
@@ -216,7 +263,9 @@ export default function Balancer() {
         <p className="ink2" style={{ marginTop: 16 }}>
           The type machinery itself compiles away. The typed contract&apos;s near-constant extra cost is real work: reading
           its rate through the banded boundary and checking its factors on every operation. The guard costs one invariant
-          solve on swaps. Value per share under the EVM attack: {evm.attack.faithful.value_per_bpt_change} on
+          solve on swaps. Starting that solve from the invariant before the swap would be cheaper, but at dust balances
+          Newton&apos;s integer iteration then settles on a different value: tried in the search, it let 13 losing
+          operations through, so the guard keeps Balancer&apos;s own solve. Value per share under the EVM attack: {evm.attack.faithful.value_per_bpt_change} on
           Balancer&apos;s arithmetic, {evm.attack.typed.value_per_bpt_change} typed, starting from{" "}
           {wad(evm.attack.faithful.value_per_bpt_start_wad, 2)}.
         </p>

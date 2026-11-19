@@ -3,7 +3,7 @@
   "question": "Does Dimension work as a dependency of someone else's project?",
   "dependency": {
     "source": "this repository's git history",
-    "rev": "f739927ed785e16187fe2cca572198ffa8d7651f",
+    "rev": "29b4c81252747e17381ea20678cf3ad0e771d8de",
     "name": "dimension",
     "version": "0.1.0"
   },
@@ -16,7 +16,7 @@
     {
       "question": "Can a new project depend on Dimension from git, and does it get Dimension's checks?",
       "holds": true,
-      "evidence": "the quickstart, as a fresh project taking Dimension at f739927 by git source, builds and passes its 3 tests; an incoming amount used as an outgoing one is rejected with 8-0000"
+      "evidence": "the quickstart, as a fresh project taking Dimension at 29b4c81 by git source, builds and passes its 3 tests; an incoming amount used as an outgoing one is rejected with 8-0000"
     }
   ]
 }

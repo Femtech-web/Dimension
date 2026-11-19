@@ -7,7 +7,9 @@ three transactions on the osETH/wETH pool, a mainnet fork at that transaction
 loads the pool's real state into the faithful, typed and guarded Fe kernels and
 replays the transaction's own swaps from fixtures/balancer-v2-exploit/. The
 faithful kernel must compute every step exactly as Balancer's Vault did and end
-where the pool ended once the real transaction runs. Needs an archive RPC:
+where the pool ended once the real transaction runs. Then, from the dust state
+the attacker's exits create, an attacker re-plans the swap phase against each
+kernel: at every step, the swap that leaves the value per BPT lowest. Needs an archive RPC:
 MAINNET_RPC_URL, or a public default. Writes docs/results/replay/<platform>.json.
 """
 
@@ -56,6 +58,7 @@ def main() -> int:
     steps: dict[tuple[int, str], list[dict]] = {}
     ends: dict[tuple[int, str], dict] = {}
     real: dict[int, dict] = {}
+    adaptive: dict[str, dict] = {}
     with RESULTS.open() as f:
         for row in csv.reader(f):
             if row[0] == "step":
@@ -78,6 +81,14 @@ def main() -> int:
                     "value_per_bpt_end_wad": int(end),
                     "balances": [int(b0), int(b1)],
                     "supply": int(supply),
+                }
+            elif row[0] == "adaptive":
+                _, kernel, done, start, lowest, end = row
+                adaptive[kernel] = {
+                    "swaps": int(done),
+                    "value_per_bpt_start_wad": int(start),
+                    "value_per_bpt_lowest_wad": int(lowest),
+                    "value_per_bpt_end_wad": int(end),
                 }
             else:
                 _, n, b0, b1, supply = row
@@ -134,6 +145,16 @@ def main() -> int:
             f"to {first['typed']['value_per_bpt_end_wad'] / WAD:.4f}",
         },
     ]
+    change = lambda k, key: (adaptive[k][key] - adaptive[k]["value_per_bpt_start_wad"]) / adaptive[k]["value_per_bpt_start_wad"] * 100
+    claims.append({
+        "question": "From the real dust state, does an attacker who re-plans every swap find a loss on Balancer's arithmetic, and none on Dimension's?",
+        "holds": bool(adaptive)
+        and adaptive["faithful"]["value_per_bpt_lowest_wad"] < adaptive["faithful"]["value_per_bpt_start_wad"]
+        and all(adaptive[k]["value_per_bpt_lowest_wad"] >= adaptive[k]["value_per_bpt_start_wad"] for k in ("typed", "guarded")),
+        "evidence": f"on Balancer's arithmetic: {change('faithful', 'value_per_bpt_lowest_wad'):+.1f}% in "
+        f"{adaptive['faithful']['swaps']} swaps. On the typed and guarded kernels, never below where it started; "
+        f"after {adaptive['typed']['swaps']} swaps it ends {change('typed', 'value_per_bpt_end_wad'):+.1f}%",
+    })
     report = {
         "schema": SCHEMA,
         "question": "Does the Fe port reproduce the real exploit step by step, and what do the same steps do to the typed kernels?",
@@ -144,6 +165,12 @@ def main() -> int:
         "fe": {"version": fe.version, "commit": fe.commit},
         "platform": fe.platform,
         "attacks": attacks,
+        "adaptive": {
+            "setup": "transaction 1's state, then the attacker's own 22 exits (67,000 wei of each token left); then up to 90 "
+            "exact-out swaps, each chosen from about 95 candidate amounts in both directions as the one leaving the value "
+            "per BPT lowest, setup moves included",
+            **adaptive,
+        },
         "claims": claims,
     }
     out = ROOT / "docs" / "results" / "replay"
