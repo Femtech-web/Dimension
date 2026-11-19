@@ -1,0 +1,6 @@
+[ingot]
+name = "zero_cost_rounding_typed"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../../../ingots/dimension" }

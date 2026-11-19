@@ -1,0 +1,33 @@
+//! The same four previews written by hand, as OpenZeppelin's ERC4626 does with
+//! a decimals offset of 0: deposit and redeem round down, mint and withdraw up.
+
+use std::abi::sol
+use core::num::{mul_div, mul_div_ceil}
+
+msg M {
+    #[selector = sol("previewDeposit(uint256,uint256,uint256)")]
+    PreviewDeposit { total_assets: u256, total_shares: u256, assets: u256 } -> u256,
+    #[selector = sol("previewMint(uint256,uint256,uint256)")]
+    PreviewMint { total_assets: u256, total_shares: u256, shares: u256 } -> u256,
+    #[selector = sol("previewWithdraw(uint256,uint256,uint256)")]
+    PreviewWithdraw { total_assets: u256, total_shares: u256, assets: u256 } -> u256,
+    #[selector = sol("previewRedeem(uint256,uint256,uint256)")]
+    PreviewRedeem { total_assets: u256, total_shares: u256, shares: u256 } -> u256,
+}
+
+pub contract P {
+    recv M {
+        PreviewDeposit { total_assets, total_shares, assets } -> u256 {
+            mul_div(assets, total_shares + 1, total_assets + 1)
+        }
+        PreviewMint { total_assets, total_shares, shares } -> u256 {
+            mul_div_ceil(shares, total_assets + 1, total_shares + 1)
+        }
+        PreviewWithdraw { total_assets, total_shares, assets } -> u256 {
+            mul_div_ceil(assets, total_shares + 1, total_assets + 1)
+        }
+        PreviewRedeem { total_assets, total_shares, shares } -> u256 {
+            mul_div(shares, total_assets + 1, total_shares + 1)
+        }
+    }
+}

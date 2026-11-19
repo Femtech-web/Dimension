@@ -2,17 +2,21 @@
 
 Usage: python3 -m harness.consumer
 
-Builds the quickstart (examples/quickstart) as a project outside the repository
-would: a fresh ingot whose fe.toml takes Dimension from this repository's git
-history at HEAD (`source` and `rev`, as for any git dependency). It must
-compile and pass its tests, and a misuse must be rejected with Dimension's type
-error. Writes docs/results/consumer/<platform>.json.
+Creates a project the way another builder would, with `dimension new`
+(cli/dimension.py): the quickstart, taking Dimension from this repository's git
+history at HEAD (`source` and `rev`, as for any git dependency). It must compile
+and pass its tests, and a misuse must be rejected with Dimension's type error.
+Then `dimension check` must pass the project, and fail it once it is set up to
+forge trusted values. Writes docs/results/consumer/<platform>.json.
 """
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -20,9 +24,10 @@ from pathlib import Path
 
 from harness.toolchain import ROOT, resolve
 
-SCHEMA = "dimension.consumer/v1"
+sys.path.insert(0, str(ROOT / "cli"))
+import dimension  # noqa: E402
 
-QUICKSTART = ROOT / "examples" / "quickstart" / "src"
+SCHEMA = "dimension.consumer/v1"
 
 MISUSE = """use dimension::{Admitted, Asset, In, Out, Quantity, admit, given, scaling_factor}
 
@@ -38,39 +43,72 @@ pub fn wrong(_ raw: u256) -> Quantity<USDC, Out, Admitted> {
 }
 """
 
+FORGE = """
+pub fn forged(_ x: u256) -> u256 {
+    unsafe { x }
+}
+"""
 
-def project(at: Path, rev: str, sources: dict[str, str]) -> Path:
-    (at / "src").mkdir(parents=True)
-    (at / "fe.toml").write_text(
-        '[ingot]\nname = "consumer"\nversion = "0.1.0"\n\n[dependencies]\n'
-        f'dimension = {{ source = "{ROOT.as_uri()}", rev = "{rev}", name = "dimension", version = "0.1.0" }}\n'
-    )
-    for name, text in sources.items():
-        (at / "src" / name).write_text(text)
+
+def variant(base: Path, at: Path, manifest: tuple[str, str] | None = None, source: tuple[str, str] | None = None) -> Path:
+    """A copy of `base` with one line of its fe.toml replaced, or one source file replaced."""
+    shutil.copytree(base, at, ignore=shutil.ignore_patterns("out"))
+    if manifest:
+        text = (at / "fe.toml").read_text()
+        (at / "fe.toml").write_text(text.replace(*manifest))
+    if source:
+        (at / "src" / source[0]).write_text(source[1])
     return at
+
+
+def failures(rows: dimension.Checklist) -> set[str]:
+    return {name for status, name, _ in rows.rows if status == "FAIL"}
 
 
 def main() -> int:
     fe = resolve()
     rev = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
-    sources = {f.name: f.read_text() for f in QUICKSTART.glob("*.fe")}
     with tempfile.TemporaryDirectory(prefix="dimension-consumer-") as tmp:
-        quickstart = project(Path(tmp) / "quickstart", rev, sources)
+        quickstart = Path(tmp) / "quickstart"
+        with contextlib.redirect_stdout(io.StringIO()):
+            dimension.new(quickstart, rev, ROOT.as_uri())
         built = fe.run(["build"], quickstart)
         tested = fe.run(["test", "--backend", "sonatina"], quickstart)
-        misuse = fe.run(["check"], project(Path(tmp) / "misuse", rev, {"lib.fe": MISUSE}))
+        misuse = fe.run(["check"], variant(quickstart, Path(tmp) / "misuse", source=("lib.fe", MISUSE)))
+        checked = dimension.checklist(quickstart, None, None, str(fe.binary))
+        unsafe_dep = dimension.checklist(
+            variant(quickstart, Path(tmp) / "unsafe-dep", manifest=('name = "dimension"', 'name = "dimension"\nallow_unsafe = true')),
+            None,
+            None,
+            str(fe.binary),
+        )
+        lib = (quickstart / "src" / "lib.fe").read_text()
+        unsafe_code = dimension.checklist(
+            variant(quickstart, Path(tmp) / "unsafe-code", source=("lib.fe", lib + FORGE)), None, None, str(fe.binary)
+        )
     passed = re.search(r"test result: ok\. (\d+) passed; 0 failed", tested.output)
     ok_code = 0 if built.code == 0 and tested.code == 0 and passed else 1
     ok_out = built.output + tested.output
-    bad_code, bad_out = misuse.code, misuse.output
-    rejected = bad_code != 0 and "error[8-0000]" in bad_out
-    claims = [{
-        "question": "Can a new project depend on Dimension from git, and does it get Dimension's checks?",
-        "holds": ok_code == 0 and rejected,
-        "evidence": f"the quickstart, as a fresh project taking Dimension at {rev[:7]} by git source, "
-        + (f"builds and passes its {passed.group(1)} tests" if ok_code == 0 else "does NOT build and pass")
-        + ("; an incoming amount used as an outgoing one is rejected with 8-0000" if rejected else "; the misuse was NOT rejected"),
-    }]
+    rejected = misuse.code != 0 and "error[8-0000]" in misuse.output
+    clean = not checked.failed
+    caught = failures(unsafe_dep) == {"allow_unsafe"} and failures(unsafe_code) == {"unsafe code"}
+    claims = [
+        {
+            "question": "Can a new project depend on Dimension from git, and does it get Dimension's checks?",
+            "holds": ok_code == 0 and rejected,
+            "evidence": f"`dimension new` creates the quickstart taking Dimension at {rev[:7]} by git source; it "
+            + (f"builds and passes its {passed.group(1)} tests" if ok_code == 0 else "does NOT build and pass")
+            + ("; an incoming amount used as an outgoing one is rejected with 8-0000" if rejected else "; the misuse was NOT rejected"),
+        },
+        {
+            "question": "Does `dimension check` pass that project, and fail it once it can forge values Dimension trusts?",
+            "holds": clean and caught,
+            "evidence": f"the new project: {sum(s.strip() == 'ok' for s, _, _ in checked.rows)} of {len(checked.rows)} checks ok, "
+            f"and a warning on {', '.join(n for s, n, _ in checked.rows if s == 'warn') or 'nothing'} (it pins HEAD, not a release); "
+            f"with allow_unsafe set on Dimension it fails {', '.join(sorted(failures(unsafe_dep))) or 'nothing'}; "
+            f"with an unsafe block it fails {', '.join(sorted(failures(unsafe_code))) or 'nothing'}",
+        },
+    ]
     report = {
         "schema": SCHEMA,
         "question": "Does Dimension work as a dependency of someone else's project?",
@@ -85,9 +123,10 @@ def main() -> int:
     path.write_text(json.dumps(report, indent=2) + "\n")
     if ok_code != 0:
         print(ok_out[-2000:])
-    print(f"{'holds' if claims[0]['holds'] else 'FAILS'}  {claims[0]['question']}\n       {claims[0]['evidence']}")
+    for claim in claims:
+        print(f"{'holds' if claim['holds'] else 'FAILS'}  {claim['question']}\n       {claim['evidence']}")
     print(f"report: {path.relative_to(ROOT)}")
-    return 0 if claims[0]["holds"] else 1
+    return 0 if all(c["holds"] for c in claims) else 1
 
 
 if __name__ == "__main__":

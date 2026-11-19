@@ -45,11 +45,32 @@ jobs:
         with:
           version: v1.4.4
       - run: make fidelity replay moonwell feeds
+      # All 17 planted bugs, including the two only a fork can catch.
+      - run: make mutants FORKS=1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: results-forks-linux_amd64
           path: docs/results/
+
+  mutants:
+    # Each planted bug in the safety-critical code must be caught by the check
+    # meant for it, for the reason expected of it.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.4.4
+      - run: make mutants
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-mutants-linux_amd64
+          path: docs/results/mutants/
 
   web:
     # The site renders the reports committed under web/data; this keeps it building.

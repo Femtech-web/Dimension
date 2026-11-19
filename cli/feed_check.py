@@ -2,7 +2,7 @@
 """Checks Dimension feed declarations against Chainlink's directory and the chain.
 
 Usage:
-    python3 scripts/feeds/feed_check.py REGISTRY.fe [...] --network base [--rpc URL] [--json OUT]
+    python3 cli/feed_check.py REGISTRY.fe [...] --network base [--rpc URL] [--json OUT]
 
 Dimension's types guarantee a `Feed<B, Q>` is only ever used as a B-in-Q
 price, and its boundary checks decimals, freshness and band on chain. Neither
@@ -293,8 +293,8 @@ def show(result: dict) -> None:
             print(f"      hint  {feed['suggestion']}")
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+def main(argv: list[str] | None = None, prog: str | None = None) -> int:
+    parser = argparse.ArgumentParser(prog=prog, description=__doc__.splitlines()[0])
     parser.add_argument("registry", nargs="+", type=Path, help="Fe source files with Feed declarations")
     parser.add_argument("--network", choices=sorted(NETWORKS), help="selects the directory and a public RPC")
     parser.add_argument("--rpc", help="JSON-RPC URL (overrides the network's public one)")

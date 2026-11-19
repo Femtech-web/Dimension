@@ -7,7 +7,7 @@ HARNESS := PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=scripts $(PYTHON) -m harness.
 CASES := $(HARNESS)cases
 FE := .tools/fe-$(shell sed -n 's/^version=//p' scripts/toolchain/fe.lock)/fe
 # The feasibility probes are kept exactly as recorded, so they are not formatted.
-FORMATTED := ingots tests/core tests/oracle tests/explorer tests/vault tests/feeds tests/compile_fail tests/compiler_findings examples
+FORMATTED := ingots tests/core tests/oracle tests/explorer tests/vault tests/feeds tests/zero_cost tests/compile_fail tests/compiler_findings examples
 
 .PHONY: help toolchain reference-deps fmt fmt-check test unit compile-fail probes differential explore evm vault consumer apidoc fidelity replay moonwell feeds unsafe-policy mutants web show demo update ci
 
@@ -43,7 +43,7 @@ differential: toolchain reference-deps ## Fe port vs Balancer V2's Solidity on i
 explore: toolchain ## Native search and repeated attacks on the faithful, typed and guarded Balancer kernels
 	@$(HARNESS)explore
 
-evm: toolchain reference-deps ## The three Fe pool contracts on a real EVM at each optimization level: repeated-exit attack and gas (needs forge)
+evm: toolchain reference-deps ## The pool contracts and the typed-vs-hand-written pairs on a real EVM at each optimization level: attack, results, gas (needs forge)
 	@$(HARNESS)evm
 
 vault: toolchain reference-deps ## The ERC-4626 vault's previews against OpenZeppelin's ERC4626 (needs forge)

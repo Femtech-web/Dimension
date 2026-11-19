@@ -123,7 +123,7 @@ export default function Moonwell() {
         <p className="ink2">
           No check on chain can prove an address is the feed it is declared to be. Chainlink&apos;s published directory
           lists every feed&apos;s address with its pair, decimals and heartbeat.{" "}
-          <a href={`${BLOB}/scripts/feeds/feed_check.py`}>
+          <a href={`${BLOB}/cli/feed_check.py`}>
             <code>feed_check.py</code>
           </a>{" "}
           requires each declaration to match it, and the chain to agree. It runs here on the registry, and on two wrong
@@ -134,7 +134,7 @@ export default function Moonwell() {
         </div>
         <div style={{ marginTop: 20 }}>
           <Code title="before deploying your own registry" lang="sh" terminal>
-            {"python3 scripts/feeds/feed_check.py src/registry.fe --network base"}
+            {"python3 cli/feed_check.py src/registry.fe --network base"}
           </Code>
         </div>
         <p className="muted" style={{ fontSize: 14 }}>

@@ -55,6 +55,7 @@ This is what CI runs on Linux. Each suite prints its claims as `holds` or
 | `holds  Can a repeated-exit attacker gain against the faithful kernel...` | Faithful attacker +20.923 D; with Dimension, −151.416 D |
 | `holds  Deployed on an EVM, does the faithful pool let a repeated-exit attacker take value from LPs?` | The same attack against the deployed Fe contracts |
 | `gas typed ... gas guarded ...` | What the safety costs per operation |
+| `holds  Above -O0, is Dimension's typing free, gas for gas...` | Typed code on the library itself, against the same code by hand: identical bytes or identical gas |
 
 ## 4. Against the real chains (about 2 minutes each, needs network)
 
@@ -122,9 +123,10 @@ result observed.
 | Types and guard remove the losses | `ingots/balancer_explorer`, pinned by `tests/explorer` on both backends | `docs/results/exploration/` |
 | The attack and gas on a real EVM | `contracts/reference/test/PoolAttack.t.sol` | `docs/results/evm/` |
 | Moonwell, before, during and after MIP-X43 | `contracts/reference/test/MoonwellFork.t.sol` | `docs/results/moonwell/` |
-| Each declared feed is the feed it claims to be | `scripts/feeds/feed_check.py`, `tests/feeds/` | `docs/results/feeds/` |
+| Each declared feed is the feed it claims to be | `cli/feed_check.py`, `tests/feeds/` | `docs/results/feeds/` |
 | Each rejected construction, and its fix | `tests/compile_fail/<case>/` | `docs/results/compile-fail/` |
-| The type machinery is free | `tests/probes/bytecode/` | `docs/results/probes/` |
+| The type machinery is free | `tests/probes/bytecode/`; on the library itself, `tests/zero_cost/` with `contracts/reference/test/ZeroCost.t.sol` | `docs/results/probes/`, `docs/results/evm/` |
+| A team's own project, created and checked | `cli/dimension.py`, run by `scripts/harness/consumer.py` | `docs/results/consumer/` |
 
 The site in [`web/`](web) shows all of these, with the replay and the Moonwell
 prices charted. `make web` rebuilds it from whatever reports your runs saved.

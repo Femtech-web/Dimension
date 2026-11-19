@@ -50,7 +50,7 @@
       "outcome": "caught",
       "evidence": [
         "FAIL core",
-        "output differs from tests/core/expected.sonatina.txt"
+        "FAIL examples/quickstart"
       ]
     },
     {
@@ -243,8 +243,8 @@
       "caught": true,
       "outcome": "caught",
       "evidence": [
-        "[FAIL: every step must compute what Balancer computed: 94 != 121] test_attack1() (gas: 13808272)",
-        "[FAIL: every step must compute what Balancer computed: 94 != 121] test_attack2() (gas: 13699933)"
+        "[FAIL: every step must compute what Balancer computed: 94 != 121] test_attack1() (gas: 13824746)",
+        "[FAIL: every step must compute what Balancer computed: 94 != 121] test_attack2() (gas: 13716429)"
       ]
     },
     {

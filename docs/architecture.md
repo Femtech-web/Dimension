@@ -97,7 +97,9 @@ private supertrait, so a third direction or a custom flow cannot be added
 (compile-fail cases `custom_rounding_direction`, `custom_flow`). Static
 dispatch on the type parameter means the abstraction compiles away: the probes
 show byte-identical runtime bytecode against hand-written `mul_div_ceil` at
-`-O1`, `-O2` and `-Os`.
+`-O1`, `-O2` and `-Os`. On the library itself, `make evm` finds the same for
+Dimension's four roundings, and the same gas on every call for an ERC-4626
+vault built on it (`tests/zero_cost`).
 
 ### Prices compose by type
 
@@ -136,7 +138,7 @@ type. Two checks apply:
   `RateOutOfBand`).
 
 The checks cannot prove an address is the feed it is declared to be. For
-Chainlink feeds, [`feed_check.py`](../scripts/feeds/feed_check.py) checks that
+Chainlink feeds, [`feed_check.py`](../cli/feed_check.py) checks that
 before deployment, against Chainlink's directory and the chain (see
 [moonwell.md](moonwell.md#before-deployment-make-feeds)).
 
@@ -264,7 +266,7 @@ whether it holds, and the evidence.
 | `compile-fail` | each rejected construction, and its twin | the expected error code; the twin must pass |
 | `differential` | Fe StableMath | Balancer's Solidity, identical calldata, byte-identical results |
 | `explore` | three kernels | each other, and the two invariants |
-| `evm` | three deployed contracts, at each optimization level | a greedy attacker, identical at every level; gas per operation |
+| `evm` | three deployed contracts, and typed code paired with the same code by hand, at each optimization level | a greedy attacker, identical at every level; gas per operation; the pairs' results, bytes and gas |
 | `vault` | the ERC-4626 vault's previews | OpenZeppelin's ERC4626 in the same states |
 | `fidelity` | the faithful kernel | the deployed pool on a mainnet fork |
 | `replay` | the three kernels | the attacker's own transactions, step by step, and the pool's state after each |

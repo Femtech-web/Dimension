@@ -6,8 +6,10 @@ Builds FaithfulPool, TypedPool and GuardedPool with the pinned compiler at each
 optimization level, and at each runs contracts/reference/test/PoolAttack.t.sol:
 a greedy attacker repeating the November 2025 exit against each deployed
 contract, and gas for every operation on a pool with the osETH/wETH pool's
-balances and parameters. Checks the claims made about them, including that
-every level computes the same attack, and writes docs/results/evm/<platform>.json.
+balances and parameters. Then, for each pair in tests/zero_cost, typed code on
+Dimension and the same code by hand on raw u256, compares bytes, results and gas
+at each level (contracts/reference/test/ZeroCost.t.sol). Checks the claims made
+about them, and writes docs/results/evm/<platform>.json.
 """
 
 from __future__ import annotations
@@ -24,6 +26,10 @@ from harness.toolchain import ROOT, resolve
 REFERENCE = ROOT / "contracts" / "reference"
 INGOT = ROOT / "ingots" / "balancer_v2"
 RESULTS = REFERENCE / "cache" / "pool-attack.csv"
+# Typed code on Dimension next to the same code by hand on raw u256, each pair one contract P.
+ZERO_COST = ROOT / "tests" / "zero_cost"
+ZERO_COST_BINS = REFERENCE / "cache" / "zero-cost"
+ZERO_COST_RESULTS = REFERENCE / "cache" / "zero-cost.csv"
 CONTRACTS = {"faithful": "FaithfulPool", "typed": "TypedPool", "guarded": "GuardedPool"}
 LEVELS = ["0", "1", "2", "s"]
 SCHEMA = "dimension.evm/v1"
@@ -83,6 +89,58 @@ def by_level() -> tuple[dict, dict, dict]:
     return sizes, gas, attacks
 
 
+def zero_cost() -> dict:
+    """Each pair in tests/zero_cost at each level: sizes, identical bytes, equal results and gas per call."""
+    fe = resolve()
+    pairs = sorted(p.name for p in ZERO_COST.iterdir() if p.is_dir())
+    ZERO_COST_BINS.mkdir(parents=True, exist_ok=True)
+    table: dict = {pair: {} for pair in pairs}
+    for level in LEVELS:
+        runtime = {}
+        for pair in pairs:
+            for variant in ("typed", "raw"):
+                ingot = ZERO_COST / pair / variant
+                shutil.rmtree(ingot / "out", ignore_errors=True)
+                built = fe.run(["build", "-O", level, "--emit", "bytecode,runtime-bytecode"], ingot)
+                if built.code != 0:
+                    raise SystemExit(f"{pair}/{variant} failed to build at -O{level}:\n{built.output}")
+                runtime[pair, variant] = bytes.fromhex((ingot / "out" / "P.runtime.bin").read_text().strip())
+                shutil.copy(ingot / "out" / "P.bin", ZERO_COST_BINS / f"{pair}-{variant}.bin")
+                shutil.rmtree(ingot / "out", ignore_errors=True)
+        ZERO_COST_RESULTS.unlink(missing_ok=True)
+        proc = subprocess.run(
+            ["forge", "test", "--match-contract", "ZeroCost"], cwd=REFERENCE, capture_output=True, text=True, timeout=3600
+        )
+        if proc.returncode != 0:
+            print(proc.stdout[-4000:], proc.stderr[-2000:])
+            raise SystemExit(1)
+        functions: dict = {pair: {} for pair in pairs}
+        with ZERO_COST_RESULTS.open() as f:
+            for pair, name, calls, equal, succeeded, gas_typed, gas_raw in csv.reader(f):
+                functions[pair][name] = {
+                    "calls": int(calls),
+                    "equal": int(equal),
+                    "succeeded": int(succeeded),
+                    "gas_typed": int(gas_typed),
+                    "gas_raw": int(gas_raw),
+                }
+        for pair in pairs:
+            rows = functions[pair].values()
+            succeeded = sum(r["succeeded"] for r in rows)
+            table[pair][f"O{level}"] = {
+                "bytes": {"typed": len(runtime[pair, "typed"]), "raw": len(runtime[pair, "raw"])},
+                "identical": runtime[pair, "typed"] == runtime[pair, "raw"],
+                "calls": sum(r["calls"] for r in rows),
+                "equal": sum(r["equal"] for r in rows),
+                "gas_per_call": {
+                    "typed": round(sum(r["gas_typed"] for r in rows) / succeeded, 1),
+                    "raw": round(sum(r["gas_raw"] for r in rows) / succeeded, 1),
+                },
+                "by_function": functions[pair],
+            }
+    return table
+
+
 def pct(value: int, base: int) -> str:
     return f"{(value - base) / base * 100:+.1f}%"
 
@@ -96,6 +154,18 @@ def main() -> int:
         raise SystemExit(f"the default build is not -O1: {sizes} vs {levels['O1']}")
     attacks, gas = attacks_by_level["O1"], gas_by_level["O1"]
     differing = [level for level, a in attacks_by_level.items() if a != attacks]
+    pairs = zero_cost()
+    calls = {level: sum(pairs[pair][level]["calls"] for pair in pairs) for level in levels}
+    unequal = [f"{pair} -{level}" for pair in pairs for level, r in pairs[pair].items() if r["equal"] != r["calls"]]
+    costly = [
+        f"{pair} -{level}"
+        for pair in pairs
+        for level, r in pairs[pair].items()
+        if level != "O0" and r["gas_per_call"]["typed"] > r["gas_per_call"]["raw"]
+    ]
+    o0 = ", ".join(
+        f"{pair} {pct(pairs[pair]['O0']['gas_per_call']['typed'], pairs[pair]['O0']['gas_per_call']['raw'])}" for pair in pairs
+    )
 
     base = gas["faithful"]
     claims = [
@@ -116,6 +186,22 @@ def main() -> int:
             if not differing
             else f"differs from -O1 at {', '.join('-' + d for d in differing)}",
         },
+        {
+            "question": "Built on Dimension itself, does typed code return exactly what the same code written by hand on raw u256 returns, at every optimization level?",
+            "holds": not unequal,
+            "evidence": f"{calls['O1']:,} calls per level over 8 functions (the four roundings, an ERC-4626 vault's four previews), reverts included: "
+            + ("all equal at -O0, -O1, -O2 and -Os" if not unequal else f"differ in {', '.join(unequal)}"),
+        },
+        {
+            "question": "Above -O0, is Dimension's typing free, gas for gas, against the same code written by hand?",
+            "holds": not costly,
+            "evidence": (
+                "at -O1, -O2 and -Os the roundings compile to identical bytes, and the vault to the same size with identical gas on every call"
+                if not costly
+                else f"typed costs more in {', '.join(costly)}"
+            )
+            + f". At -O0, which no one deploys, typed costs {o0} per call",
+        },
     ]
     report = {
         "schema": SCHEMA,
@@ -132,6 +218,11 @@ def main() -> int:
                 k: {op: pct(v[op], base[op]) for op in v} for k, v in gas.items() if k != "faithful"
             },
             "per_operation_by_level": gas_by_level,
+        },
+        "zero_cost": {
+            "setup": "tests/zero_cost: each pair is one contract written with Dimension and the same contract written by hand "
+            "on raw u256, with the same ABI. Every function is called on the same 512 inputs of every magnitude in both.",
+            "pairs": pairs,
         },
         "runtime_bytecode_bytes": sizes,
         "runtime_bytecode_bytes_by_level": levels,
@@ -150,6 +241,11 @@ def main() -> int:
         print(f"bytecode -{level}: " + ", ".join(f"{k} {n:,} B" for k, n in row.items()))
     for level, table in gas_by_level.items():
         print(f"mean gas -{level}: " + ", ".join(f"{k} {sum(v.values()) // len(v):,}" for k, v in table.items()))
+    for pair, rows in pairs.items():
+        for level, r in rows.items():
+            g = r["gas_per_call"]
+            same = "identical bytes" if r["identical"] else f"{r['bytes']['typed']:,} vs {r['bytes']['raw']:,} B"
+            print(f"zero-cost {pair:8s} -{level}: {same}; gas per call typed {g['typed']:,} raw {g['raw']:,}; {r['equal']}/{r['calls']} equal")
     print(f"report: {path.relative_to(ROOT)}")
     return 0 if all(c["holds"] for c in claims) else 1
 

@@ -219,8 +219,8 @@ export default function Home() {
               name the wrong one.
             </p>
             <p className="ink2">
-              The direction is resolved statically: the typed code compiles to the same bytes as hand-written{" "}
-              <code>mul_div_ceil</code> at <code>-O1</code>, <code>-O2</code> and <code>-Os</code>. Effects make a feed
+              The direction is resolved statically: on the library itself, the typed code compiles to the same bytes as
+              hand-written <code>mul_div</code> calls at <code>-O1</code>, <code>-O2</code> and <code>-Os</code>. Effects make a feed
               read declare its calls and clock, and make failure a capability: one kernel reverts with Balancer&apos;s
               codes on the EVM and records failures in a native search.
             </p>
@@ -242,13 +242,14 @@ export default function Home() {
             <div className="eyebrow">Use it in your protocol</div>
             <h2 style={{ margin: "14px 0 16px" }}>A Fe library. Five minutes to a typed contract.</h2>
             <p className="ink2">
-              Dimension is an ingot, Fe&apos;s equivalent of a crate. Add it to <code>fe.toml</code> pinned to a release
-              commit, copy the quickstart, and your contracts&apos; amounts, prices and policies are checked whenever they
-              compile.
+              Dimension is an ingot, Fe&apos;s equivalent of a crate. <code>dimension new</code> creates a project from
+              the quickstart, pinned to a release, and your contracts&apos; amounts, prices and policies are checked
+              whenever they compile. <code>dimension check</code> runs the checklist before deploying: no{" "}
+              <code>allow_unsafe</code>, no <code>unsafe</code> code, and every Chainlink feed the feed it claims to be.
             </p>
             <p className="ink2">
-              CI builds the quickstart as a fresh project taking Dimension by git on every change: its tests must pass,
-              and a misuse must be rejected.
+              CI runs both on every change: the new project must pass its tests, a misuse must be rejected, and the check
+              must fail the project once it can forge what Dimension trusts.
             </p>
             <div className={styles.ctas}>
               <Link href="/docs/guide" className="button">
@@ -270,11 +271,10 @@ rev = "57ce4106575a173b9fc51ebb44c3c2243e285cd5"   # v0.1.0
 name = "dimension"
 version = "0.1.0"`}
             </Code>
-            <Code title="examples/quickstart, from a fresh project" lang="shell">
-              {`fe check                     # every Dimension rule, at compile time
-fe test                      # 3 tests, on the EVM
-fe test --backend native     # and natively
-fe build                     # the Desk contract's bytecode and ABI`}
+            <Code title="from a clone of Dimension" lang="shell">
+              {`python3 cli/dimension.py new ../my-protocol
+(cd ../my-protocol && fe test)        # 3 tests, on the EVM
+python3 cli/dimension.py check ../my-protocol --network base`}
             </Code>
           </div>
         </div>

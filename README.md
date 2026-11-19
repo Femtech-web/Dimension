@@ -254,7 +254,11 @@ pub fn admit<T, F: Flow>(_ q: Quantity<T, F, Given>, _ factor: ScalingFactor<T>)
 
 The direction is resolved statically. The typed code compiles to the same
 bytes as hand-written `mul_div_ceil` at `-O1`, `-O2` and `-Os`, with identical
-hashes recorded by the probes.
+hashes recorded by the probes. On the library itself (`make evm`), Dimension's
+four roundings compile to the same bytes as the hand-written `mul_div` calls,
+and an ERC-4626 vault built on it to the same size and the same gas on every
+call. Both return exactly what the hand-written code returns, on 4,096 calls at
+every optimization level.
 
 The rest of Dimension leans on Fe throughout:
 
@@ -280,6 +284,7 @@ The rest of Dimension leans on Fe throughout:
 | Exhaustive search, three kernels, exact integers | 4,608 pool states, about 3.14M operations each | the two invariants hold under the guard in every operation kind | `make explore` |
 | The same kernels on the EVM and natively | pinned grid and attack | identical integers | `make unit` |
 | The pool contracts at every optimization level | `-O0`, `-O1`, `-O2`, `-Os` | the same attack to the wei at each; gas and size per level | `make evm` |
+| Typed code on Dimension against the same code by hand on raw `u256` | 2 pairs, 8 functions, 4,096 calls per level, 4 levels | identical results at every level; above `-O0`, identical gas, and identical bytes for the roundings | `make evm` |
 | Admission and settlement against the exact rational result | 20,000 per backend | exact floor and ceil | `make unit` |
 | Constructions the compiler must reject | 17 cases, each with a corrected twin | all rejected with the intended error; all twins pass | `make compile-fail` |
 | Language behaviour the design rests on | 20 probes with golden outputs and bytecode hashes | all as recorded, identical on macOS and Linux | `make probes` |
@@ -288,7 +293,7 @@ The rest of Dimension leans on Fe throughout:
 | The ERC-4626 vault against OpenZeppelin's ERC4626 | 40,000 vectors, 33,684 where the rounding decides | all equal | `make vault` |
 | The vault against the exact rational result | 32,768 states × 4 previews, both backends | exact floor or ceil as EIP-4626 requires | `make unit` |
 | Planted bugs in the safety-critical code | 17 mutants across 7 layers | every one caught, for the reason expected of it | `make mutants FORKS=1` |
-| A fresh project taking Dimension by git | the quickstart, plus a misuse | builds, passes its tests; the misuse is rejected | `make consumer` |
+| A fresh project from `dimension new`, taking Dimension by git | the quickstart, a misuse, two unsafe setups | builds and passes its tests; the misuse is rejected; `dimension check` passes it and fails both setups | `make consumer` |
 
 Every run writes a report to [`docs/results/`](docs/results). Each claim in it
 is a question, an answer and its evidence, and a claim that fails fails the
@@ -355,20 +360,27 @@ tests, and follow [docs/guide.md](docs/guide.md):
 - the method used to port Balancer;
 - a checklist before production.
 
-Before deploying, check your feed declarations with
-[`feed_check.py`](scripts/feeds/feed_check.py): one file, Python's standard
-library only, so you can copy it. It requires that Chainlink's directory lists
-each declared address as the declared pair, with the declared decimals and a
-heartbeat within `max_age`, and that the chain agrees:
+The command line, [`cli/dimension.py`](cli/dimension.py), starts a project
+and checks it before deploying. It needs only Python's standard library; run it
+from a clone of this repository:
 
 ```sh
-python3 scripts/feeds/feed_check.py src/registry.fe --network base
+python3 cli/dimension.py new ../my-protocol                     # the quickstart, pinned to the latest release
+(cd ../my-protocol && fe test)
+python3 cli/dimension.py check ../my-protocol --network base    # the checklist before deploying
 ```
 
+`check` fails a project that could forge or misprice what Dimension trusts:
+`allow_unsafe` set on Dimension, any `unsafe` code, code that does not compile,
+or a Chainlink feed that is not the feed it is declared to be, checked against
+Chainlink's directory and the chain by [`feed_check.py`](cli/feed_check.py). It
+warns on a dependency not pinned to a release, and on an untested Fe version.
+
 The library's own page is [`ingots/dimension`](ingots/dimension), and its
-security policy is [SECURITY.md](SECURITY.md). `make consumer` checks the whole
-path on every CI run. It builds the quickstart as a fresh project taking
-Dimension by git, its 3 tests must pass, and a misuse must be rejected.
+security policy is [SECURITY.md](SECURITY.md). `make consumer` checks this path
+on every CI run. `dimension new` creates the project, taking Dimension by git;
+its 3 tests must pass, and a misuse must be rejected. `dimension check` must
+pass it, and fail it once `allow_unsafe` or `unsafe` code is added.
 
 ## Limits
 
@@ -435,13 +447,14 @@ elsewhere the native search is skipped.
 |---|---|
 | [`ingots/dimension`](ingots/dimension) | The library: assets, flows, roundings, prices, values, policies, the guard, the oracle boundary |
 | [`examples/quickstart`](examples/quickstart) | A deposit desk contract and its tests: the project a team starts from |
+| [`cli`](cli) | The command line for teams using Dimension: `new`, `check`, `feeds` |
 | [`ingots/balancer_v2`](ingots/balancer_v2) | Balancer V2 ported: StableMath, the faithful, typed and guarded pools, their contracts |
 | [`ingots/balancer_explorer`](ingots/balancer_explorer) | The native search and greedy attacker |
 | [`ingots/moonwell`](ingots/moonwell) | Moonwell's cbETH market: feed registry, composite pricing, oracle contracts |
 | [`ingots/vault`](ingots/vault) | An ERC-4626 vault's accounting, written with Dimension |
 | [`contracts/reference`](contracts/reference) | Foundry: Balancer's Solidity, the differential test, the EVM attack, the fork tests and the attack replay |
 | [`fixtures/balancer-v2-exploit`](fixtures/balancer-v2-exploit) | The attacker's swaps on the pool, read from the three transactions' events |
-| [`tests`](tests) | Unit tests (EVM and native), compile-fail cases with twins, probes, the compiler finding's reproducer |
+| [`tests`](tests) | Unit tests (EVM and native), compile-fail cases with twins, probes, typed-vs-hand-written pairs, misdeclared feeds, the compiler finding's reproducer |
 | [`scripts`](scripts) | The pinned toolchain, and one harness module per suite |
 | [`third_party/balancer-v2`](third_party/balancer-v2) | Balancer's sources at the pinned commit |
 | [`docs`](docs/README.md) | The documentation and the saved results |

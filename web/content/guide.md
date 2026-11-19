@@ -26,6 +26,10 @@ This guide covers three things:
 
 ## Getting started
 
+With the command line, from a clone of Dimension,
+`python3 cli/dimension.py new ../my_protocol` does steps 1 to 3: it creates
+the quickstart project with Dimension pinned to the latest release. By hand:
+
 **1. Create a project.**
 
 ```sh
@@ -87,9 +91,9 @@ fe build                     # the Desk contract's bytecode and ABI, in out/
 it: `expected Quantity<USDC, In, Settled>, but Quantity<USDC, Out, Settled> is
 given`.
 
-All of this is checked on every CI run (`make consumer`). The quickstart is built
-as a fresh project that takes Dimension by git. It must pass its tests, and a
-misuse must be rejected with Dimension's type error.
+All of this is checked on every CI run (`make consumer`): `dimension new`
+creates the project, which takes Dimension by git and must pass its tests, and
+a misuse must be rejected with Dimension's type error.
 
 For the full API, every item with its doc comment, see the reference generated
 by `fe doc`: `/api` on the project site, or `make apidoc` locally.
@@ -268,19 +272,22 @@ The method used for Balancer, in order:
 
 ## Before production
 
-A checklist for a team shipping a protocol built on Dimension:
+A checklist for a team shipping a protocol built on Dimension.
+`python3 cli/dimension.py check <project> --network base` runs items 1, 2 and
+5, finds any `unsafe` code, and confirms the project compiles. Items 3, 4, 6
+and 7 need your judgment.
 
 1. **Pin a release commit**, and read the changelog before moving to another.
 2. **Never set `allow_unsafe` on Dimension in an ingot you deploy.** Keep
-   `assume_price` and `assume_rate` in test roots, and add a CI check like
-   `make unsafe-policy`.
+   `assume_price` and `assume_rate` in test roots. `dimension check` fails a
+   project that sets it, or that contains `unsafe` code.
 3. **Make your math's signatures demand admitted amounts**, as
    `typed/math.fe` does. A raw `u256` can then never reach it unrounded.
 4. **Declare each feed once.** Set `max_age` from the feed's measured
    heartbeat plus a margin, and a band no honest answer leaves. Call `verify`
    in the constructor.
 5. **Check every registry entry before deploying**, with
-   [`feed_check.py`](../scripts/feeds/feed_check.py) for Chainlink feeds. It
+   [`feed_check.py`](../cli/feed_check.py) for Chainlink feeds. It
    catches a wrong address that every on-chain check accepts. For other feeds,
    review address, pair and decimals against the operator's own record.
 6. **Decide where the runtime guard is worth its gas.** It is one invariant

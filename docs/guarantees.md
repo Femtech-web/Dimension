@@ -16,12 +16,12 @@ established, and what it does not guarantee. Status words:
 | Compile time | A price used for the wrong pair; prices composed without a shared asset; collateral added to debt | `Price<B, Q>` and `Value<Q, V>` phantom parameters; `Mul` only through a shared asset | compile-fail cases with twins; Moonwell's MIP-X43 configuration written against the real Base registry | tested |
 | Compile time | An amount rounded the wrong way when admitted or settled; a scaled amount handed to the math without admission | `Flow` and `Stage` types; `admit` and `settle` are the only producers; the typed kernel reaches StableMath only through `Admitted` signatures | Balancer's `_upscale` line put back into the typed pool is rejected; the explorer measures the effect | verified |
 | Compile time | A third rounding direction, a custom flow, an incoherent risk policy, an asset with more than 18 decimals | sealed traits; `where` predicates on associated constants | compile-fail cases | tested |
-| Compile time | Trusted values built from raw numbers; test constructors reached from production code | private fields; `unsafe fn` constructors gated by `allow_unsafe`; `make unsafe-policy` | compile-fail cases `forge_price`, `forge_admitted_quantity`, `test_constructor_from_production_root`; CI policy check | tested |
+| Compile time | Trusted values built from raw numbers; test constructors reached from production code | private fields; `unsafe fn` constructors gated by `allow_unsafe`; `make unsafe-policy` here, and `dimension check` for a team's own project | compile-fail cases `forge_price`, `forge_admitted_quantity`, `test_constructor_from_production_root`; CI policy check; `make consumer` requires `dimension check` to fail a project with `allow_unsafe` or `unsafe` code | tested |
 | Compile time | An oracle read in code that has not declared it calls out and reads the clock | effects: `read` requires `uses (call: mut Call, ctx: Ctx)` | compile-fail case `oracle_read_without_effects` | tested |
 | Bind time | A feed that reports different decimals than declared | `verify` in the constructor, `WrongDecimals` | oracle unit tests; on a Base fork, cbETH/ETH declared as an 8-decimal USD feed fails to deploy | verified |
 | Read time | Non-positive, future, stale or out-of-band answers; out-of-band rates | `read`, `read_rate` | oracle unit tests; on a Base fork, cbETH/ETH declared as cbETH/USD fails its first read, and a stale ETH/USD leg is refused | verified |
 | Runtime | An operation that lowers the value behind a pool share, whatever its cause | `preserves_share_value`, exact 512-bit comparison; `GuardedPool` | 0 losses over 3.14 million operations per kernel; rejects exactly the 17 that would lose; EVM attack; the attacker's own transactions revert; an attacker re-planning 90 swaps from the real dust state never lowers the value per share | verified |
-| Review time | A Chainlink feed declared at an address that is not that pair, even one every on-chain check accepts | `scripts/feeds/feed_check.py`: Chainlink's directory must list the address as the declared pair, with its decimals and a heartbeat within `max_age`, and the chain must agree | `make feeds`: Moonwell's registry passes; MIP-X43's declaration, and the cbETH/USD feed declared as ETH/USD, which every on-chain check accepts, are rejected | tested |
+| Review time | A Chainlink feed declared at an address that is not that pair, even one every on-chain check accepts | `cli/feed_check.py`: Chainlink's directory must list the address as the declared pair, with its decimals and a heartbeat within `max_age`, and the chain must agree | `make feeds`: Moonwell's registry passes; MIP-X43's declaration, and the cbETH/USD feed declared as ETH/USD, which every on-chain check accepts, are rejected | tested |
 | External | That Chainlink's directory is right, and that `make feeds` was run before deploying | none: Chainlink's own record, and a review step | stated here | assumption |
 | External | That a rate provider (`RateSource`), or a feed outside Chainlink, is what it is declared to be | none: a reviewed declaration, with no directory to check against | stated here | assumption |
 
@@ -123,9 +123,19 @@ so the level changes only the cost. In these contracts `-Os` gives larger code
 than `-O1` and `-O2`, and 6.8% more gas than `-O2`: a compiler observation,
 not a Dimension effect.
 
-The type machinery itself is free: typed and raw code compile to byte-identical
-runtime bytecode at `-O1`, `-O2` and `-Os` in the probes (`make probes`). At
-`-O0` they differ.
+The type machinery itself is free. In the probes (`make probes`), typed and raw
+code compile to byte-identical runtime bytecode at `-O1`, `-O2` and `-Os`. On
+the library itself, `make evm` compares typed code with the same code written by
+hand on raw `u256` ([`tests/zero_cost`](../tests/zero_cost)), calling each
+function on the same 512 inputs of every magnitude at each level:
+
+| Pair | `-O0` | `-O1` and `-O2` | `-Os` |
+|---|---|---|---|
+| The four roundings, for a 6-decimal token | typed 3,131 B and 3,153 gas per call; by hand 2,817 B and 2,924 (+7.8%) | identical bytes; 580 gas each | identical bytes; 601 gas each |
+| An ERC-4626 vault's four previews | typed 3,806 B and 3,845 gas; by hand 3,325 B and 3,550 (+8.3%) | 671 B each, laid out differently; 740 gas each | 671 B each; 740 gas each |
+
+Every one of the 4,096 calls per level returns the same result in both, reverts
+included. `-O0` is not a level anyone deploys at.
 
 ## Fidelity of the Balancer demonstration
 

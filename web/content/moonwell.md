@@ -86,7 +86,7 @@ reverts with `StaleAnswer`.
 
 No check on chain can prove an address is the feed it is declared to be.
 Chainlink can: its published directory lists every feed's address with its
-pair, decimals and heartbeat. [`feed_check.py`](../scripts/feeds/feed_check.py)
+pair, decimals and heartbeat. [`feed_check.py`](../cli/feed_check.py)
 reads each `Feed<B, Q>` declaration from Fe source and requires, for each:
 
 - **in Chainlink's directory:** the address is listed, as the pair `B/Q`,
@@ -109,7 +109,7 @@ cbETH's price, about 14% high. The trust that remains is in Chainlink's own
 directory, at review time.
 
 ```sh
-python3 scripts/feeds/feed_check.py src/registry.fe --network base   # your registry
+python3 cli/feed_check.py src/registry.fe --network base   # your registry
 ```
 
 ## The fork runs

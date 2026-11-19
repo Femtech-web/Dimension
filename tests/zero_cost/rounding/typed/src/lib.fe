@@ -1,0 +1,38 @@
+//! Dimension's four roundings for a 6-decimal token. No line names a rounding.
+
+use std::abi::sol
+use dimension::{Asset, In, Out, admit, given, owed, scaling_factor, settle}
+
+pub struct USDC {}
+
+impl Asset for USDC {
+    const DECIMALS: u256 = 6
+}
+
+msg M {
+    #[selector = sol("admitIn(uint256)")]
+    AdmitIn { raw: u256 } -> u256,
+    #[selector = sol("admitOut(uint256)")]
+    AdmitOut { raw: u256 } -> u256,
+    #[selector = sol("settleIn(uint256)")]
+    SettleIn { internal: u256 } -> u256,
+    #[selector = sol("settleOut(uint256)")]
+    SettleOut { internal: u256 } -> u256,
+}
+
+pub contract P {
+    recv M {
+        AdmitIn { raw } -> u256 {
+            admit(given<USDC, In>(raw), scaling_factor<USDC>()).value()
+        }
+        AdmitOut { raw } -> u256 {
+            admit(given<USDC, Out>(raw), scaling_factor<USDC>()).value()
+        }
+        SettleIn { internal } -> u256 {
+            settle(owed<USDC, In>(internal), scaling_factor<USDC>()).value()
+        }
+        SettleOut { internal } -> u256 {
+            settle(owed<USDC, Out>(internal), scaling_factor<USDC>()).value()
+        }
+    }
+}

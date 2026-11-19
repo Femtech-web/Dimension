@@ -184,6 +184,359 @@
       }
     }
   },
+  "zero_cost": {
+    "setup": "tests/zero_cost: each pair is one contract written with Dimension and the same contract written by hand on raw u256, with the same ABI. Every function is called on the same 512 inputs of every magnitude in both.",
+    "pairs": {
+      "rounding": {
+        "O0": {
+          "bytes": {
+            "typed": 3131,
+            "raw": 2817
+          },
+          "identical": false,
+          "calls": 2048,
+          "equal": 2048,
+          "gas_per_call": {
+            "typed": 3153.0,
+            "raw": 2923.9
+          },
+          "by_function": {
+            "admitIn": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 440,
+              "gas_typed": 1336616,
+              "gas_raw": 1233656
+            },
+            "admitOut": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 438,
+              "gas_typed": 1418748,
+              "gas_raw": 1316256
+            },
+            "settleIn": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 512,
+              "gas_typed": 1666544,
+              "gas_raw": 1551344
+            },
+            "settleOut": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 512,
+              "gas_typed": 1575160,
+              "gas_raw": 1459960
+            }
+          }
+        },
+        "O1": {
+          "bytes": {
+            "typed": 791,
+            "raw": 791
+          },
+          "identical": true,
+          "calls": 2048,
+          "equal": 2048,
+          "gas_per_call": {
+            "typed": 580.0,
+            "raw": 580.0
+          },
+          "by_function": {
+            "admitIn": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 440,
+              "gas_typed": 232406,
+              "gas_raw": 232406
+            },
+            "admitOut": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 438,
+              "gas_typed": 266124,
+              "gas_raw": 266124
+            },
+            "settleIn": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 512,
+              "gas_typed": 311916,
+              "gas_raw": 311916
+            },
+            "settleOut": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 512,
+              "gas_typed": 292663,
+              "gas_raw": 292663
+            }
+          }
+        },
+        "O2": {
+          "bytes": {
+            "typed": 791,
+            "raw": 791
+          },
+          "identical": true,
+          "calls": 2048,
+          "equal": 2048,
+          "gas_per_call": {
+            "typed": 580.0,
+            "raw": 580.0
+          },
+          "by_function": {
+            "admitIn": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 440,
+              "gas_typed": 232406,
+              "gas_raw": 232406
+            },
+            "admitOut": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 438,
+              "gas_typed": 266124,
+              "gas_raw": 266124
+            },
+            "settleIn": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 512,
+              "gas_typed": 311916,
+              "gas_raw": 311916
+            },
+            "settleOut": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 512,
+              "gas_typed": 292663,
+              "gas_raw": 292663
+            }
+          }
+        },
+        "Os": {
+          "bytes": {
+            "typed": 683,
+            "raw": 683
+          },
+          "identical": true,
+          "calls": 2048,
+          "equal": 2048,
+          "gas_per_call": {
+            "typed": 600.7,
+            "raw": 600.7
+          },
+          "by_function": {
+            "admitIn": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 440,
+              "gas_typed": 232406,
+              "gas_raw": 232406
+            },
+            "admitOut": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 438,
+              "gas_typed": 287148,
+              "gas_raw": 287148
+            },
+            "settleIn": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 512,
+              "gas_typed": 330372,
+              "gas_raw": 330372
+            },
+            "settleOut": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 512,
+              "gas_typed": 292663,
+              "gas_raw": 292663
+            }
+          }
+        }
+      },
+      "vault": {
+        "O0": {
+          "bytes": {
+            "typed": 3806,
+            "raw": 3325
+          },
+          "identical": false,
+          "calls": 2048,
+          "equal": 2048,
+          "gas_per_call": {
+            "typed": 3845.1,
+            "raw": 3549.6
+          },
+          "by_function": {
+            "previewDeposit": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 423,
+              "gas_typed": 1575912,
+              "gas_raw": 1451550
+            },
+            "previewMint": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 429,
+              "gas_typed": 1681363,
+              "gas_raw": 1553950
+            },
+            "previewWithdraw": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 447,
+              "gas_typed": 1772093,
+              "gas_raw": 1640675
+            },
+            "previewRedeem": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 417,
+              "gas_typed": 1568764,
+              "gas_raw": 1444915
+            }
+          }
+        },
+        "O1": {
+          "bytes": {
+            "typed": 671,
+            "raw": 671
+          },
+          "identical": false,
+          "calls": 2048,
+          "equal": 2048,
+          "gas_per_call": {
+            "typed": 740.2,
+            "raw": 740.2
+          },
+          "by_function": {
+            "previewDeposit": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 423,
+              "gas_typed": 293793,
+              "gas_raw": 293793
+            },
+            "previewMint": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 429,
+              "gas_typed": 319889,
+              "gas_raw": 319889
+            },
+            "previewWithdraw": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 447,
+              "gas_typed": 351778,
+              "gas_raw": 351778
+            },
+            "previewRedeem": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 417,
+              "gas_typed": 304778,
+              "gas_raw": 304778
+            }
+          }
+        },
+        "O2": {
+          "bytes": {
+            "typed": 671,
+            "raw": 671
+          },
+          "identical": false,
+          "calls": 2048,
+          "equal": 2048,
+          "gas_per_call": {
+            "typed": 740.2,
+            "raw": 740.2
+          },
+          "by_function": {
+            "previewDeposit": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 423,
+              "gas_typed": 293793,
+              "gas_raw": 293793
+            },
+            "previewMint": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 429,
+              "gas_typed": 319889,
+              "gas_raw": 319889
+            },
+            "previewWithdraw": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 447,
+              "gas_typed": 351778,
+              "gas_raw": 351778
+            },
+            "previewRedeem": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 417,
+              "gas_typed": 304778,
+              "gas_raw": 304778
+            }
+          }
+        },
+        "Os": {
+          "bytes": {
+            "typed": 671,
+            "raw": 671
+          },
+          "identical": false,
+          "calls": 2048,
+          "equal": 2048,
+          "gas_per_call": {
+            "typed": 740.2,
+            "raw": 740.2
+          },
+          "by_function": {
+            "previewDeposit": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 423,
+              "gas_typed": 293793,
+              "gas_raw": 293793
+            },
+            "previewMint": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 429,
+              "gas_typed": 319889,
+              "gas_raw": 319889
+            },
+            "previewWithdraw": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 447,
+              "gas_typed": 351778,
+              "gas_raw": 351778
+            },
+            "previewRedeem": {
+              "calls": 512,
+              "equal": 512,
+              "succeeded": 417,
+              "gas_typed": 304778,
+              "gas_raw": 304778
+            }
+          }
+        }
+      }
+    }
+  },
   "runtime_bytecode_bytes": {
     "faithful": 8014,
     "typed": 9693,
@@ -226,6 +579,16 @@
       "question": "Does every optimization level compute the same attack, to the wei?",
       "holds": true,
       "evidence": "the attack's exits and value per BPT on each kernel are identical at -O0, -O1, -O2 and -Os"
+    },
+    {
+      "question": "Built on Dimension itself, does typed code return exactly what the same code written by hand on raw u256 returns, at every optimization level?",
+      "holds": true,
+      "evidence": "4,096 calls per level over 8 functions (the four roundings, an ERC-4626 vault's four previews), reverts included: all equal at -O0, -O1, -O2 and -Os"
+    },
+    {
+      "question": "Above -O0, is Dimension's typing free, gas for gas, against the same code written by hand?",
+      "holds": true,
+      "evidence": "at -O1, -O2 and -Os the roundings compile to identical bytes, and the vault to the same size with identical gas on every call. At -O0, which no one deploys, typed costs rounding +7.8%, vault +8.3% per call"
     }
   ]
 }

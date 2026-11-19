@@ -1,0 +1,36 @@
+//! The same four conversions written by hand, each rounding chosen explicitly.
+
+use std::abi::sol
+use core::num::{mul_div, mul_div_ceil}
+
+const WAD: u256 = 1_000_000_000_000_000_000
+/// WAD * 10^(18 - 6), the scaling factor of a 6-decimal token.
+const FACTOR: u256 = 1_000_000_000_000_000_000_000_000_000_000
+
+msg M {
+    #[selector = sol("admitIn(uint256)")]
+    AdmitIn { raw: u256 } -> u256,
+    #[selector = sol("admitOut(uint256)")]
+    AdmitOut { raw: u256 } -> u256,
+    #[selector = sol("settleIn(uint256)")]
+    SettleIn { internal: u256 } -> u256,
+    #[selector = sol("settleOut(uint256)")]
+    SettleOut { internal: u256 } -> u256,
+}
+
+pub contract P {
+    recv M {
+        AdmitIn { raw } -> u256 {
+            mul_div(raw, FACTOR, WAD)
+        }
+        AdmitOut { raw } -> u256 {
+            mul_div_ceil(raw, FACTOR, WAD)
+        }
+        SettleIn { internal } -> u256 {
+            mul_div_ceil(internal, WAD, FACTOR)
+        }
+        SettleOut { internal } -> u256 {
+            mul_div(internal, WAD, FACTOR)
+        }
+    }
+}

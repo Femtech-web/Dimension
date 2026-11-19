@@ -2,7 +2,7 @@
 
 Usage: python3 -m harness.feeds
 
-Runs scripts/feeds/feed_check.py on Moonwell's registry, which must pass, and
+Runs cli/feed_check.py on Moonwell's registry, which must pass, and
 on tests/feeds: two declarations that compile, one of which also passes every
 check Dimension makes on chain. feed-check must reject both, for the pair.
 Needs network access (BASE_RPC_URL overrides the public RPC). Writes
@@ -15,8 +15,10 @@ import json
 import os
 import sys
 
-from feeds import feed_check
 from harness.toolchain import ROOT, resolve
+
+sys.path.insert(0, str(ROOT / "cli"))
+import feed_check  # noqa: E402
 
 REGISTRY = ROOT / "ingots" / "moonwell" / "src" / "registry.fe"
 FIXTURE = ROOT / "tests" / "feeds"
