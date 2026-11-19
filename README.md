@@ -329,10 +329,10 @@ yet the guard still rejects every one of those losses.
 
 | Prior work | What it does | What Dimension adds |
 |---|---|---|
-| [fe-fixedpoint](https://github.com/ridakalam52-design/fe-fixedpoint) | exact fixed-point math for Fe, with a runtime rounding mode | the rounding is decided by the type, and a wrong one does not compile |
 | Balancer V3 `ScalingHelpers` | `...RoundDown` and `...RoundUp` variants, picked by the caller | the call site does not pick |
 | [roundme](https://github.com/crytic/roundme), [ScType](https://conf.researchr.org/details/icse-2024/icse-2024-research-track/127/Towards-Finding-Accounting-Errors-in-Smart-Contracts) | advise on, or detect, rounding and accounting errors in Solidity | prevention at compile time, plus checked boundaries and a runtime guard |
 | [Remix workshop](https://github.com/remix-project-org/remix-workshops/tree/master/RoundingDirectionExploit), [Quint model](https://github.com/informalsystems/quint-balancer-v2-rounding-bug) | teach, or model, the Balancer bug on a simplified pool | the real kernel, verified against Balancer and the deployed pool, then made unable to express the bug |
+| [fe-fixedpoint](https://github.com/ridakalam52-design/fe-fixedpoint) | exact fixed-point math for Fe, with a runtime rounding mode | the rounding is decided by the type, and a wrong one does not compile |
 | On-chain oracle checks (staleness, decimals, bounds) | catch a stale, mis-scaled or absurd answer | the pair is in the type, and `dimension check` matches each declared feed to Chainlink's directory before deploying: it catches a wrong feed that every on-chain check accepts |
 
 [The full comparison →](docs/comparison.md)
