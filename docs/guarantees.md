@@ -175,8 +175,8 @@ Dimension's trust rests on protocol code living in ingots that cannot reach
 [`tests/unsafe_root`](../tests/unsafe_root/src/lib.fe) does it against
 Dimension's own `Price`, and values collateral with the forged price, on both
 backends. So `dimension check` fails any project whose sources contain `unsafe`,
-read with Fe's lexical rules and confirmed against the compiler, failing when it
-cannot confirm (`make consumer` requires it to catch exactly this forgery, also
+read with Fe's lexical rules and confirmed against the compiler, failing if the
+compiler disagrees and warning if it cannot run (`make consumer` requires it to catch exactly this forgery, also
 with the strings `"/*"` and `"*/"` around it), and
 `make unsafe-policy` does the same for this repository's protocol ingots.
 `balancer_explorer` sets `allow_unsafe` on Dimension, because it feeds rates to

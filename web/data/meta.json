@@ -1,6 +1,7 @@
 {
   "platform": "mac_arm64",
   "suites": [
+    "compat",
     "compile-fail",
     "consumer",
     "differential",

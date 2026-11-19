@@ -1,0 +1,64 @@
+{
+  "schema": "dimension.compat/v1",
+  "question": "Does Dimension work, unchanged, on the other Fe release it supports?",
+  "fe": {
+    "reported": "fe 26.7.0 (e6e6342)",
+    "lock": "scripts/toolchain/fe-compat.lock"
+  },
+  "platform": "mac_arm64",
+  "ingots": {
+    "ingots/balancer_explorer": true,
+    "ingots/balancer_v2": true,
+    "ingots/dimension": true,
+    "ingots/moonwell": true,
+    "ingots/vault": true
+  },
+  "suites": {
+    "examples/quickstart (sonatina)": 3,
+    "examples/quickstart (native)": 3,
+    "tests/core (sonatina)": 17,
+    "tests/core (native)": 17,
+    "tests/explorer (sonatina)": 2,
+    "tests/explorer (native)": 2,
+    "tests/oracle (sonatina)": 9,
+    "tests/unsafe_root (sonatina)": 2,
+    "tests/unsafe_root (native)": 2,
+    "tests/vault (sonatina)": 3,
+    "tests/vault (native)": 3
+  },
+  "compile_fail": {
+    "add_collateral_to_debt": true,
+    "balancer_floor_upscale_as_admitted": true,
+    "compose_prices_without_shared_asset": true,
+    "custom_flow": true,
+    "custom_rounding_direction": true,
+    "deposit_credited_to_another_token": true,
+    "forge_admitted_quantity": true,
+    "forge_price": true,
+    "internal_units_credited_to_balance": true,
+    "liquidation_bonus_creates_bad_debt": true,
+    "ltv_at_liquidation_threshold": true,
+    "moonwell_component_feed_in_usd_market": true,
+    "oracle_read_without_effects": true,
+    "payout_settled_as_charge": true,
+    "scale_asset_with_too_many_decimals": true,
+    "share_supply_credited_as_held": true,
+    "test_constructor_from_production_root": true,
+    "typed_pool_with_balancer_upscale": true,
+    "value_with_another_assets_price": true,
+    "vault_deposit_labeled_as_leaving": true,
+    "vault_deposit_rounds_shares_up": true
+  },
+  "claims": [
+    {
+      "question": "On fe 26.7.0 (e6e6342), does every ingot type-check, and every unit suite pass on the backends it declares?",
+      "holds": true,
+      "evidence": "5 of 5 ingots type-check; 11 of 11 suite runs pass, 63 tests"
+    },
+    {
+      "question": "On fe 26.7.0 (e6e6342), is every compile-fail case rejected with its expected code, and its corrected twin accepted?",
+      "holds": true,
+      "evidence": "21 of 21 cases"
+    }
+  ]
+}

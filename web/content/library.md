@@ -31,9 +31,8 @@ payout where a charge is expected is a compile error, not an audit finding.
 
 ## Install
 
-Requires **Fe 26.6.0 or 26.7.0**. CI pins 26.6.0. On 26.7.0 every ingot in
-the repository also type-checks, and every test suite passes on the EVM and
-natively. Install Fe with its installer:
+Requires **Fe 26.6.0 or 26.7.0**. CI pins 26.6.0, and also runs every ingot,
+test suite and compile-fail case on 26.7.0 (`make compat`). Install Fe with its installer:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/argotorg/fe/master/feup/feup.sh | bash -s -- --version v26.6.0

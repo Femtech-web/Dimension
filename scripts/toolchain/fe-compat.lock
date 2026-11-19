@@ -1,0 +1,9 @@
+# The other Fe release Dimension supports. `make compat` type-checks every ingot
+# and runs every suite with it; CI runs it on every change.
+version=26.7.0
+commit=e6e6342b252082f3fd8af5b9f763cb13296bf0a1
+url=https://github.com/argotorg/fe/releases/download/v26.7.0
+sha256_linux_amd64=4ef2b818e260f0ba0b0af4bd78468dda589dc4949503fffaef25d8188e5107d5
+sha256_linux_arm64=8410974317f84d419203cf1e78644865579f0886e32c84d865c9f8e95f804dbe
+sha256_mac_amd64=8aee7b311263102f75bd3a9c0d9c547a535b41f1ad20f05e45999d2cfc8c0629
+sha256_mac_arm64=fff9fe6ee9fad74f5c74039f8007e03b56d0f1f647d8244a43883f204671742e

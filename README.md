@@ -302,7 +302,8 @@ The rest of Dimension leans on Fe throughout:
 | The ERC-4626 vault against OpenZeppelin's ERC4626 | 40,000 vectors, 33,684 where the rounding decides | all equal | `make vault` |
 | The vault against the exact rational result | 32,768 states × 4 previews, both backends | exact floor or ceil as EIP-4626 requires | `make unit` |
 | Planted bugs in the safety-critical code | 21 mutants across 7 layers | every one caught, for the reason expected of it | `make mutants FORKS=1` |
-| A fresh project from `dimension new`, taking Dimension by git | the quickstart, a misuse, two unsafe setups | builds and passes its tests; the misuse is rejected; `dimension check` passes it and fails both setups | `make consumer` |
+| Every ingot, test suite and compile-fail case on Fe 26.7.0 | 5 ingots, 11 suite runs, 21 cases | all pass, unchanged | `make compat` |
+| A fresh project from `dimension new`, taking Dimension by git | the quickstart, a misuse, four broken copies | builds and passes its tests; the misuse is rejected; `dimension check` passes it and fails each copy: `allow_unsafe`, a forged price, the same forgery between `"/*"` and `"*/"` strings, a feed it cannot read | `make consumer` |
 
 Every run writes a report to [`docs/results/`](docs/results). Each claim in it
 is a question, an answer and its evidence, and a claim that fails fails the
@@ -394,14 +395,19 @@ and feeds are the calls the compiler's own index (`fe scip`) resolves to
 Dimension's functions, whatever name they are made under. `unsafe` is read with
 Fe's lexical rules, then confirmed against the compiler twice: every symbol the
 compiler indexes must be code to `check` too, and the project must still
-compile with its comments blanked. If either fails, `check` fails rather than
-report no `unsafe` code.
+compile with its comments blanked. A cross-check that disagrees fails. A check
+that cannot run, because there is no `fe` or the project does not compile, is a
+warning that says so, never a pass; `--strict` makes every warning fail too.
+
+The command line lives on `main`, not in the library's release tags: it has
+been improved since v0.3.0, while the library pinned above has not changed.
 
 The library's own page is [`ingots/dimension`](ingots/dimension), and its
 security policy is [SECURITY.md](SECURITY.md). `make consumer` checks this path
 on every CI run. `dimension new` creates the project, taking Dimension by git;
 its 3 tests must pass, and a misuse must be rejected. `dimension check` must
-pass it, and fail it once `allow_unsafe` or `unsafe` code is added.
+pass it, and fail it once `allow_unsafe`, `unsafe` code, or a feed it cannot
+read is added.
 
 ## Limits
 
@@ -459,7 +465,8 @@ Requires `make`, `curl`, Python 3.12 and [Foundry](https://getfoundry.sh)
 1.4.4. The compiler is pinned to Fe 26.6.0
 (`5b3f96af2ab10df11bf847551f4b81d1fe481110`) and checksum-verified into
 `.tools/`; nothing uses a globally installed `fe`. Every ingot also
-type-checks, and every test suite passes, on Fe 26.7.0. The manifest is
+type-checks, every test suite passes and every compile-fail case is rejected on
+Fe 26.7.0, which `make compat` checks, also in CI. The manifest is
 [`fe.toml`](fe.toml), a workspace of the ingots in [`ingots/`](ingots).
 
 | Command | What it does |
@@ -470,6 +477,7 @@ type-checks, and every test suite passes, on Fe 26.7.0. The manifest is
 | `make replay` | The attacker's three transactions, step by step, through the three kernels (mainnet forks) |
 | `make moonwell` | Moonwell's market around MIP-X43 (Base forks; `BASE_RPC_URL` overrides the public RPC) |
 | `make feeds` | Each declared feed against Chainlink's directory and Base; wrong declarations must be rejected |
+| `make compat` | Every ingot, test suite and compile-fail case on Fe 26.7.0, the other supported release |
 | `make vault` | The ERC-4626 vault against OpenZeppelin's ERC4626 |
 | `make mutants` | Plants realistic bugs one at a time; each must be caught by the check meant for it |
 | `make consumer` | Builds the quickstart as a fresh project taking Dimension by git |
@@ -477,8 +485,8 @@ type-checks, and every test suite passes, on Fe 26.7.0. The manifest is
 | `make web` | Syncs the saved reports into [`web/`](web) and builds the site |
 | `make help` | Every target |
 
-CI runs `make ci` and `make mutants` on Linux, and the fork comparisons, with
-all 21 mutants, in a separate job.
+CI runs `make ci`, `make mutants` and `make compat` on Linux, and the fork
+comparisons, with all 21 mutants, in a separate job.
 Native executables exist for `linux_amd64` and `mac_arm64` in Fe 26.6.0;
 elsewhere the native search is skipped.
 

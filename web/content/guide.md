@@ -14,8 +14,8 @@ This guide covers three things:
 
 ## Requirements
 
-- **Fe 26.6.0 or 26.7.0.** CI pins 26.6.0. On 26.7.0 every ingot also
-  type-checks, and every test suite passes on the EVM and natively. Install Fe
+- **Fe 26.6.0 or 26.7.0.** CI pins 26.6.0, and also runs every ingot, test
+  suite and compile-fail case on 26.7.0 (`make compat`). Install Fe
   with its installer:
   ```sh
   curl -fsSL https://raw.githubusercontent.com/argotorg/fe/master/feup/feup.sh | bash -s -- --version v26.6.0
@@ -271,8 +271,8 @@ assert!(preserves_share_value(before, after), "share value decreased")
 ```
 
 The comparison is an exact 512-bit cross-multiplication. In the Balancer
-kernel it rejects exactly the operations that would lose value, at +6.9% gas on
-exits.
+kernel it rejects exactly the operations that would lose value, at +7% to +8%
+gas on exits.
 
 ## Testing
 

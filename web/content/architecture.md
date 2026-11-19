@@ -187,7 +187,9 @@ The provider decides what failing means:
 
 The kernels are written once and run in both settings. Two pieces of
 `#[inline(never)]` keep the Newton solvers from being inlined into every
-endpoint: without them, the harness grows from 8,150 B to 11,399 B.
+endpoint: without them, the harness grows from 8,183 B to 11,432 B at the
+default `-O1` (`fe build --contract StableMathFe --emit runtime-bytecode` in
+`ingots/balancer_v2`, with and without them).
 
 **The typed kernel** changes Balancer in exactly the two places it rounded an
 outgoing amount down: `swap_given_out` and `exit_given_out`. Given amounts
@@ -280,11 +282,12 @@ whether it holds, and the evidence.
 | `moonwell` | the Fe oracle | Moonwell's deployed oracle and the real feeds on Base forks |
 | `feeds` | each declared feed | Chainlink's directory and Base; wrong declarations must be rejected |
 | `consumer` | a fresh project from `dimension new`, and the CLI's label list | Dimension taken by git; its tests; a misuse; `dimension check` passes it and fails it with `allow_unsafe` or a forged price; its labels equal the compiler's in every ingot |
+| `compat` | every ingot, unit suite and compile-fail case | the same, on Fe 26.7.0, the other supported release |
 | `mutants` | the checks themselves | realistic bugs planted one at a time; the check meant for each must fail |
 
 Golden files never regenerate silently: `make update` rewrites them, and the
 diff is reviewed before it is kept. The differential test clears Foundry's
-failure cache so its counts are deterministic. CI runs `make ci` and
-`make mutants` on Linux, and the fork targets, with all 21 mutants, in a
-separate job. The same goldens pass on macOS and Linux,
+failure cache so its counts are deterministic. CI runs `make ci`,
+`make mutants` and `make compat` on Linux, and the fork targets, with all 21
+mutants, in a separate job. The same goldens pass on macOS and Linux,
 so diagnostics and bytecode hashes do not depend on the platform.

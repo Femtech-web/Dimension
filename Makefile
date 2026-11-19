@@ -9,7 +9,7 @@ FE := .tools/fe-$(shell sed -n 's/^version=//p' scripts/toolchain/fe.lock)/fe
 # The feasibility probes are kept exactly as recorded, so they are not formatted.
 FORMATTED := ingots tests/core tests/oracle tests/explorer tests/vault tests/unsafe_root tests/labels tests/feeds tests/zero_cost tests/compile_fail tests/compiler_findings examples
 
-.PHONY: help toolchain reference-deps fmt fmt-check test unit compile-fail probes differential explore evm vault consumer apidoc fidelity replay moonwell feeds unsafe-policy mutants web show demo update ci
+.PHONY: help toolchain reference-deps fmt fmt-check test unit compile-fail probes differential explore evm vault consumer apidoc fidelity replay moonwell feeds compat unsafe-policy mutants web show demo update ci
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -60,6 +60,9 @@ replay: toolchain reference-deps ## The real exploit's 360 steps through the thr
 
 moonwell: toolchain reference-deps ## Moonwell's cbETH market on Base forks around MIP-X43 (needs forge and a Base RPC)
 	@$(HARNESS)moonwell
+
+compat: ## Every ingot, suite and compile-fail case on Fe 26.7.0, the other supported release (downloads it, checksum verified)
+	@$(HARNESS)compat
 
 feeds: toolchain ## Each declared feed against Chainlink's directory and Base; wrong declarations must be rejected (needs network)
 	@$(HARNESS)feeds

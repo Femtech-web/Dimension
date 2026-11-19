@@ -1,4 +1,4 @@
-//! Label calls written every way Fe allows. `make consumer` requires
+//! Label calls written in every form found so far. `make consumer` requires
 //! `dimension check` to list exactly the calls the compiler finds here.
 
 use dimension::{Given, In, Out, Owed, Quantity, given, held}

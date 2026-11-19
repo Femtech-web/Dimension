@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Installs the pinned Fe release into .tools/ after verifying its SHA-256.
-# Prints the installed binary path on stdout.
+# Installs a pinned Fe release into .tools/ after verifying its SHA-256: the one
+# in fe.lock, or in the lock file given as the first argument. Prints the
+# installed binary path on stdout.
 set -euo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
-lock="$root/scripts/toolchain/fe.lock"
+lock="${1:-$root/scripts/toolchain/fe.lock}"
 
 lock_value() { sed -n "s/^$1=//p" "$lock"; }
 

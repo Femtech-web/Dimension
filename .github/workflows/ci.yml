@@ -53,6 +53,22 @@ jobs:
           name: results-forks-linux_amd64
           path: docs/results/
 
+  compat:
+    # Fe 26.7.0, the other release Dimension supports: every ingot, every unit
+    # suite on its backends, and every compile-fail case.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: make compat
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-compat-linux_amd64
+          path: docs/results/compat/
+
   mutants:
     # Each planted bug in the safety-critical code must be caught by the check
     # meant for it, for the reason expected of it.

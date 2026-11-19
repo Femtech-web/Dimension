@@ -3,7 +3,7 @@
 
 Usage:
     python3 cli/dimension.py new DIR [--rev COMMIT] [--source URL]
-    python3 cli/dimension.py check [DIR] [--network base] [--rpc URL] [--fe PATH]
+    python3 cli/dimension.py check [DIR] [--network base] [--rpc URL] [--fe PATH] [--strict]
     python3 cli/dimension.py feeds REGISTRY.fe [...] --network base
 
 `new` creates a Fe project from the quickstart, as it was at the release it
@@ -32,9 +32,11 @@ compiler's own index (`fe scip`) resolves to Dimension's functions, whatever
 name they are made under. `unsafe` is read with Fe's lexical rules (`//`
 comments, double-quoted strings; Fe has no block comments), then confirmed
 against the compiler: every symbol it indexes must be code here too, and the
-project must still compile with its comments blanked. What cannot be confirmed
-fails; it is never reported as clean. `make consumer` requires the labels to
-equal those a second compiler method finds, in every ingot of this repository.
+project must still compile with its comments blanked. A cross-check that
+disagrees fails. A check that cannot run, because there is no `fe` or the
+project does not compile, is a warning that says so, never a pass; `--strict`
+makes every warning fail too. `make consumer` requires the labels to equal
+those a second compiler method finds, in the six projects it compares.
 
 Exits 1 if any check fails. Python 3.11+, standard library only.
 """
@@ -117,8 +119,12 @@ def find_fe(explicit: str | None) -> str | None:
         return explicit
     if found := shutil.which("fe"):
         return found
-    pinned = sorted(REPO.glob(".tools/fe-*/fe"))
-    return str(pinned[-1]) if pinned else None
+    lock = REPO / "scripts" / "toolchain" / "fe.lock"
+    version = re.search(r"^version=(\S+)", lock.read_text(), re.MULTILINE) if lock.exists() else None
+    if version and (REPO / ".tools" / f"fe-{version[1]}" / "fe").exists():
+        return str(REPO / ".tools" / f"fe-{version[1]}" / "fe")
+    installed = sorted(REPO.glob(".tools/fe-*/fe"))
+    return str(installed[0]) if installed else None
 
 
 def scip(fe: str, project: Path) -> dict[str, list[tuple[int, int, int, str, int]]] | None:
@@ -306,7 +312,7 @@ def checklist(project: Path, network: str | None, rpc: str | None, fe_path: str 
     index = scip(fe, project) if compiled is not None and compiled.returncode == 0 else None
 
     # Unsafe code: read with Fe's own lexical rules, then held to the compiler twice.
-    # Anything that cannot be confirmed fails, rather than passing as "none".
+    # A disagreement with the compiler fails; a check the compiler cannot run is a warning, never a pass.
     unreadable = [f"{path.relative_to(project)}: {problem}" for path, (_, problems) in codes.items() for problem in problems]
     if index is not None:
         for path, text in texts.items():
@@ -411,7 +417,7 @@ def checklist(project: Path, network: str | None, rpc: str | None, fe_path: str 
     return rows
 
 
-def check(project: Path, network: str | None, rpc: str | None, fe_path: str | None) -> int:
+def check(project: Path, network: str | None, rpc: str | None, fe_path: str | None, strict: bool = False) -> int:
     rows = checklist(project, network, rpc, fe_path)
     print(f"dimension check {project}")
     for status, name, detail in rows.rows:
@@ -421,7 +427,8 @@ def check(project: Path, network: str | None, rpc: str | None, fe_path: str | No
         print("\n  labels to review (an amount that moves a holding is also checked against it):")
         for where, label in rows.labels:
             print(f"    {where:<{width}}  {label}")
-    return 1 if rows.failed else 0
+    warned = any(status == "warn" for status, _, _ in rows.rows)
+    return 1 if rows.failed or (strict and warned) else 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -436,6 +443,7 @@ def main(argv: list[str] | None = None) -> int:
     p_check.add_argument("--network", choices=sorted(feed_check.NETWORKS), help="also check declared feeds")
     p_check.add_argument("--rpc", help="JSON-RPC URL for the feed check")
     p_check.add_argument("--fe", help="the fe binary (default: fe on PATH)")
+    p_check.add_argument("--strict", action="store_true", help="exit 1 on any warning too, such as a check that could not run")
     commands.add_parser("feeds", help="check feed declarations against Chainlink's directory and the chain", add_help=False)
     args, rest = parser.parse_known_args(argv)
     if args.command == "feeds":
@@ -444,7 +452,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"unrecognized arguments: {' '.join(rest)}")
     if args.command == "new":
         return new(args.dir, args.rev, args.source)
-    return check(args.dir, args.network, args.rpc, args.fe)
+    return check(args.dir, args.network, args.rpc, args.fe, args.strict)
 
 
 if __name__ == "__main__":

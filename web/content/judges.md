@@ -129,6 +129,7 @@ result observed.
 | Each rejected construction, and its fix | `tests/compile_fail/<case>/` | `docs/results/compile-fail/` |
 | The type machinery is free | `tests/probes/bytecode/`; on the library itself, `tests/zero_cost/` with `contracts/reference/test/ZeroCost.t.sol` | `docs/results/probes/`, `docs/results/evm/` |
 | A team's own project, created and checked | `cli/dimension.py`, run by `scripts/harness/consumer.py` | `docs/results/consumer/` |
+| The same on Fe 26.7.0 | `scripts/harness/compat.py`, `scripts/toolchain/fe-compat.lock` | `docs/results/compat/` |
 
 The site in [`web/`](web) shows all of these, with the replay and the Moonwell
 prices charted. `make web` rebuilds it from whatever reports your runs saved.

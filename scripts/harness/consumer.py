@@ -102,7 +102,7 @@ def variant(base: Path, at: Path, manifest: tuple[str, str] | None = None, sourc
     return at
 
 
-# Every ingot whose label calls are compared with the compiler's, by path from the root.
+# The projects whose label calls are compared with the compiler's, by path from the root.
 LABELLED = ["tests/labels", "examples/quickstart", "ingots/vault", "ingots/balancer_v2", "ingots/balancer_explorer", "ingots/moonwell"]
 _SITE = re.compile(r"error\[6-0003\][^\n]*\n\s*┌─ (\S+?\.fe):(\d+):\d+")
 
@@ -203,7 +203,7 @@ def main() -> int:
         {
             "question": "Does `dimension check` list exactly the label calls the compiler finds, however they are written?",
             "holds": agree,
-            "evidence": "identical to the compiler's list in every ingot: "
+            "evidence": "identical to the compiler's list in each of the projects compared: "
             + ", ".join(f"{ingot} {len(cli)}" + ("" if cli == compiler else f" (compiler {len(compiler)})") for ingot, (cli, compiler) in compared.items())
             + ". tests/labels writes them in every form found so far: type inferred, aliased, re-exported and renamed in another file, through an aliased module and a module path, generic in the direction, a holding and a supply, and decoys: a comment, a string, a local function sharing a label's name, and an unrelated function sharing a re-exported one",
         },

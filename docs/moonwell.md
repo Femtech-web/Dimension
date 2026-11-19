@@ -51,11 +51,11 @@ pub const ETH_USD: Feed<ETH, USD> = feed(
 )
 ```
 
-Each `max_age` is the feed's heartbeat plus a margin, taken from its update
-history:
+Each `max_age` is the feed's heartbeat, as Chainlink's directory lists it, plus
+a margin; `make feeds` checks that each one covers its feed's heartbeat:
 
-- cbETH/ETH updates every 86,400 s (largest gap seen: 86,426 s);
-- ETH/USD updates at least every 1,200 s (largest gap seen: 1,201 s).
+- cbETH/ETH updates at least every 86,400 s, and `max_age` is 90,000 s;
+- ETH/USD updates at least every 1,200 s, and `max_age` is 1,800 s.
 
 Each band is the range a sane answer must fall in.
 
@@ -111,6 +111,13 @@ directory, at review time.
 ```sh
 python3 cli/feed_check.py src/registry.fe --network base   # your registry
 ```
+
+`dimension check ingots/moonwell` fails its feeds row, and should. The ingot's
+test contract `DeclaredCbethUsdFeed` builds a feed from its constructor's
+arguments, so that the fork test can declare one wrongly on purpose. A feed
+built at run time cannot be read before deployment, so `check` refuses it. A
+deployable registry declares each feed as a constant, as
+[`registry.fe`](../ingots/moonwell/src/registry.fe) does.
 
 ## The fork runs
 
