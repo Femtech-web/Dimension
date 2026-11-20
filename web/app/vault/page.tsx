@@ -18,14 +18,16 @@ pub fn preview_deposit<A>(_ v: Vault<A>, _ assets: Quantity<A, In, Given>) -> Qu
 > {
     exchange(
         assets,
-        numerator: v.total_shares + 1,
-        denominator: v.total_assets + 1,
+        numerator: v.total_shares.raw() + 1,
+        denominator: v.total_assets.raw() + 1,
     )
 }`;
 
-const EXCHANGE = `/// Exchanges a given amount of \`A\` for an amount of \`B\`. What the
-/// protocol gives in return moves the other way, \`G::Opposite\`, and is
-/// rounded by that direction's obligation.
+const EXCHANGE = `/// Exchanges a given amount of \`A\` for an amount of \`B\` at the ratio
+/// \`numerator / denominator\`, such as a vault's shares per asset. What the
+/// protocol gives in return moves the other way, \`G::Opposite\`, and is rounded
+/// by that direction's obligation: a payout rounds down, a charge rounds up.
+/// So the rounding follows from which way the given amount moves.
 pub fn exchange<A, B, G: Flow>(
     _ given: Quantity<A, G, Given>,
     numerator: u256,

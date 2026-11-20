@@ -10,6 +10,7 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
       ["Balancer V2", "/balancer"],
       ["Moonwell MIP-X43", "/moonwell"],
       ["ERC-4626 vault", "/vault"],
+      ["Live on Base Sepolia", "/live"],
       ["Verify every claim", "/verify"],
     ],
   },

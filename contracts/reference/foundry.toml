@@ -16,6 +16,7 @@ fs_permissions = [
   { access = "read", path = "../../ingots/balancer_v2/out" },
   { access = "read", path = "../../ingots/moonwell/out" },
   { access = "read", path = "../../ingots/vault/out" },
+  { access = "read", path = "../../ingots/live/out" },
   { access = "read", path = "../../fixtures" },
   { access = "read-write", path = "cache" },
 ]

@@ -116,7 +116,11 @@ class Checklist:
 
 def find_fe(explicit: str | None) -> str | None:
     if explicit:
-        return explicit
+        # A path is relative to where the command runs, not to the project; a bare name is looked up on PATH.
+        found = str(Path(explicit).resolve()) if "/" in explicit else shutil.which(explicit)
+        if not found or not Path(found).is_file():
+            raise SystemExit(f"--fe {explicit}: no fe binary there")
+        return found
     if found := shutil.which("fe"):
         return found
     lock = REPO / "scripts" / "toolchain" / "fe.lock"

@@ -290,6 +290,8 @@ export default function Balancer() {
           {wad(evm.attack.faithful.value_per_bpt_start_wad, 2)}.
         </p>
         <p style={{ marginTop: 22 }}>
+          <Link href="/live">The same contracts on Base Sepolia, attacked on chain →</Link>
+          <br />
           <Link href="/docs/balancer">The full account, with every limit →</Link>
         </p>
       </Section>

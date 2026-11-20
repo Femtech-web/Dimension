@@ -13,6 +13,7 @@ const STEPS = [
   ["See both incidents", "make demo", "Each mistake written in Fe, the compiler's verdict, the fix, and the evidence the fork runs saved."],
   ["Run everything offline", "make ci", "Formatting, unsafe policy, unit tests on both backends, compile-fail cases, probes, the differential test, the search, the EVM contracts with the typed-vs-hand-written pairs, the vault, and a fresh project through the CLI. About two minutes."],
   ["Against the real chains", "make replay fidelity moonwell", "The attacker's own transactions, the deployed pool, and Moonwell's market on Base: public RPCs by default."],
+  ["On a public chain", "make live", "The deployment on Base Sepolia, read back: every receipt, each contract's code against this build, every logged outcome, and the oracle, the declarations and the vault at the latest block."],
   ["Try to break it", "make mutants", "Plants each bug below in a scratch copy and requires the check meant for it to fail."],
 ];
 
@@ -35,7 +36,20 @@ export default function Verify() {
           </>
         }
       />
-      <Section eyebrow="Ten minutes, from a clean clone">
+      <Section eyebrow="One command, with only Docker">
+        <Code title="every offline check: make ci, with no network" lang="shell">
+          {`docker run --rm ghcr.io/femtech-web/dimension              # the published image
+docker build -t dimension . && docker run --rm dimension   # or build it from a clone`}
+        </Code>
+        <p className="ink2" style={{ marginTop: 16 }}>
+          Any other target runs the same way, such as <code>docker run --rm ghcr.io/femtech-web/dimension make demo</code>
+          ; the fork and live targets use the network, which <code>docker run</code> has by default. On x86-64 every
+          check runs. On arm64, Docker on Apple silicon included, Fe 26.6.0 has no native backend, so those checks are
+          skipped and say so.
+        </p>
+      </Section>
+
+      <Section eyebrow="Or step by step, from a clean clone">
         <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 14 }}>
           {STEPS.map(([title, command, what], i) => (
             <li key={title} className="panel" style={{ display: "grid", gridTemplateColumns: "42px 1fr", gap: 14, alignItems: "start" }}>

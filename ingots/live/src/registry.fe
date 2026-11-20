@@ -1,0 +1,28 @@
+//! The Chainlink feeds on Base Sepolia for the pairs Moonwell's cbETH market
+//! reads on Base, with the decimals, heartbeats and bands of the mainnet
+//! registry. `dimension check --network base-sepolia` checks them against
+//! Chainlink's directory.
+
+#![cfg(target = "evm")]
+
+use dimension::WAD
+use dimension::value::oracle::{Feed, feed}
+use moonwell::registry::{CBETH, ETH, USD}
+
+/// Chainlink cbETH/ETH exchange rate on Base Sepolia.
+pub const CBETH_ETH: Feed<CBETH, ETH> = feed(
+    Address::new(0x91b21900E91CD302EBeD05E45D8f270ddAED944d),
+    decimals: 18,
+    max_age: 90_000,
+    min_wad: WAD,
+    max_wad: 3 * WAD / 2,
+)
+
+/// Chainlink ETH/USD on Base Sepolia.
+pub const ETH_USD: Feed<ETH, USD> = feed(
+    Address::new(0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1),
+    decimals: 8,
+    max_age: 1_800,
+    min_wad: 100 * WAD,
+    max_wad: 100_000 * WAD,
+)

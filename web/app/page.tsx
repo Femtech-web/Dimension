@@ -285,6 +285,14 @@ python3 cli/dimension.py check ../my-protocol --network base`}
         <div className="wrap narrow">
           <div className="eyebrow">Don&apos;t take our word for it</div>
           <h2 style={{ margin: "14px 0 20px" }}>Every claim reproduces from one front door.</h2>
+          <Code title="with only Docker: every offline check, no network" lang="shell">
+            {`docker run --rm ghcr.io/femtech-web/dimension              # the published image
+docker build -t dimension . && docker run --rm dimension   # or build it from a clone`}
+          </Code>
+          <p className="ink2" style={{ fontSize: 14.5, margin: "12px 0 22px" }}>
+            Any other target runs the same way, such as{" "}
+            <code>docker run --rm ghcr.io/femtech-web/dimension make demo</code>. Or with the toolchain:
+          </p>
           <Code title="a clean clone" lang="shell">
             {`make toolchain   # Fe 26.6.0, downloaded and checksum-verified
 make demo        # both incidents: the mistake, the verdict, the fix

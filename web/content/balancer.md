@@ -302,6 +302,30 @@ depending on where it starts. In the search it let 13 losing operations
 through, stored an invariant above what the balances back 4,880 times, and
 rejected about 3,100 harmless operations. The guard keeps Balancer's own solve.
 
+### On a public chain
+
+The same three contracts are deployed on Base Sepolia, with a rate provider
+fixed at 1.21 and the pool at the same `[1000, 1000]` state.
+[`LivePlan.t.sol`](../contracts/reference/test/LivePlan.t.sol) plans the batch
+against Balancer's arithmetic: 51 exact-out exits of osETH, each the one that
+lowers the value per BPT most. The batch then ran once against each contract:
+
+| Contract | Exits | Outcome | Value per BPT | Transaction |
+|---|---|---|---|---|
+| Faithful | 51 | runs | 1.0000 → 0.9662 (−3.38%) | [0x0ecf…9520](https://sepolia.basescan.org/tx/0x0ecfa83eb8262078418123cb281fa2d1228783f83c32526e79b461fc3e6f9520) |
+| Typed | 51 | reverts at exit 51, `BAL#004` | unchanged | [0xa31a…31e2](https://sepolia.basescan.org/tx/0xa31aece1fbc76a2df355920862d177191bfcdca4b4eb1dfd52a1bc49521231e2) |
+| Guarded | 51 | reverts at exit 51, `BAL#004` | unchanged | [0x4dd5…ecdc](https://sepolia.basescan.org/tx/0x4dd5c6e0439d0d144c4eb36eafae96fa7d9b917afa97c3a7b7dce97b9bfcecdc) |
+| Typed | the first 50 | runs | 1.0000 → 1.1391 (+13.91%) | [0xdeed…bfea](https://sepolia.basescan.org/tx/0xdeed21852409e9834110b9898aa78bbe7d93402c4f11354a3f9caa5ae129bfea) |
+| Guarded | the first 50 | runs | 1.0000 → 1.1391 (+13.91%) | [0x90b3…d18e](https://sepolia.basescan.org/tx/0x90b301a1149b2e31ee5d57f74e394ac2c70935d165aefab047ba244e4607d18e) |
+
+Before exit 51, both kinds of pool hold 2 wei of osETH, and the exit asks for
+1. Balancer scales that amount down, 1 × 1.21 to 1. The typed kernel rounds an
+amount leaving the pool up, to 2: everything the pool holds at its scale
+(2 × 1.21 is 2.42, rounded down as a balance), so StableMath reverts
+`BAL#004`, a division by zero. Without that exit, the batch pays the pool.
+`make live` checks every number here against the chain and against forge's
+run of the same batch.
+
 ## Limits
 
 - One two-token pool. Its operations include protocol fees, but not an

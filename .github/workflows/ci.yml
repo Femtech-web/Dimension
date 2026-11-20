@@ -45,7 +45,9 @@ jobs:
         with:
           version: v1.4.4
       - run: make fidelity replay moonwell feeds
-      # All 17 planted bugs, including the two only a fork can catch.
+      # The deployment on Base Sepolia, re-read from the chain.
+      - run: make live
+      # All 21 planted bugs, including the two only a fork can catch.
       - run: make mutants FORKS=1
       - uses: actions/upload-artifact@v4
         if: always()

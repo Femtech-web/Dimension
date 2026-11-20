@@ -43,6 +43,7 @@ DIRECTORY = "https://reference-data-directory.vercel.app/feeds-{}.json"
 NETWORKS = {
     "ethereum": ("mainnet", "https://eth.drpc.org"),
     "base": ("ethereum-mainnet-base-1", "https://mainnet.base.org"),
+    "base-sepolia": ("ethereum-testnet-sepolia-base-1", "https://sepolia.base.org"),
 }
 WAD = 10**18
 
@@ -121,15 +122,8 @@ def fe_code(text: str) -> tuple[str, list[str]]:
     return "".join(out), problems
 
 
-def declarations(path: Path) -> list[Declared]:
-    text, _ = fe_code(path.read_text())
-    consts: dict[str, int] = {}
-    for name, expr in _CONST.findall(text):
-        try:
-            consts[name] = evaluate(expr, consts)
-        except (ValueError, SyntaxError):
-            pass
-    found = [
+def _parse(path: Path, text: str, consts: dict[str, int]) -> list[Declared]:
+    return [
         Declared(
             name=m["name"],
             base=m["base"],
@@ -143,6 +137,21 @@ def declarations(path: Path) -> list[Declared]:
         )
         for m in _FEED.finditer(text)
     ]
+
+
+def declarations(path: Path) -> list[Declared]:
+    text, _ = fe_code(path.read_text())
+    # Dimension's own WAD, for a registry that imports it; a local constant overrides it.
+    consts: dict[str, int] = {"WAD": WAD}
+    for name, expr in _CONST.findall(text):
+        try:
+            consts[name] = evaluate(expr, consts)
+        except (ValueError, SyntaxError):
+            pass
+    try:
+        found = _parse(path, text, consts)
+    except ValueError as unread:
+        raise SystemExit(f"{path}: {unread}; use literals or constants defined in the file") from None
     calls = [text.count("\n", 0, m.start()) + 1 for m in _CALLS.finditer(text) if not re.search(r"\bfn\s*$", text[: m.start()])]
     if len(found) != len(calls):
         lines = sorted(set(calls) - {int(d.source.rsplit(":", 1)[1]) for d in found})
@@ -151,6 +160,14 @@ def declarations(path: Path) -> list[Declared]:
             f"decimals: .., max_age: .., min_wad: .., max_wad: ..)`; not in that form: line {', '.join(map(str, lines))}"
         )
     return found
+
+
+class RpcError(RuntimeError):
+    """A JSON-RPC error reply; `error` is the reply's error object."""
+
+    def __init__(self, method: str, error: dict):
+        super().__init__(f"{method}: {error}")
+        self.error = error
 
 
 class Chain:
@@ -174,7 +191,7 @@ class Chain:
                 if attempt == 2:
                     raise
         if "error" in reply:
-            raise RuntimeError(f"{method}: {reply['error']}")
+            raise RpcError(method, reply["error"])
         return reply["result"]
 
     def call(self, to: str, selector: str) -> bytes:

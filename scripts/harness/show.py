@@ -59,7 +59,11 @@ def show(fe, name: str) -> bool:
         ok = fixed.code == 0
         print(f"  fixed:     {'compiles' if ok else 'DOES NOT COMPILE'}")
     for report in spec.get("evidence", []):
-        path = ROOT / "docs" / "results" / report / f"{fe.platform}.json"
+        # This platform's run if there is one, else the one saved on another, as named.
+        saved = ROOT / "docs" / "results" / report
+        path = saved / f"{fe.platform}.json"
+        if not path.exists():
+            path = next(iter(sorted(saved.glob("*.json"))), path)
         if not path.exists():
             print(f"  evidence:  run make {report} to produce it")
             continue

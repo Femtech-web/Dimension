@@ -46,6 +46,7 @@ on their real code and chain state, and both are stopped.
   [an ERC-4626 vault](#beyond-the-incidents-an-erc-4626-vault) ·
   [How it works](#how-it-works) · [Fe highlight](#fe-highlight)
 - **The evidence:** [See it in one minute](#see-it-in-one-minute) ·
+  [Live on Base Sepolia](#live-on-base-sepolia) ·
   [Checked and attacked](#checked-and-attacked) · [Try to break it](#try-to-break-it) ·
   [How it compares](#how-it-compares) · [Limits](#limits)
 - **Using it:** [Use it in your protocol](#use-it-in-your-protocol) ·
@@ -155,8 +156,8 @@ pub fn preview_deposit<A>(_ v: Vault<A>, _ assets: Quantity<A, In, Given>) -> Qu
 > {
     exchange(
         assets,
-        numerator: v.total_shares + 1,
-        denominator: v.total_assets + 1,
+        numerator: v.total_shares.raw() + 1,
+        denominator: v.total_assets.raw() + 1,
     )
 }
 ```
@@ -169,6 +170,17 @@ on every small vault state, on both backends.
 
 ## See it in one minute
 
+With only Docker, every offline check (`make ci`), with no network:
+
+```sh
+docker run --rm ghcr.io/femtech-web/dimension              # the published image
+docker build -t dimension . && docker run --rm dimension   # or build it from a clone
+```
+
+Any other target runs the same way, such as
+`docker run --rm ghcr.io/femtech-web/dimension make demo`. With the toolchain
+instead:
+
 ```sh
 make toolchain   # Fe 26.6.0, downloaded and checksum-verified
 make demo        # both incidents: the mistake, the compiler's verdict, the fix, the evidence
@@ -179,6 +191,35 @@ Then `make ci` runs every offline check in about a minute, and `make replay`,
 ten-minute tour with ways to try to break it, and the site in [`web/`](web)
 (`make web`) shows every saved result: the replay and the Moonwell prices
 charted, every claim, every planted bug.
+
+## Live on Base Sepolia
+
+The three pools, the cbETH oracle and the vault run on Base Sepolia (chain
+84532), compiled by Fe 26.6.0 from this repository and deployed in 21
+transactions from one account.
+[`LiveRecorder`](contracts/reference/src/LiveRecorder.sol) ran each attempt and
+logged its outcome in an event, with the exact revert data.
+[The site](https://dimension-sandy.vercel.app/live) reads the contracts from
+your browser.
+
+| On chain | Outcome | Transaction |
+|---|---|---|
+| The attacker's 51-exit batch against `FaithfulPool` | runs: value per BPT 1.0000 → 0.9662 (−3.38%) | [0x0ecf…9520](https://sepolia.basescan.org/tx/0x0ecfa83eb8262078418123cb281fa2d1228783f83c32526e79b461fc3e6f9520) |
+| The same batch against `TypedPool` and `GuardedPool` | reverts at exit 51 with `BAL#004`; value per BPT unchanged | [typed](https://sepolia.basescan.org/tx/0xa31aece1fbc76a2df355920862d177191bfcdca4b4eb1dfd52a1bc49521231e2), [guarded](https://sepolia.basescan.org/tx/0x4dd5c6e0439d0d144c4eb36eafae96fa7d9b917afa97c3a7b7dce97b9bfcecdc) |
+| The batch without exit 51, against the same two | runs: value per BPT 1.0000 → 1.1391 (+13.91%) | [typed](https://sepolia.basescan.org/tx/0xdeed21852409e9834110b9898aa78bbe7d93402c4f11354a3f9caa5ae129bfea), [guarded](https://sepolia.basescan.org/tx/0x90b301a1149b2e31ee5d57f74e394ac2c70935d165aefab047ba244e4607d18e) |
+| `CbethUsdOracle` on Chainlink's Base Sepolia feeds | cbETH/ETH × ETH/USD, every check passed | [0x03e6…eace](https://sepolia.basescan.org/tx/0x03e65d1e49d4944e1ed75909ad9ca74f3da917a7a589fb0ff61a0c9426f6eace) |
+| cbETH/ETH declared as an 8-decimal USD feed | the deployment reverts `WrongDecimals(…, 8, 18)` | [0x432c…0b53](https://sepolia.basescan.org/tx/0x432c22fcaf3be5143877b94b68194f92c7e854cd09fec74482d526d744270b53) |
+| cbETH/ETH declared as a USD feed with its real 18 decimals | deploys; its read reverts `AnswerOutOfBand` | [0x1771…7289](https://sepolia.basescan.org/tx/0x177152c14735c1b1b642b95ed07d14c954c4a1862567dc7cfd9ff7c3500f7289) |
+| Chainlink's cbETH/USD, declared correctly | reads its answer | [0x75e6…d39f](https://sepolia.basescan.org/tx/0x75e623230f9edbfcf1eaad98f24f77370a1be063b58fea8a16b1ed84d37bd39f) |
+
+Exit 51 asks for 1 wei of the 2 the pool holds, the dust that rounding up
+refuses (see [Limits](#limits)). `make live` reads all of it back: each
+receipt; each contract's code against this repository's build, the Fe
+contracts byte for byte; each logged outcome against forge's run of the same
+batch; and the oracle, both declarations and the vault's previews at the
+latest block. `make live-rehearse` repeats the whole deployment on a local
+fork, with no key. Every address and transaction is in
+[`deployments/base-sepolia.json`](deployments/base-sepolia.json).
 
 ## How it works
 
@@ -302,7 +343,8 @@ The rest of Dimension leans on Fe throughout:
 | The ERC-4626 vault against OpenZeppelin's ERC4626 | 40,000 vectors, 33,684 where the rounding decides | all equal | `make vault` |
 | The vault against the exact rational result | 32,768 states × 4 previews, both backends | exact floor or ceil as EIP-4626 requires | `make unit` |
 | Planted bugs in the safety-critical code | 21 mutants across 7 layers | every one caught, for the reason expected of it | `make mutants FORKS=1` |
-| Every ingot, test suite and compile-fail case on Fe 26.7.0 | 5 ingots, 11 suite runs, 21 cases | all pass, unchanged | `make compat` |
+| The deployment on Base Sepolia, read back from the chain | 9 contracts, 21 transactions | every transaction succeeded; code identical to this repository's build; every outcome as planned, to the wei | `make live` |
+| Every ingot, test suite and compile-fail case on Fe 26.7.0 | 6 ingots, 11 suite runs, 21 cases | all pass, unchanged | `make compat` |
 | A fresh project from `dimension new`, taking Dimension by git | the quickstart, a misuse, four broken copies | builds and passes its tests; the misuse is rejected; `dimension check` passes it and fails each copy: `allow_unsafe`, a forged price, the same forgery between `"/*"` and `"*/"` strings, a feed it cannot read | `make consumer` |
 
 Every run writes a report to [`docs/results/`](docs/results). Each claim in it
@@ -452,6 +494,10 @@ read is added.
   its checked rate read.
 - **Rounding up refuses some dust:** 1 wei out of a 2-wei balance, which
   Balancer paid out for free.
+- **The live deployment is a testnet's.** Base Sepolia, with Chainlink's
+  testnet feeds and a fixed-rate stand-in for osETH's rate provider. Its pools
+  are test contracts with open entry points, as in the fork tests, so their
+  state now can differ from the record; the record is the transactions.
 - **No attack found is not no attack possible.** The replay proves the
   recorded attack cannot run. That no other sequence pays rests on evidence,
   not proof: an attacker re-planning 90 swaps from the real dust state, and
@@ -469,6 +515,12 @@ type-checks, every test suite passes and every compile-fail case is rejected on
 Fe 26.7.0, which `make compat` checks, also in CI. The manifest is
 [`fe.toml`](fe.toml), a workspace of the ingots in [`ingots/`](ingots).
 
+Or only Docker: the [`Dockerfile`](Dockerfile) installs all of it on Ubuntu
+24.04, as CI does, and runs `make ci` with no network. CI checks it and
+publishes it for x86-64 and arm64 as `ghcr.io/femtech-web/dimension`. On arm64,
+where Fe 26.6.0 has no native backend, the native-backend checks are skipped
+and say so.
+
 | Command | What it does |
 |---|---|
 | `make ci` | Formatting, unsafe policy, unit, compile-fail, probes, differential, search, EVM, vault, consumer: what CI runs |
@@ -477,6 +529,8 @@ Fe 26.7.0, which `make compat` checks, also in CI. The manifest is
 | `make replay` | The attacker's three transactions, step by step, through the three kernels (mainnet forks) |
 | `make moonwell` | Moonwell's market around MIP-X43 (Base forks; `BASE_RPC_URL` overrides the public RPC) |
 | `make feeds` | Each declared feed against Chainlink's directory and Base; wrong declarations must be rejected |
+| `make live` | Reads the Base Sepolia deployment back from the chain (`BASE_SEPOLIA_RPC_URL` overrides the public RPC) |
+| `make live-rehearse` | The whole deployment again, on a local anvil fork, with no key |
 | `make compat` | Every ingot, test suite and compile-fail case on Fe 26.7.0, the other supported release |
 | `make vault` | The ERC-4626 vault against OpenZeppelin's ERC4626 |
 | `make mutants` | Plants realistic bugs one at a time; each must be caught by the check meant for it |
@@ -485,8 +539,9 @@ Fe 26.7.0, which `make compat` checks, also in CI. The manifest is
 | `make web` | Syncs the saved reports into [`web/`](web) and builds the site |
 | `make help` | Every target |
 
-CI runs `make ci`, `make mutants` and `make compat` on Linux, and the fork
-comparisons, with all 21 mutants, in a separate job.
+CI runs `make ci`, `make mutants` and `make compat` on Linux and, in a
+separate job, the fork comparisons with all 21 mutants, and `make live`. From
+`main` it publishes the Docker image, once the image passes `make ci` itself.
 Native executables exist for `linux_amd64` and `mac_arm64` in Fe 26.6.0;
 elsewhere the native search is skipped.
 
@@ -501,7 +556,9 @@ elsewhere the native search is skipped.
 | [`ingots/balancer_explorer`](ingots/balancer_explorer) | The native search and greedy attacker |
 | [`ingots/moonwell`](ingots/moonwell) | Moonwell's cbETH market: feed registry, composite pricing, oracle contracts |
 | [`ingots/vault`](ingots/vault) | An ERC-4626 vault's accounting, written with Dimension |
-| [`contracts/reference`](contracts/reference) | Foundry: Balancer's Solidity, the differential test, the EVM attack, the fork tests and the attack replay |
+| [`ingots/live`](ingots/live) | The cbETH oracle on Base Sepolia's Chainlink feeds, as deployed |
+| [`contracts/reference`](contracts/reference) | Foundry: Balancer's Solidity, the differential test, the EVM attack, the fork tests, the attack replay, and the Base Sepolia deployment script |
+| [`deployments`](deployments) | The Base Sepolia deployment: each contract and transaction |
 | [`fixtures/balancer-v2-exploit`](fixtures/balancer-v2-exploit) | The attacker's swaps on the pool, read from the three transactions' events |
 | [`tests`](tests) | Unit tests (EVM and native), compile-fail cases with twins, probes, typed-vs-hand-written pairs, misdeclared feeds, the compiler finding's reproducer |
 | [`scripts`](scripts) | The pinned toolchain, and one harness module per suite |

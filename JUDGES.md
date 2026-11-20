@@ -4,9 +4,26 @@ A ten-minute path from a clean clone to every claim in the README, plus ways
 to try to break it. Nothing here needs to be taken on faith: each step runs
 the code and prints what it checked.
 
-Requirements: `make`, `curl`, Python 3.12, [Foundry](https://getfoundry.sh)
-1.4.4, and macOS arm64 or Linux amd64 for the native search. Times are from an
-Apple-silicon laptop.
+## The fastest way: one command, with only Docker
+
+The image installs everything on Ubuntu 24.04, as CI does, and runs every
+offline check (`make ci`) with no network, in about two minutes:
+
+```sh
+docker run --rm ghcr.io/femtech-web/dimension              # the published image
+docker build -t dimension . && docker run --rm dimension   # or build it from a clone
+```
+
+Any target in this guide runs the same way, such as
+`docker run --rm ghcr.io/femtech-web/dimension make demo`; the fork and live
+targets in step 4 use the network, which `docker run` has by default. On
+x86-64 every check runs. On arm64, Docker on Apple silicon included, Fe 26.6.0
+has no native backend, so the native-backend checks are skipped and say so;
+`make ci` on macOS itself runs them.
+
+Step by step on your own machine instead needs `make`, `curl`, Python 3.12,
+[Foundry](https://getfoundry.sh) 1.4.4, and macOS arm64 or Linux amd64 for the
+native search. Times are from an Apple-silicon laptop.
 
 ## 1. Install (about 1 minute)
 
@@ -64,6 +81,7 @@ make replay     # the attacker's three transactions, step by step (mainnet forks
 make fidelity   # Ethereum mainnet fork, block 23,717,396
 make moonwell   # Base forks from block 42,194,662 to 42,538,949
 make feeds      # each declared feed against Chainlink's directory and Base
+make live       # the deployment on Base Sepolia, read back from the chain
 ```
 
 - **`replay`** forks Ethereum at each of the attacker's three transactions. It
@@ -83,9 +101,14 @@ make feeds      # each declared feed against Chainlink's directory and Base
 - **`feeds`** checks each declared feed against Chainlink's directory and the
   chain. Moonwell's registry must pass. Two wrong declarations that compile
   must be rejected, one of which every on-chain check accepts.
+- **`live`** reads the deployment on Base Sepolia back from the chain: every
+  receipt, each contract's code against what `fe build` produces here, each
+  outcome `LiveRecorder` logged against forge's run of the same batch, and the
+  oracle, the declarations and the vault at the latest block. `make
+  live-rehearse` deploys it all again on a local fork, with no key.
 
-Both use public RPCs. Set `MAINNET_RPC_URL` or `BASE_RPC_URL` if one is
-rate-limited.
+All use public RPCs. Set `MAINNET_RPC_URL`, `BASE_RPC_URL` or
+`BASE_SEPOLIA_RPC_URL` if one is rate-limited.
 
 ## 5. Read the code (five files)
 
@@ -130,6 +153,7 @@ result observed.
 | The type machinery is free | `tests/probes/bytecode/`; on the library itself, `tests/zero_cost/` with `contracts/reference/test/ZeroCost.t.sol` | `docs/results/probes/`, `docs/results/evm/` |
 | A team's own project, created and checked | `cli/dimension.py`, run by `scripts/harness/consumer.py` | `docs/results/consumer/` |
 | The same on Fe 26.7.0 | `scripts/harness/compat.py`, `scripts/toolchain/fe-compat.lock` | `docs/results/compat/` |
+| The contracts on a public chain | `contracts/reference/script/Live.s.sol`, `deployments/base-sepolia.json`, `scripts/harness/live.py` | `docs/results/live/` |
 
 The site in [`web/`](web) shows all of these, with the replay and the Moonwell
 prices charted. `make web` rebuilds it from whatever reports your runs saved.

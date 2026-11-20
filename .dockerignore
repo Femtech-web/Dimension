@@ -1,0 +1,17 @@
+# Never in an image: keys and internal notes.
+.secrets/
+private-notes/
+
+# Built or downloaded inside the image instead.
+.tools/
+**/out/
+**/__pycache__/
+contracts/reference/lib/
+contracts/reference/cache/
+contracts/reference/broadcast/
+
+# The site is built separately (make web).
+web/node_modules/
+web/.next/
+
+.DS_Store

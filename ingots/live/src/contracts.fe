@@ -1,0 +1,22 @@
+//! `CbethUsdOracle` on Base Sepolia: cbETH's USD price as Moonwell's market
+//! must read it, cbETH/ETH times ETH/USD, both feeds bound when it deploys.
+
+#![cfg(target = "evm")]
+
+use std::evm::{Call, Ctx}
+use moonwell::contracts::PriceOracle
+use moonwell::pricing::ViaEth
+use moonwell::registry::CBETH
+use super::registry::{CBETH_ETH, ETH_USD}
+
+pub const CBETH_USD: ViaEth<CBETH> = ViaEth { leg: CBETH_ETH, eth_usd: ETH_USD }
+
+pub contract CbethUsdOracle uses (call: mut Call, ctx: Ctx) {
+    init() uses (call) { CBETH_USD.verify() }
+
+    recv PriceOracle {
+        UsdPrice -> u256 uses (call, ctx) {
+            CBETH_USD.read().wad()
+        }
+    }
+}

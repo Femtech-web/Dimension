@@ -156,6 +156,25 @@ The test asserts four things:
 The same test checks the bind-time, read-time and staleness rejections against
 the real feeds at the MIP-X43 block, with the full revert data.
 
+## On Base Sepolia
+
+[`ingots/live`](../ingots/live) declares Chainlink's cbETH/ETH and ETH/USD feeds
+on Base Sepolia with the mainnet registry's decimals, ages and bands, and
+deploys `CbethUsdOracle` against them. The same mistake was then made on chain,
+each outcome logged by `LiveRecorder` with its exact revert data:
+
+| Declaration | Outcome | Transaction |
+|---|---|---|
+| `CbethUsdOracle`, cbETH/ETH × ETH/USD | prices cbETH, every check passed | [0x03e6…eace](https://sepolia.basescan.org/tx/0x03e65d1e49d4944e1ed75909ad9ca74f3da917a7a589fb0ff61a0c9426f6eace) |
+| cbETH/ETH as cbETH/USD, 8 decimals | the deployment reverts `WrongDecimals(…, 8, 18)` | [0x432c…0b53](https://sepolia.basescan.org/tx/0x432c22fcaf3be5143877b94b68194f92c7e854cd09fec74482d526d744270b53) |
+| cbETH/ETH as cbETH/USD, 18 decimals | deploys; its read reverts `AnswerOutOfBand` | [0x1771…7289](https://sepolia.basescan.org/tx/0x177152c14735c1b1b642b95ed07d14c954c4a1862567dc7cfd9ff7c3500f7289) |
+| Chainlink's cbETH/USD, 8 decimals | reads its answer | [0x75e6…d39f](https://sepolia.basescan.org/tx/0x75e623230f9edbfcf1eaad98f24f77370a1be063b58fea8a16b1ed84d37bd39f) |
+
+`make live` reads them again at the latest block and requires the oracle's
+price to equal the product of the two feeds' answers to the wei.
+[The site](https://dimension-sandy.vercel.app/live) reads them from your
+browser.
+
 ## Limits
 
 - The demonstration covers one market and its two feeds, on Base.

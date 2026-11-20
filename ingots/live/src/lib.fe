@@ -1,0 +1,5 @@
+//! Moonwell's cbETH market priced through Dimension, deployed on Base Sepolia.
+//!
+//! The same composition as `moonwell`, with the same asset types and checks,
+//! over the Chainlink feeds Base Sepolia lists for the same pairs. `make live`
+//! checks the deployed contracts against the chain.

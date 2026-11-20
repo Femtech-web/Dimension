@@ -181,6 +181,8 @@ export default function Moonwell() {
           </table>
         </div>
         <p style={{ marginTop: 22 }}>
+          <Link href="/live">The oracle and the mistake on Base Sepolia, read live →</Link>
+          <br />
           <Link href="/docs/moonwell">The full record, block by block →</Link>
         </p>
       </Section>

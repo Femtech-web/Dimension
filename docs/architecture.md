@@ -252,6 +252,15 @@ behaviour.
   - `DeclaredCbethUsdFeed` deploys a single declaration given at construction,
     so the fork test can try wrong declarations against the real feed.
 
+## On Base Sepolia: `ingots/live`
+
+The same composition as `ingots/moonwell`, over the Chainlink feeds Base
+Sepolia lists for the same pairs, with the mainnet registry's decimals, ages
+and bands. `contracts/reference/script/Live.s.sol` deploys it with the three
+pools, the vault and the declarations; `LiveRecorder` logs each outcome; and
+`scripts/harness/live.py` reads it all back. See
+[the README](../README.md#live-on-base-sepolia).
+
 ## The vault: `ingots/vault`
 
 An ERC-4626 vault's accounting, as an example of Dimension in a protocol

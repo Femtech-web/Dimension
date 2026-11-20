@@ -10,6 +10,7 @@
     "ingots/balancer_explorer": true,
     "ingots/balancer_v2": true,
     "ingots/dimension": true,
+    "ingots/live": true,
     "ingots/moonwell": true,
     "ingots/vault": true
   },
@@ -53,7 +54,7 @@
     {
       "question": "On fe 26.7.0 (e6e6342), does every ingot type-check, and every unit suite pass on the backends it declares?",
       "holds": true,
-      "evidence": "5 of 5 ingots type-check; 11 of 11 suite runs pass, 63 tests"
+      "evidence": "6 of 6 ingots type-check; 11 of 11 suite runs pass, 63 tests"
     },
     {
       "question": "On fe 26.7.0 (e6e6342), is every compile-fail case rejected with its expected code, and its corrected twin accepted?",

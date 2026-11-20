@@ -1,0 +1,7 @@
+[ingot]
+name = "live"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../dimension" }
+moonwell = { path = "../moonwell" }

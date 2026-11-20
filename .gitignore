@@ -11,3 +11,6 @@ __pycache__/
 # Reference project (Foundry)
 contracts/reference/lib/
 contracts/reference/cache/
+
+# Local keys (the testnet deployer); never committed.
+.secrets/

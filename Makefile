@@ -9,7 +9,7 @@ FE := .tools/fe-$(shell sed -n 's/^version=//p' scripts/toolchain/fe.lock)/fe
 # The feasibility probes are kept exactly as recorded, so they are not formatted.
 FORMATTED := ingots tests/core tests/oracle tests/explorer tests/vault tests/unsafe_root tests/labels tests/feeds tests/zero_cost tests/compile_fail tests/compiler_findings examples
 
-.PHONY: help toolchain reference-deps fmt fmt-check test unit compile-fail probes differential explore evm vault consumer apidoc fidelity replay moonwell feeds compat unsafe-policy mutants web show demo update ci
+.PHONY: help toolchain reference-deps fmt fmt-check test unit compile-fail probes differential explore evm vault consumer apidoc fidelity replay moonwell feeds live live-rehearse live-deploy compat unsafe-policy mutants web show demo update ci
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -61,6 +61,15 @@ replay: toolchain reference-deps ## The real exploit's 360 steps through the thr
 moonwell: toolchain reference-deps ## Moonwell's cbETH market on Base forks around MIP-X43 (needs forge and a Base RPC)
 	@$(HARNESS)moonwell
 
+live: toolchain reference-deps ## Re-check the Base Sepolia deployment from the chain: receipts, code, recorded outcomes, live reads (needs network)
+	@$(HARNESS)live
+
+live-rehearse: toolchain reference-deps ## Run the whole Base Sepolia deployment on a local anvil fork, then check it (needs anvil; no key)
+	@$(HARNESS)live rehearse
+
+live-deploy: toolchain reference-deps ## Deploy to Base Sepolia from .secrets/base-sepolia.json and record it in deployments/ (once; RESUME=1 finishes a stopped run)
+	@$(HARNESS)live deploy $(if $(RESUME),--resume)
+
 compat: ## Every ingot, suite and compile-fail case on Fe 26.7.0, the other supported release (downloads it, checksum verified)
 	@$(HARNESS)compat
 
@@ -88,7 +97,7 @@ update: toolchain ## Regenerate golden files for every suite (review the diff be
 
 # Ingots that contracts are built from. Only Dimension's own test constructors
 # may be unsafe, and none of these may reach them.
-PROTOCOL := dimension balancer_v2 moonwell vault
+PROTOCOL := dimension balancer_v2 moonwell vault live
 
 unsafe-policy: ## Fail if a protocol ingot could forge a trusted value
 	@if grep -n allow_unsafe $(PROTOCOL:%=ingots/%/fe.toml); then echo "a protocol ingot sets allow_unsafe"; exit 1; fi

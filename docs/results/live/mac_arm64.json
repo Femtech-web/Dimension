@@ -1,0 +1,377 @@
+{
+  "schema": "dimension.live/v1",
+  "question": "Does the deployment on Base Sepolia do on chain what the tests say it does?",
+  "network": "base-sepolia",
+  "chain_id": 84532,
+  "explorer": "https://sepolia.basescan.org",
+  "checked_at": {
+    "block": 61298392,
+    "timestamp": 1795181547
+  },
+  "deployer": "0x84e223Fb745B157a5f71d831634302B968129dB3",
+  "fe": {
+    "version": "26.6.0",
+    "commit": "5b3f96af2ab10df11bf847551f4b81d1fe481110"
+  },
+  "contracts": {
+    "LiveRecorder": {
+      "address": "0x30da1a5ee445b8e32567b714bb55571f7c6bd5a1",
+      "tx": "0xb2126a55ac0247857e7e79752ab579c62a0d151ed987774ce704c90bf54fa362",
+      "block": 61288219
+    },
+    "MockRateProvider": {
+      "address": "0x08a6052be51d1c3e44ab2a9987f43b7e70a3f638",
+      "tx": "0x22d491ddae884298539c7702b18492bf4ae6a471235da70d3e72b76a632d808f",
+      "block": 61288224
+    },
+    "FaithfulPool": {
+      "address": "0x39577a44232219e6efc8861e05b5ea9853fe2de8",
+      "tx": "0xf4d3dc06c503fbc522adfdaf0991a2e8e30e9e1de79a36f37705c09754a8bff0",
+      "block": 61288230
+    },
+    "TypedPool": {
+      "address": "0xbb36abc7a6c6bae7a10f1183e86c05101eb8e36d",
+      "tx": "0x9538d4a64eb2122eb1daeb91f1a13148856aa9d496359b01a93cbe1c2866a66b",
+      "block": 61288240
+    },
+    "GuardedPool": {
+      "address": "0x62927089b6c0e1f2257b45eef8e6ce879ab5a15e",
+      "tx": "0x678ca68643497fc79dba8b7f3db226ca2fe948c9a84c64c7a1a0dc609cfe91c8",
+      "block": 61289242
+    },
+    "CbethUsdOracle": {
+      "address": "0x81c9cd31e845d9c69654f111b32290045f11121c",
+      "tx": "0x62a87c09e0f0d375ac13633f894edc222ae03cb5bdd4e6207719e9e4918ae49b",
+      "block": 61289276
+    },
+    "DeclaredCbethEthAsUsd": {
+      "address": "0xc3e300b1b375a2beb608ba2f11355ebb4e2345f1",
+      "tx": "0xba526a6587d9ac223f8c28cec79929d2ff5fb6b0382cafe5f4943f3fdaac8edc",
+      "block": 61289290
+    },
+    "DeclaredCbethUsd": {
+      "address": "0x8e5c3f8461e8251406f787f123c5019f6d0638ee",
+      "tx": "0x27b13f2450cc602f07263445e716af99d9837a2930a811d9a3d264b0dff20781",
+      "block": 61289300
+    },
+    "TypedVault": {
+      "address": "0xd3090780c4106549fb94999df9de6e0793abd01f",
+      "tx": "0x6bb910f7cf8b2eb9010d22ba20dcefc8c2419acd35d3f0c856ff2482d318123e",
+      "block": 61289310
+    }
+  },
+  "transactions": [
+    {
+      "action": "deploy LiveRecorder",
+      "hash": "0xb2126a55ac0247857e7e79752ab579c62a0d151ed987774ce704c90bf54fa362",
+      "block": 61288219,
+      "gas_used": 570145
+    },
+    {
+      "action": "deploy MockRateProvider",
+      "hash": "0x22d491ddae884298539c7702b18492bf4ae6a471235da70d3e72b76a632d808f",
+      "block": 61288224,
+      "gas_used": 97248
+    },
+    {
+      "action": "deploy FaithfulPool",
+      "hash": "0xf4d3dc06c503fbc522adfdaf0991a2e8e30e9e1de79a36f37705c09754a8bff0",
+      "block": 61288230,
+      "gas_used": 1784895
+    },
+    {
+      "action": "initialize FaithfulPool",
+      "hash": "0x5d0e819cc4c2330e0cf974d08a8f8ad0eddaa00f2123d14395fa594ed210b60a",
+      "block": 61288235,
+      "gas_used": 207252
+    },
+    {
+      "action": "deploy TypedPool",
+      "hash": "0x9538d4a64eb2122eb1daeb91f1a13148856aa9d496359b01a93cbe1c2866a66b",
+      "block": 61288240,
+      "gas_used": 2086755
+    },
+    {
+      "action": "initialize TypedPool",
+      "hash": "0xde933db6c42ecb91db7c443cbc0f579813c6493609c4f42b8775397818485541",
+      "block": 61289237,
+      "gas_used": 207694
+    },
+    {
+      "action": "deploy GuardedPool",
+      "hash": "0x678ca68643497fc79dba8b7f3db226ca2fe948c9a84c64c7a1a0dc609cfe91c8",
+      "block": 61289242,
+      "gas_used": 2185128
+    },
+    {
+      "action": "initialize GuardedPool",
+      "hash": "0x4ba5ed0f562673abf7e36b05c2cd2be499367ef9da265d78d7687fb7e985747c",
+      "block": 61289247,
+      "gas_used": 207726
+    },
+    {
+      "action": "attack FaithfulPool (51 exits)",
+      "hash": "0x0ecfa83eb8262078418123cb281fa2d1228783f83c32526e79b461fc3e6f9520",
+      "block": 61289251,
+      "gas_used": 784948
+    },
+    {
+      "action": "attack TypedPool (51 exits)",
+      "hash": "0xa31aece1fbc76a2df355920862d177191bfcdca4b4eb1dfd52a1bc49521231e2",
+      "block": 61289256,
+      "gas_used": 824096
+    },
+    {
+      "action": "attack GuardedPool (51 exits)",
+      "hash": "0x4dd5c6e0439d0d144c4eb36eafae96fa7d9b917afa97c3a7b7dce97b9bfcecdc",
+      "block": 61289261,
+      "gas_used": 863879
+    },
+    {
+      "action": "attack TypedPool (50 exits)",
+      "hash": "0xdeed21852409e9834110b9898aa78bbe7d93402c4f11354a3f9caa5ae129bfea",
+      "block": 61289266,
+      "gas_used": 813514
+    },
+    {
+      "action": "attack GuardedPool (50 exits)",
+      "hash": "0x90b301a1149b2e31ee5d57f74e394ac2c70935d165aefab047ba244e4607d18e",
+      "block": 61289271,
+      "gas_used": 853326
+    },
+    {
+      "action": "deploy CbethUsdOracle",
+      "hash": "0x62a87c09e0f0d375ac13633f894edc222ae03cb5bdd4e6207719e9e4918ae49b",
+      "block": 61289276,
+      "gas_used": 328466
+    },
+    {
+      "action": "probe CbethUsdOracle",
+      "hash": "0x03e65d1e49d4944e1ed75909ad9ca74f3da917a7a589fb0ff61a0c9426f6eace",
+      "block": 61289281,
+      "gas_used": 68432
+    },
+    {
+      "action": "deploy DeclaredCbethUsdFeed through LiveRecorder",
+      "hash": "0x432c22fcaf3be5143877b94b68194f92c7e854cd09fec74482d526d744270b53",
+      "block": 61289286,
+      "gas_used": 83797
+    },
+    {
+      "action": "deploy DeclaredCbethEthAsUsd",
+      "hash": "0xba526a6587d9ac223f8c28cec79929d2ff5fb6b0382cafe5f4943f3fdaac8edc",
+      "block": 61289290,
+      "gas_used": 289416
+    },
+    {
+      "action": "probe DeclaredCbethEthAsUsd",
+      "hash": "0x177152c14735c1b1b642b95ed07d14c954c4a1862567dc7cfd9ff7c3500f7289",
+      "block": 61289295,
+      "gas_used": 58315
+    },
+    {
+      "action": "deploy DeclaredCbethUsd",
+      "hash": "0x27b13f2450cc602f07263445e716af99d9837a2930a811d9a3d264b0dff20781",
+      "block": 61289300,
+      "gas_used": 289428
+    },
+    {
+      "action": "probe DeclaredCbethUsd",
+      "hash": "0x75e623230f9edbfcf1eaad98f24f77370a1be063b58fea8a16b1ed84d37bd39f",
+      "block": 61289305,
+      "gas_used": 56986
+    },
+    {
+      "action": "deploy TypedVault",
+      "hash": "0x6bb910f7cf8b2eb9010d22ba20dcefc8c2419acd35d3f0c856ff2482d318123e",
+      "block": 61289310,
+      "gas_used": 198464
+    }
+  ],
+  "plan": {
+    "exits": [
+      1,
+      4,
+      19,
+      19,
+      19,
+      19,
+      1,
+      4,
+      19,
+      19,
+      19,
+      19,
+      19,
+      1,
+      28,
+      95,
+      76,
+      1,
+      4,
+      19,
+      19,
+      19,
+      19,
+      19,
+      1,
+      4,
+      19,
+      19,
+      19,
+      19,
+      19,
+      1,
+      4,
+      19,
+      19,
+      19,
+      19,
+      19,
+      1,
+      28,
+      95,
+      57,
+      19,
+      59,
+      28,
+      14,
+      9,
+      4,
+      2,
+      1,
+      1
+    ],
+    "supply": 2209
+  },
+  "attacks": [
+    {
+      "pool": "FaithfulPool",
+      "tx": "0x0ecfa83eb8262078418123cb281fa2d1228783f83c32526e79b461fc3e6f9520",
+      "block": 61289251,
+      "exits": 51,
+      "succeeded": true,
+      "rate_before": 1000000000000000000,
+      "rate_after": 966233766233766233,
+      "reason": null
+    },
+    {
+      "pool": "TypedPool",
+      "tx": "0xa31aece1fbc76a2df355920862d177191bfcdca4b4eb1dfd52a1bc49521231e2",
+      "block": 61289256,
+      "exits": 51,
+      "succeeded": false,
+      "rate_before": 1000000000000000000,
+      "rate_after": 1000000000000000000,
+      "reason": "Error(\"BAL#004\")"
+    },
+    {
+      "pool": "GuardedPool",
+      "tx": "0x4dd5c6e0439d0d144c4eb36eafae96fa7d9b917afa97c3a7b7dce97b9bfcecdc",
+      "block": 61289261,
+      "exits": 51,
+      "succeeded": false,
+      "rate_before": 1000000000000000000,
+      "rate_after": 1000000000000000000,
+      "reason": "Error(\"BAL#004\")"
+    },
+    {
+      "pool": "TypedPool",
+      "tx": "0xdeed21852409e9834110b9898aa78bbe7d93402c4f11354a3f9caa5ae129bfea",
+      "block": 61289266,
+      "exits": 50,
+      "succeeded": true,
+      "rate_before": 1000000000000000000,
+      "rate_after": 1139118457300275482,
+      "reason": null
+    },
+    {
+      "pool": "GuardedPool",
+      "tx": "0x90b301a1149b2e31ee5d57f74e394ac2c70935d165aefab047ba244e4607d18e",
+      "block": 61289271,
+      "exits": 50,
+      "succeeded": true,
+      "rate_before": 1000000000000000000,
+      "rate_after": 1139118457300275482,
+      "reason": null
+    }
+  ],
+  "oracle": {
+    "recorded": 1989704228162491982753,
+    "recorded_block": 61289281,
+    "price": 1981000659273865693750,
+    "feeds": {
+      "CBETH_ETH": "0x91b21900E91CD302EBeD05E45D8f270ddAED944d",
+      "ETH_USD": "0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1"
+    }
+  },
+  "declarations": {
+    "bind": {
+      "error": "WrongDecimals(0x91b2\u2026944d, 8, 18)",
+      "tx": "0x432c22fcaf3be5143877b94b68194f92c7e854cd09fec74482d526d744270b53"
+    },
+    "read": {
+      "error": "AnswerOutOfBand(0x91b2\u2026944d: 1.1443, outside 100 to 100,000)",
+      "tx": "0x177152c14735c1b1b642b95ed07d14c954c4a1862567dc7cfd9ff7c3500f7289"
+    },
+    "correct": {
+      "price": 1981866614510000000000,
+      "recorded": 1988080698690000000000,
+      "tx": "0x75e623230f9edbfcf1eaad98f24f77370a1be063b58fea8a16b1ed84d37bd39f",
+      "feed": "0x3c65e28d357a37589e1c7c86044a9f44ddc17134"
+    }
+  },
+  "claims": [
+    {
+      "question": "Did every recorded transaction succeed, in the block the record gives?",
+      "holds": true,
+      "evidence": "21 transactions from 0x84e223Fb745B157a5f71d831634302B968129dB3, blocks 61,288,219 to 61,289,310"
+    },
+    {
+      "question": "Is each contract's code on chain exactly the code this repository builds?",
+      "holds": true,
+      "evidence": "7 Fe contracts byte-identical to fe build with Fe 26.6.0; LiveRecorder and MockRateProvider (rate 1.21) identical to forge's build apart from Solidity's metadata hash"
+    },
+    {
+      "question": "On chain, does the attacker's planned batch lower the value behind each share of the pool that rounds as Balancer V2?",
+      "holds": true,
+      "evidence": "51 exits in one transaction (0x0ecf\u20269520, block 61,289,251): 1.0000 to 0.9662 per BPT (-3.38%), equal to the wei to LivePlan's run of the same batch"
+    },
+    {
+      "question": "Do the typed and guarded pools reject the same batch on chain, keeping the value behind each share?",
+      "holds": true,
+      "evidence": "TypedPool: reverted Error(\"BAL#004\") at exit 51 of 51, as LivePlan finds; 1.0000 per BPT unchanged; GuardedPool: reverted Error(\"BAL#004\") at exit 51 of 51, as LivePlan finds; 1.0000 per BPT unchanged"
+    },
+    {
+      "question": "Without the exit they reject, does the same batch raise the value behind each typed and guarded share instead?",
+      "holds": true,
+      "evidence": "TypedPool: 50 exits, 1.0000 to 1.1391 per BPT (+13.91%); GuardedPool: 50 exits, 1.0000 to 1.1391 per BPT (+13.91%), equal to the wei to LivePlan"
+    },
+    {
+      "question": "Does the oracle price cbETH as cbETH/ETH times ETH/USD, read from Chainlink's Base Sepolia feeds with every check?",
+      "holds": true,
+      "evidence": "block 61,298,392: 1,981.00 USD, equal to the wei to the product of the feeds' answers; recorded on chain at deployment: 1,989.70 USD (block 61,289,281)"
+    },
+    {
+      "question": "Declared as an 8-decimal USD feed, is cbETH/ETH rejected when the contract binding it is deployed?",
+      "holds": true,
+      "evidence": "WrongDecimals(0x91b2\u2026944d, 8, 18) in 0x432c\u20260b53, block 61,289,286"
+    },
+    {
+      "question": "Declared with its real 18 decimals, does it deploy, and is every read of it rejected?",
+      "holds": true,
+      "evidence": "deployed at 0xc3e3\u202645f1; its read reverted AnswerOutOfBand(0x91b2\u2026944d: 1.1443, outside 100 to 100,000) in 0x1771\u20267289, and AnswerOutOfBand(0x91b2\u2026944d: 1.1443, outside 100 to 100,000) at block 61,298,392"
+    },
+    {
+      "question": "Declared correctly, does Chainlink's own cbETH/USD feed read through the same contract?",
+      "holds": true,
+      "evidence": "block 61,298,392: 1,981.87 USD, its answer to the wei; the oracle's price through ETH is 0.04% from it"
+    },
+    {
+      "question": "Does the deployed typed vault preview as OpenZeppelin's ERC4626?",
+      "holds": true,
+      "evidence": "24 of 24 previews equal OpenZeppelin's formulas, in 3 states including a first deposit after a one-token donation"
+    }
+  ],
+  "platform": "mac_arm64"
+}
