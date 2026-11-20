@@ -34,7 +34,9 @@ Not vulnerabilities, because they are documented limits
   `allow_unsafe` (`dimension check` fails a project with either).
 
 The Balancer V2 and Moonwell code in this repository reproduces past incidents
-for research. It is not deployed and not in scope.
+for research. It is deployed only on Base Sepolia, a testnet, for the live
+demonstration (`deployments/base-sepolia.json`), holds nothing of value, and
+is not in scope.
 
 ## Supported versions
 

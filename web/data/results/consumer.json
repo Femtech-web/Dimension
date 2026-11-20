@@ -3,9 +3,9 @@
   "question": "Does Dimension work as a dependency of someone else's project?",
   "dependency": {
     "source": "this repository's git history",
-    "rev": "873f2cd4c3dcc70dc79954cee75cd2fd5369dbbd",
+    "rev": "5a1aafe80e2f9034242fb6f5ada9b2495685d2ac",
     "name": "dimension",
-    "version": "0.3.0"
+    "version": "0.3.1"
   },
   "fe": {
     "version": "26.6.0",
@@ -176,12 +176,12 @@
     {
       "question": "Can a new project depend on Dimension from git, and does it get Dimension's checks?",
       "holds": true,
-      "evidence": "`dimension new` creates the quickstart taking Dimension at 873f2cd by git source; it builds and passes its 3 tests; an incoming amount used as an outgoing one is rejected with 8-0000"
+      "evidence": "`dimension new` creates the quickstart taking Dimension at 5a1aafe by git source; it builds and passes its 3 tests; an incoming amount used as an outgoing one is rejected with 8-0000"
     },
     {
       "question": "Does `dimension check` pass that project, list its labels for review, and fail it once it can forge values Dimension trusts?",
       "holds": true,
-      "evidence": "the new project: 5 of 6 checks ok, warnings on pinned; its 3 labels listed for review (given<USDC, In>, owed<USDC, Out>, owed<USDC, In>); with allow_unsafe set on Dimension it fails allow_unsafe; with a price forged by a pointer cast, which compiles, it fails unsafe code; with the forgery between the strings \"/*\" and \"*/\", it fails unsafe code; with a feed built where feed-check cannot read it, it fails feeds"
+      "evidence": "the new project: 6 of 6 checks ok, no warnings; its 3 labels listed for review (given<USDC, In>, owed<USDC, Out>, owed<USDC, In>); with allow_unsafe set on Dimension it fails allow_unsafe; with a price forged by a pointer cast, which compiles, it fails unsafe code; with the forgery between the strings \"/*\" and \"*/\", it fails unsafe code; with a feed built where feed-check cannot read it, it fails feeds"
     },
     {
       "question": "In each project compared, does `dimension check` list exactly the label calls a second compiler method finds?",

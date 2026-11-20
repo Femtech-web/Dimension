@@ -6,6 +6,9 @@ a git dependency's `rev` as a full commit hash, so each release lists its commit
 
 ## 0.3.1: 2026-11-20
 
+Commit `5a1aafe80e2f9034242fb6f5ada9b2495685d2ac` (tag `v0.3.1`). Release notes:
+[docs/releases/v0.3.1.md](docs/releases/v0.3.1.md).
+
 ### Fixed
 
 - The seals of `Rounding`, `Flow`, `Stage` and `Valuation` no longer rest on a

@@ -268,9 +268,9 @@ export default function Home() {
             <Code title="fe.toml" lang="toml">
               {`[dependencies.dimension]
 source = "https://github.com/Femtech-web/Dimension"
-rev = "1171eb8339b8fc5bb6f594807f0696fde736ecaf"   # v0.3.0
+rev = "5a1aafe80e2f9034242fb6f5ada9b2495685d2ac"   # v0.3.1
 name = "dimension"
-version = "0.3.0"`}
+version = "0.3.1"`}
             </Code>
             <Code title="with the command line" lang="shell">
               {`pipx install "git+https://github.com/Femtech-web/Dimension#subdirectory=cli"
