@@ -36,7 +36,8 @@ export default function Verify() {
           </>
         }
       />
-      <Section eyebrow="One command, with only Docker">
+      <Section>
+        <div className="eyebrow solo">One command, with only Docker</div>
         <Code title="every offline check: make ci, with no network" lang="shell">
           {`docker run --rm ghcr.io/femtech-web/dimension              # the published image
 docker build -t dimension . && docker run --rm dimension   # or build it from a clone`}
@@ -47,9 +48,9 @@ docker build -t dimension . && docker run --rm dimension   # or build it from a 
           check runs. On arm64, Docker on Apple silicon included, Fe 26.6.0 has no native backend, so those checks are
           skipped and say so.
         </p>
-      </Section>
-
-      <Section eyebrow="Or step by step, from a clean clone">
+        <div className="eyebrow solo" style={{ marginTop: 48 }}>
+          Or step by step, from a clean clone
+        </div>
         <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 14 }}>
           {STEPS.map(([title, command, what], i) => (
             <li key={title} className="panel" style={{ display: "grid", gridTemplateColumns: "42px 1fr", gap: 14, alignItems: "start" }}>

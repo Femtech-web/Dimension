@@ -1,0 +1,10 @@
+error[2-0003]: `Key` is not visible
+  ┌─ src/lib.fe:5:38
+  │
+5 │     fn key(_ k: dimension::rounding::Key) {}
+  │                                      ^^^ `Key` is not visible
+  │
+  ┌─ src/rounding.fe:9:8
+  │
+9 │ struct Key {}
+  │        --- `Key` is defined here

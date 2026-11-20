@@ -3,7 +3,14 @@
 
 use core::num::{mul_div, mul_div_ceil}
 
-trait Sealed {}
+/// Named only in this module. Fe 26.6 does not check a private trait's
+/// visibility where it is implemented (argotorg/fe#2036), but does check a
+/// struct's, so no implementation of `Sealed` can be written elsewhere.
+struct Key {}
+
+trait Sealed {
+    fn key(_ k: Key)
+}
 
 pub trait Rounding: Sealed {
     /// `a * b / d` with a 512-bit intermediate, rounded in this direction.
@@ -17,8 +24,12 @@ pub struct Floor {}
 /// Away from zero.
 pub struct Ceil {}
 
-impl Sealed for Floor {}
-impl Sealed for Ceil {}
+impl Sealed for Floor {
+    fn key(_ k: Key) {}
+}
+impl Sealed for Ceil {
+    fn key(_ k: Key) {}
+}
 
 impl Rounding for Floor {
     fn mul_div(_ a: u256, _ b: u256, _ d: u256) -> u256 {

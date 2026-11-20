@@ -54,6 +54,21 @@
       ]
     },
     {
+      "id": "seal-key-public",
+      "layer": "types",
+      "bug": "The seal's key is made public, so code outside Dimension can implement the seal and add a flow",
+      "files": [
+        "ingots/dimension/src/flow.fe"
+      ],
+      "check": "make compile-fail",
+      "caught": true,
+      "outcome": "caught",
+      "evidence": [
+        "FAIL compile_fail/custom_flow_through_the_seal",
+        "compiled, but it must be rejected"
+      ]
+    },
+    {
       "id": "exchange-keeps-direction",
       "layer": "types",
       "bug": "An exchange gives back value moving the same way as what it received",
@@ -327,7 +342,7 @@
     {
       "question": "Is every planted bug in the safety-critical code caught by the check meant to catch it?",
       "holds": true,
-      "evidence": "21 of 21 mutants caught, each for the reason expected of it, across 7 layers: bind time, compile time, port fidelity, read time, runtime guard, types, unsafe policy"
+      "evidence": "22 of 22 mutants caught, each for the reason expected of it, across 7 layers: bind time, compile time, port fidelity, read time, runtime guard, types, unsafe policy"
     }
   ]
 }

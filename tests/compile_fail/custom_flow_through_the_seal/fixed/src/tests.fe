@@ -1,0 +1,7 @@
+use dimension::{In, Out}
+use super::both_flows
+
+#[test]
+fn in_and_out_are_flows() {
+    assert(both_flows<In>() && both_flows<Out>())
+}

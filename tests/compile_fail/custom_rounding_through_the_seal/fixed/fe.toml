@@ -1,0 +1,6 @@
+[ingot]
+name = "custom_rounding_through_the_seal_fixed"
+version = "0.1.0"
+
+[dependencies]
+dimension = { path = "../../../../ingots/dimension" }

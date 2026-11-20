@@ -32,7 +32,9 @@
     "balancer_floor_upscale_as_admitted": true,
     "compose_prices_without_shared_asset": true,
     "custom_flow": true,
+    "custom_flow_through_the_seal": true,
     "custom_rounding_direction": true,
+    "custom_rounding_through_the_seal": true,
     "deposit_credited_to_another_token": true,
     "forge_admitted_quantity": true,
     "forge_price": true,
@@ -59,7 +61,7 @@
     {
       "question": "On fe 26.7.0 (e6e6342), is every compile-fail case rejected with its expected code, and its corrected twin accepted?",
       "holds": true,
-      "evidence": "21 of 21 cases"
+      "evidence": "23 of 23 cases"
     }
   ]
 }

@@ -2,13 +2,17 @@
 """The Dimension command line: start a project, check it before deploying.
 
 Usage:
-    python3 cli/dimension.py new DIR [--rev COMMIT] [--source URL]
-    python3 cli/dimension.py check [DIR] [--network base] [--rpc URL] [--fe PATH] [--strict]
-    python3 cli/dimension.py feeds REGISTRY.fe [...] --network base
+    dimension new DIR [--rev COMMIT] [--source URL]
+    dimension check [DIR] [--network base] [--rpc URL] [--fe PATH] [--strict]
+    dimension feeds REGISTRY.fe [...] --network base
+
+Install it with `pipx install "git+https://github.com/Femtech-web/Dimension#subdirectory=cli"`,
+or run it from a clone as `python3 cli/dimension.py`.
 
 `new` creates a Fe project from the quickstart, as it was at the release it
-pins, with Dimension as a git dependency on that release's commit. Run it from
-a clone of this repository.
+pins, with Dimension as a git dependency on that release's commit. It reads
+this repository's history: the clone it runs from, or else a copy fetched
+from GitHub into the user's cache, file contents only as they are read.
 
 `check` runs the checklist from docs/guide.md ("Before production") on a
 project. It fails on what would let the project forge values Dimension
@@ -53,9 +57,12 @@ import tempfile
 import tomllib
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import feed_check  # noqa: E402
+
+# The clone this file is in, when it runs from one rather than installed.
+CLONE = Path(__file__).resolve().parents[1]
+CLONED = (CLONE / ".git").exists() and (CLONE / "ingots" / "dimension").is_dir()
 
 SOURCE = "https://github.com/Femtech-web/Dimension"
 QUICKSTART = "examples/quickstart/src"
@@ -65,14 +72,29 @@ _RELEASE = re.compile(r"^## (\d+\.\d+\.\d+)\b[^\n]*\n\nCommit `([0-9a-f]{40})`",
 _FULL_COMMIT = re.compile(r"^[0-9a-f]{40}$")
 
 
-def releases() -> dict[str, str]:
-    """Release commit -> version, from the changelog, newest first."""
-    text = (REPO / "CHANGELOG.md").read_text()
-    return {commit: version for version, commit in _RELEASE.findall(text)}
+def history() -> Path:
+    """This repository's git history: the clone, or a cached copy of GitHub's."""
+    if CLONED:
+        return CLONE
+    cache = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "dimension" / "repo.git"
+    if (cache / "HEAD").exists():
+        subprocess.run(["git", "-C", str(cache), "fetch", "--quiet", "--tags", "origin", "+refs/heads/*:refs/heads/*"],
+                       capture_output=True)
+    else:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["git", "clone", "--quiet", "--bare", "--filter=blob:none", SOURCE, str(cache)],
+                       capture_output=True, check=True)
+    return cache
 
 
 def git(*args: str) -> str:
-    return subprocess.run(["git", *args], cwd=REPO, capture_output=True, text=True, check=True).stdout
+    return subprocess.run(["git", *args], cwd=history(), capture_output=True, text=True, check=True).stdout
+
+
+def releases() -> dict[str, str]:
+    """Release commit -> version, from the changelog, newest first."""
+    text = (CLONE / "CHANGELOG.md").read_text() if CLONED else git("show", "HEAD:CHANGELOG.md")
+    return {commit: version for version, commit in _RELEASE.findall(text)}
 
 
 def new(target: Path, rev: str | None, source: str) -> int:
@@ -97,7 +119,7 @@ def new(target: Path, rev: str | None, source: str) -> int:
     )
     print(f"created {target} from the quickstart at {commit[:7]}{label.replace('   #', ',')}")
     print(f"next:   cd {target} && fe test")
-    print(f"before deploying:   python3 {Path(__file__).resolve()} check {target}")
+    print(f"before deploying:   {f'python3 {Path(__file__).resolve()}' if CLONED else 'dimension'} check {target}")
     return 0
 
 
@@ -123,11 +145,13 @@ def find_fe(explicit: str | None) -> str | None:
         return found
     if found := shutil.which("fe"):
         return found
-    lock = REPO / "scripts" / "toolchain" / "fe.lock"
+    if not CLONED:
+        return None
+    lock = CLONE / "scripts" / "toolchain" / "fe.lock"
     version = re.search(r"^version=(\S+)", lock.read_text(), re.MULTILINE) if lock.exists() else None
-    if version and (REPO / ".tools" / f"fe-{version[1]}" / "fe").exists():
-        return str(REPO / ".tools" / f"fe-{version[1]}" / "fe")
-    installed = sorted(REPO.glob(".tools/fe-*/fe"))
+    if version and (CLONE / ".tools" / f"fe-{version[1]}" / "fe").exists():
+        return str(CLONE / ".tools" / f"fe-{version[1]}" / "fe")
+    installed = sorted(CLONE.glob(".tools/fe-*/fe"))
     return str(installed[0]) if installed else None
 
 
@@ -265,12 +289,17 @@ def checklist(project: Path, network: str | None, rpc: str | None, fe_path: str 
     if not isinstance(dep, dict):
         raise SystemExit(f"{manifest}: no Dimension dependency")
 
-    known = releases()
+    try:
+        known = releases()
+    except (OSError, subprocess.CalledProcessError):
+        known = None
     rev = dep.get("rev", "")
     if "path" in dep:
         rows.add("warn", "pinned", f"a path dependency ({dep['path']}): pin a release commit before deploying")
     elif not _FULL_COMMIT.match(rev):
         rows.add("warn", "pinned", f"rev {rev!r} is not a full commit hash")
+    elif known is None:
+        rows.add("warn", "pinned", f"{rev[:7]}: the release list could not be read from {SOURCE}")
     elif rev in known:
         rows.add("ok  ", "pinned", f"release v{known[rev]} ({rev[:7]})")
     else:

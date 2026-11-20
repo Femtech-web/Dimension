@@ -143,6 +143,11 @@ section.block {
   color: var(--muted);
 }
 
+/* A label with no heading under it still needs room before what it labels. */
+.eyebrow.solo {
+  margin-bottom: 18px;
+}
+
 h1,
 h2,
 h3 {

@@ -272,10 +272,11 @@ rev = "1171eb8339b8fc5bb6f594807f0696fde736ecaf"   # v0.3.0
 name = "dimension"
 version = "0.3.0"`}
             </Code>
-            <Code title="from a clone of Dimension, on main" lang="shell">
-              {`python3 cli/dimension.py new ../my-protocol
-(cd ../my-protocol && fe test)        # 3 tests, on the EVM
-python3 cli/dimension.py check ../my-protocol --network base`}
+            <Code title="with the command line" lang="shell">
+              {`pipx install "git+https://github.com/Femtech-web/Dimension#subdirectory=cli"
+dimension new my-protocol
+(cd my-protocol && fe test)        # 3 tests, on the EVM
+dimension check my-protocol --network base`}
             </Code>
           </div>
         </div>
@@ -296,7 +297,7 @@ docker build -t dimension . && docker run --rm dimension   # or build it from a 
           <Code title="a clean clone" lang="shell">
             {`make toolchain   # Fe 26.6.0, downloaded and checksum-verified
 make demo        # both incidents: the mistake, the verdict, the fix
-make ci          # every offline check, about a minute
+make ci          # every offline check, about two minutes
 make replay      # the attacker's 360 steps, on mainnet forks
 make mutants     # plant bugs; each must be caught`}
           </Code>

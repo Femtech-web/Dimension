@@ -4,6 +4,19 @@ Changes to the `dimension` library ingot (`ingots/dimension`). Versions follow
 semantic versioning; before 1.0, a minor version may change the API. Fe resolves
 a git dependency's `rev` as a full commit hash, so each release lists its commit.
 
+## 0.3.1: 2026-11-20
+
+### Fixed
+
+- The seals of `Rounding`, `Flow`, `Stage` and `Valuation` no longer rest on a
+  private trait's visibility, which Fe 26.6 does not check where a trait is
+  implemented ([argotorg/fe#2036](https://github.com/argotorg/fe/issues/2036)).
+  On 0.3.0, code outside Dimension could implement the seal and add a flow or a
+  rounding direction. Each seal now also requires a method that takes `Key`, a
+  private struct, whose visibility Fe does check, so that code fails to compile
+  (`2-0003`). Nothing else changes: every compiled contract is byte-identical to
+  0.3.0's.
+
 ## 0.3.0: 2026-11-19
 
 Commit `1171eb8339b8fc5bb6f594807f0696fde736ecaf` (tag `v0.3.0`). Release notes:

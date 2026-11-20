@@ -5,7 +5,14 @@
 
 use super::rounding::{Ceil, Floor, Rounding}
 
-trait Sealed {}
+/// Named only in this module. Fe 26.6 does not check a private trait's
+/// visibility where it is implemented (argotorg/fe#2036), but does check a
+/// struct's, so no implementation of `Sealed` can be written elsewhere.
+struct Key {}
+
+trait Sealed {
+    fn key(_ k: Key)
+}
 
 /// The direction value moves, seen from the protocol.
 pub trait Flow: Sealed {
@@ -26,8 +33,12 @@ pub struct In {}
 /// than what is owed.
 pub struct Out {}
 
-impl Sealed for In {}
-impl Sealed for Out {}
+impl Sealed for In {
+    fn key(_ k: Key) {}
+}
+impl Sealed for Out {
+    fn key(_ k: Key) {}
+}
 
 impl Flow for In {
     type Admission = Floor
@@ -54,10 +65,18 @@ pub struct Owed {}
 /// A raw amount to transfer, rounded by `Flow::Obligation`.
 pub struct Settled {}
 
-impl Sealed for Given {}
-impl Sealed for Admitted {}
-impl Sealed for Owed {}
-impl Sealed for Settled {}
+impl Sealed for Given {
+    fn key(_ k: Key) {}
+}
+impl Sealed for Admitted {
+    fn key(_ k: Key) {}
+}
+impl Sealed for Owed {
+    fn key(_ k: Key) {}
+}
+impl Sealed for Settled {
+    fn key(_ k: Key) {}
+}
 
 impl Stage for Given {}
 impl Stage for Admitted {}
@@ -83,8 +102,12 @@ pub struct Collateral {}
 /// Value a position owes. Rounded up so debt is never understated.
 pub struct Debt {}
 
-impl Sealed for Collateral {}
-impl Sealed for Debt {}
+impl Sealed for Collateral {
+    fn key(_ k: Key) {}
+}
+impl Sealed for Debt {
+    fn key(_ k: Key) {}
+}
 
 impl Valuation for Collateral {
     type Rounding = Floor

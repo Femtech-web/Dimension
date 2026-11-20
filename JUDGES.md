@@ -52,7 +52,7 @@ For each incident this shows:
   pool, is a type error. StableMath only accepts amounts that went through
   `admit`.
 
-`make show` with no argument runs all 21 compile-fail cases the same way.
+`make show` with no argument runs all 23 compile-fail cases the same way.
 
 ## 3. Run everything offline (about 2 minutes)
 

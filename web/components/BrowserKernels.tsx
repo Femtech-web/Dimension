@@ -14,6 +14,8 @@ const W = 960;
 const H = 340;
 const M = { l: 62, r: 24, t: 24, b: 44 };
 const NO_FAILURE = 0xffffffff;
+// One exit every 120 ms plays the batch in about six seconds.
+const STEP_MS = 120;
 
 /** The batch through each kernel, by the module `make wasm` builds: the value
  * per BPT at the start and after each exit, up to the exit that fails. */
@@ -48,7 +50,9 @@ export function BrowserKernels({ chain }: { chain: Record<Kernel, string> }) {
   const [result, setResult] = useState<Awaited<ReturnType<typeof runAll>> | null>(null);
   const [error, setError] = useState("");
   const [n, setN] = useState(0);
+  const [playing, setPlaying] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
+  const figureRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     runAll()
@@ -58,6 +62,35 @@ export function BrowserKernels({ chain }: { chain: Record<Kernel, string> }) {
       })
       .catch(() => setError("This browser could not load the WebAssembly module."));
   }, []);
+
+  // Plays the batch once from the start when the chart first comes into view,
+  // unless the reader prefers reduced motion; until then it shows the outcome.
+  useEffect(() => {
+    const figure = figureRef.current;
+    if (!result || !figure || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        observer.disconnect();
+        setN(0);
+        setPlaying(true);
+      },
+      { threshold: 0.5 },
+    );
+    observer.observe(figure);
+    return () => observer.disconnect();
+  }, [result]);
+
+  useEffect(() => {
+    if (!playing || !result) return;
+    const timer = setInterval(() => setN((step) => Math.min(step + 1, result.count)), STEP_MS);
+    return () => clearInterval(timer);
+  }, [playing, result]);
+
+  // The batch played to its last exit.
+  useEffect(() => {
+    if (playing && result && n >= result.count) setPlaying(false);
+  }, [playing, result, n]);
 
   if (error) return <p className="ink2">{error}</p>;
   if (!result) return <p className="muted num">Running the kernels in WebAssembly…</p>;
@@ -76,7 +109,16 @@ export function BrowserKernels({ chain }: { chain: Record<Kernel, string> }) {
   const stop = typed.values.length; // the exit that fails, counted from 1
   const equal = (k: Kernel) => runs[k].values.at(-1)?.toString() === chain[k];
 
+  function toggle() {
+    if (playing) setPlaying(false);
+    else {
+      if (n >= count) setN(0);
+      setPlaying(true);
+    }
+  }
+
   function locate(clientX: number) {
+    if (playing) return;
     const box = svgRef.current?.getBoundingClientRect();
     if (!box) return;
     const step = Math.round(((((clientX - box.left) / box.width) * W - M.l) / plotW) * count);
@@ -84,7 +126,7 @@ export function BrowserKernels({ chain }: { chain: Record<Kernel, string> }) {
   }
 
   return (
-    <figure className={styles.figure}>
+    <figure className={styles.figure} ref={figureRef}>
       <figcaption className={styles.caption}>Value per BPT after each exit of the batch, computed in this browser</figcaption>
       <div className={styles.legend}>
         <span>
@@ -109,6 +151,7 @@ export function BrowserKernels({ chain }: { chain: Record<Kernel, string> }) {
           aria-label={`Over ${count} exits the faithful kernel's value per BPT falls from 1.0000 to ${wad(runs.faithful.values.at(-1)!, 4)}; the typed and guarded kernels' rises to ${wad(typed.values.at(-1)!, 4)}, then exit ${stop} fails with ${typed.failure === null ? "nothing" : bal(typed.failure)}. A table of the values follows.`}
           onPointerMove={(e) => locate(e.clientX)}
           onKeyDown={(e) => {
+            setPlaying(false);
             if (e.key === "ArrowRight") setN(Math.min(count, n + 1));
             else if (e.key === "ArrowLeft") setN(Math.max(0, n - 1));
             else return;
@@ -144,10 +187,25 @@ export function BrowserKernels({ chain }: { chain: Record<Kernel, string> }) {
         </svg>
       </div>
 
-      <label className={own.slider}>
-        <span className="num">{n === 0 ? "At the start" : `After exit ${n} of ${count}`}</span>
-        <input type="range" min={0} max={count} value={n} onChange={(e) => setN(+e.target.value)} />
-      </label>
+      <div className={own.controls}>
+        <button type="button" className={`button ghost ${own.play}`} onClick={toggle} aria-label={playing ? "Pause the batch" : n >= count ? "Replay the batch from the start" : "Play the batch"}>
+          <span aria-hidden="true">{playing ? "❚❚" : n >= count ? "↺" : "▶"}</span>
+          {playing ? "Pause" : n >= count ? "Replay" : "Play"}
+        </button>
+        <label className={own.slider}>
+          <span className="num">{n === 0 ? "At the start" : `After exit ${n} of ${count}`}</span>
+          <input
+            type="range"
+            min={0}
+            max={count}
+            value={n}
+            onChange={(e) => {
+              setPlaying(false);
+              setN(+e.target.value);
+            }}
+          />
+        </label>
+      </div>
       <div className="table-wrap">
         <table>
           <thead>
@@ -164,9 +222,9 @@ export function BrowserKernels({ chain }: { chain: Record<Kernel, string> }) {
               return (
                 <tr key={k}>
                   <td>{k}</td>
-                  <td className="n">{v === undefined ? `exit ${runs[k].values.length} fails ${bal(runs[k].failure!)}` : wad(v, 4)}</td>
+                  <td className="n">{v === undefined ? `exit ${runs[k].values.length}: ${bal(runs[k].failure!)}` : wad(v, 4)}</td>
                   <td className="n">
-                    {v === undefined ? "the batch reverts" : `${(((asFloat(v) - asFloat(start)) / asFloat(start)) * 100).toFixed(2)}%`}
+                    {v === undefined ? "reverted" : `${(((asFloat(v) - asFloat(start)) / asFloat(start)) * 100).toFixed(2)}%`}
                   </td>
                 </tr>
               );

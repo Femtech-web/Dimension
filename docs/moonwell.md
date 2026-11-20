@@ -109,7 +109,7 @@ cbETH's price, about 14% high. The trust that remains is in Chainlink's own
 directory, at review time.
 
 ```sh
-python3 cli/feed_check.py src/registry.fe --network base   # your registry
+dimension feeds src/registry.fe --network base   # your registry
 ```
 
 `dimension check ingots/moonwell` fails its feeds row, and should. The ingot's

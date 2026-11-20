@@ -186,7 +186,7 @@ make toolchain   # Fe 26.6.0, downloaded and checksum-verified
 make demo        # both incidents: the mistake, the compiler's verdict, the fix, the evidence
 ```
 
-Then `make ci` runs every offline check in about a minute, and `make replay`,
+Then `make ci` runs every offline check in about two minutes, and `make replay`,
 `make fidelity` and `make moonwell` run the fork comparisons. [JUDGES.md](JUDGES.md) is a
 ten-minute tour with ways to try to break it, and the site in [`web/`](web)
 (`make web`) shows every saved result: the replay and the Moonwell prices
@@ -314,7 +314,7 @@ The rest of Dimension leans on Fe throughout:
 | Fe feature | What Dimension does with it |
 |---|---|
 | Phantom generics, module-scoped privacy | Trusted values have private fields; only their checking functions construct them |
-| Sealed traits with associated types | Exactly two roundings, two flows and two valuation sides; none can be added |
+| Sealed traits with associated types | Exactly two roundings, two flows and two valuation sides; none can be added. Fe 26.6 lets code elsewhere implement a private trait ([argotorg/fe#2036](https://github.com/argotorg/fe/issues/2036)), so each seal also requires a private struct, which Fe does check |
 | A recursive associated type (`type Opposite: Flow`) | An exchange's result moves opposite to what it received, so an ERC-4626 vault's four roundings need no code |
 | A sealed sub-trait of a sealed trait (`TokenUnits: Stage`) | A holding accepts only `Given` and `Settled` amounts, so internal 18-decimal units never reach a raw balance, and no one can add a stage that would |
 | Methods on phantom-typed holdings (`Held<T>`, `Supply<T>`) | A balance takes only its own token, in its own role: crediting shares to a supply, or WETH to USDC, does not compile |
@@ -337,16 +337,16 @@ The rest of Dimension leans on Fe throughout:
 | The pool contracts at every optimization level | `-O0`, `-O1`, `-O2`, `-Os` | the same attack to the wei at each; gas and size per level | `make evm` |
 | Typed code on Dimension against the same code by hand on raw `u256` | 2 pairs, 8 functions, 4,096 calls per level, 4 levels | identical results at every level; above `-O0`, identical gas, and identical bytes for the roundings | `make evm` |
 | Admission and settlement against the exact rational result | 20,000 per backend | exact floor and ceil | `make unit` |
-| Constructions the compiler must reject | 21 cases, each with a corrected twin | all rejected with the intended error; all twins pass | `make compile-fail` |
+| Constructions the compiler must reject | 23 cases, each with a corrected twin | all rejected with the intended error; all twins pass | `make compile-fail` |
 | Language behaviour the design rests on | 20 probes with golden outputs and bytecode hashes | all as recorded, identical on macOS and Linux | `make probes` |
 | Moonwell's market on Base forks | 14 blocks across the incident | Dimension correct at every block; identical to Moonwell where Moonwell was right | `make moonwell` |
 | Each declared feed against Chainlink's directory and Base | the registry, plus 2 wrong declarations that compile | the registry passes 10 of 10 checks per feed; both wrong ones rejected, one that passes every on-chain check | `make feeds` |
 | The ERC-4626 vault against OpenZeppelin's ERC4626 | 40,000 vectors, 33,684 where the rounding decides | all equal | `make vault` |
 | The vault against the exact rational result | 32,768 states × 4 previews, both backends | exact floor or ceil as EIP-4626 requires | `make unit` |
-| Planted bugs in the safety-critical code | 21 mutants across 7 layers | every one caught, for the reason expected of it | `make mutants FORKS=1` |
+| Planted bugs in the safety-critical code | 22 mutants across 7 layers | every one caught, for the reason expected of it | `make mutants FORKS=1` |
 | The deployment on Base Sepolia, read back from the chain | 9 contracts, 21 transactions | every transaction succeeded; code identical to this repository's build; every outcome as planned, to the wei | `make live` |
 | The Balancer kernels compiled to WebAssembly, against the EVM | 154 values per BPT across the batch on 3 kernels; 4 unit suites | every value equal to the wei, the same `BAL#004`; 24 tests pass; the module rebuilds byte for byte | `make wasm` |
-| Every ingot, test suite and compile-fail case on Fe 26.7.0 | 6 ingots, 11 suite runs, 21 cases | all pass, unchanged | `make compat` |
+| Every ingot, test suite and compile-fail case on Fe 26.7.0 | 6 ingots, 11 suite runs, 23 cases | all pass, unchanged | `make compat` |
 | A fresh project from `dimension new`, taking Dimension by git | the quickstart, a misuse, four broken copies | builds and passes its tests; the misuse is rejected; `dimension check` passes it and fails each copy: `allow_unsafe`, a forged price, the same forgery between `"/*"` and `"*/"` strings, a feed it cannot read | `make consumer` |
 
 Every run writes a report to [`docs/results/`](docs/results). Each claim in it
@@ -359,7 +359,7 @@ run.
 the check meant to catch each. A mutant counts as caught only if that check
 fails for the reason expected of it. A failure for any other reason, such as a
 network error, is reported as inconclusive and fails the run. `FORKS=1` adds
-the two that need a fork. **All 21 are caught:**
+the two that need a fork. **All 22 are caught:**
 
 | Bug planted | Caught by |
 |---|---|
@@ -369,6 +369,7 @@ the two that need a fork. **All 21 are caught:**
 | A feed's band, age or decimals unchecked; a rate's band unchecked | the oracle boundary tests |
 | The guard always passing, or switched off on exits | the search: losses reappear |
 | A risk policy's bad-debt predicate dropped | the compile-fail suite: the bad policy compiles |
+| The seal's key made public | the compile-fail suite: a flow added from outside Dimension compiles |
 | The port's `+ 1` dropped, or its `mulUp` rounding down | the differential test against Balancer's Solidity |
 | An extra virtual share in the vault | the comparison with OpenZeppelin |
 | `unsafe` in a protocol ingot | the unsafe policy |
@@ -416,15 +417,18 @@ tests, and follow [docs/guide.md](docs/guide.md):
 - the method used to port Balancer;
 - a checklist before production.
 
-The command line, [`cli/dimension.py`](cli/dimension.py), starts a project
-and checks it before deploying. It needs only Python's standard library; run it
-from a clone of this repository:
+The command line, [`dimension`](cli/dimension.py), starts a project and
+checks it before deploying. It needs Python 3.11 and git, and nothing else;
+install it with [pipx](https://pipx.pypa.io):
 
 ```sh
-python3 cli/dimension.py new ../my-protocol                     # the quickstart, pinned to the latest release
-(cd ../my-protocol && fe test)
-python3 cli/dimension.py check ../my-protocol --network base    # the checklist before deploying
+pipx install "git+https://github.com/Femtech-web/Dimension#subdirectory=cli"
+dimension new my-protocol                       # the quickstart, pinned to the latest release
+(cd my-protocol && fe test)
+dimension check my-protocol --network base      # the checklist before deploying
 ```
+
+From a clone, `python3 cli/dimension.py` is the same command.
 
 `check` fails a project that could forge or misprice what Dimension trusts:
 `allow_unsafe` granted to any dependency, any `unsafe` code, code that does not
@@ -443,8 +447,8 @@ compile with its comments blanked. A cross-check that disagrees fails. A check
 that cannot run, because there is no `fe` or the project does not compile, is a
 warning that says so, never a pass; `--strict` makes every warning fail too.
 
-The command line lives on `main`, not in the library's release tags: it has
-been improved since v0.3.0, while the library pinned above has not changed.
+`pipx install` takes the command line from `main`; the library a project
+depends on is pinned to a release, as above.
 
 The library's own page is [`ingots/dimension`](ingots/dimension), and its
 security policy is [SECURITY.md](SECURITY.md). `make consumer` checks this path
@@ -543,7 +547,7 @@ and say so.
 | `make help` | Every target |
 
 CI runs `make ci`, `make mutants` and `make compat` on Linux and, in a
-separate job, the fork comparisons with all 21 mutants, and `make live`; `make wasm`
+separate job, the fork comparisons with all 22 mutants, and `make live`; `make wasm`
 runs in its own job. From
 `main` it publishes the Docker image, once the image passes `make ci` itself.
 Native executables exist for `linux_amd64` and `mac_arm64` in Fe 26.6.0;

@@ -101,7 +101,12 @@ whoever triggered it. `Flow` encodes it once:
 `F::Obligation`. A call site never names a direction, so it cannot name the
 wrong one. `Rounding`, `Flow`, `Stage` and `Valuation` are sealed through a
 private supertrait, so a third direction or a custom flow cannot be added
-(compile-fail cases `custom_rounding_direction`, `custom_flow`). Static
+(compile-fail cases `custom_rounding_direction`, `custom_flow`). Fe 26.6 lets
+code elsewhere name and implement a private trait
+([argotorg/fe#2036](https://github.com/argotorg/fe/issues/2036)), so the seal
+also has a method that takes `Key`, a private struct, whose visibility Fe does
+check: implementing the seal from outside fails either way
+(`custom_flow_through_the_seal`, `custom_rounding_through_the_seal`). Static
 dispatch on the type parameter means the abstraction compiles away: the probes
 show byte-identical runtime bytecode against hand-written `mul_div_ceil` at
 `-O1`, `-O2` and `-Os`. On the library itself, `make evm` finds the same for
@@ -306,6 +311,6 @@ whether it holds, and the evidence.
 Golden files never regenerate silently: `make update` rewrites them, and the
 diff is reviewed before it is kept. The differential test clears Foundry's
 failure cache so its counts are deterministic. CI runs `make ci`,
-`make mutants` and `make compat` on Linux, and the fork targets, with all 21
+`make mutants` and `make compat` on Linux, and the fork targets, with all 22
 mutants, in a separate job. The same goldens pass on macOS and Linux,
 so diagnostics and bytecode hashes do not depend on the platform.

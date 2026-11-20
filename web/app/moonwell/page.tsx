@@ -134,7 +134,7 @@ export default function Moonwell() {
         </div>
         <div style={{ marginTop: 20 }}>
           <Code title="before deploying your own registry" lang="sh" terminal>
-            {"python3 cli/feed_check.py src/registry.fe --network base"}
+            {"dimension feeds src/registry.fe --network base"}
           </Code>
         </div>
         <p className="muted" style={{ fontSize: 14 }}>

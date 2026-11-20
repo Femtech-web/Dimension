@@ -1,0 +1,7 @@
+use super::halves
+
+#[test]
+fn floor_and_ceil() {
+    let (down, up) = halves(3)
+    assert(down == 1 && up == 2)
+}

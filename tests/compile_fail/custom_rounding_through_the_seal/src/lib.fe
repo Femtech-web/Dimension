@@ -1,0 +1,11 @@
+use dimension::Rounding
+pub struct Nearest {}
+// Fe 26.6 lets this name the private seal (argotorg/fe#2036), but not its key.
+impl dimension::rounding::Sealed for Nearest {
+    fn key(_ k: dimension::rounding::Key) {}
+}
+impl Rounding for Nearest {
+    fn mul_div(_ a: u256, _ b: u256, _ d: u256) -> u256 {
+        (a * b + d / 2) / d
+    }
+}

@@ -1,0 +1,11 @@
+use dimension::{Ceil, Flow}
+pub struct Sideways {}
+// Fe 26.6 lets this name the private seal (argotorg/fe#2036), but not its key.
+impl dimension::flow::Sealed for Sideways {
+    fn key(_ k: dimension::flow::Key) {}
+}
+impl Flow for Sideways {
+    type Admission = Ceil
+    type Obligation = Ceil
+    type Opposite = Sideways
+}

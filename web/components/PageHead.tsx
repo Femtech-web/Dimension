@@ -18,7 +18,7 @@ export function Section({ eyebrow, title, children }: { eyebrow?: string; title?
   return (
     <section className="block">
       <div className="wrap">
-        {eyebrow && <div className="eyebrow">{eyebrow}</div>}
+        {eyebrow && <div className={title ? "eyebrow" : "eyebrow solo"}>{eyebrow}</div>}
         {title && <h2 style={{ margin: "12px 0 24px", fontSize: "clamp(28px, 3.6vw, 42px)" }}>{title}</h2>}
         {children}
       </div>

@@ -124,7 +124,7 @@ export default function Live() {
       <Section eyebrow="Run it in your browser" title="The same batch, through the same Fe kernels, in WebAssembly.">
         <p className="ink2" style={{ marginTop: -8, marginBottom: 22, maxWidth: 760 }}>
           The kernels the pool contracts run, compiled by Fe to WebAssembly from the same source and run here, in this
-          page. Move along the batch to see each kernel&apos;s value per BPT after every exit.
+          page. Play the batch, or move along it, to see each kernel&apos;s value per BPT after every exit.
         </p>
         <BrowserKernels chain={chainEnds} />
       </Section>

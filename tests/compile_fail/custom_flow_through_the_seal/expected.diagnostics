@@ -1,0 +1,10 @@
+error[2-0003]: `Key` is not visible
+   ┌─ src/lib.fe:5:34
+   │
+ 5 │     fn key(_ k: dimension::flow::Key) {}
+   │                                  ^^^ `Key` is not visible
+   │
+   ┌─ src/flow.fe:11:8
+   │
+11 │ struct Key {}
+   │        --- `Key` is defined here

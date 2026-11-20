@@ -1,0 +1,6 @@
+use dimension::{Ceil, Floor, Rounding}
+
+// The fix: use the two directions Dimension defines.
+pub fn halves(_ x: u256) -> (u256, u256) {
+    (Floor::mul_div(x, 1, 2), Ceil::mul_div(x, 1, 2))
+}

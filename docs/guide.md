@@ -26,10 +26,9 @@ This guide covers three things:
 
 ## Getting started
 
-With the command line, from a clone of Dimension on `main` (the command line
-is newer than the release tags; the library it pins is not),
-`python3 cli/dimension.py new ../my_protocol` does steps 1 to 3: it creates
-the quickstart project with Dimension pinned to the latest release. By hand:
+With the command line (`pipx install "git+https://github.com/Femtech-web/Dimension#subdirectory=cli"`, or `python3 cli/dimension.py` from a clone),
+`dimension new ../my_protocol` does steps 1 to 3: it creates the quickstart
+project with Dimension pinned to the latest release. By hand:
 
 **1. Create a project.**
 
@@ -300,7 +299,7 @@ The method used for Balancer, in order:
 ## Before production
 
 A checklist for a team shipping a protocol built on Dimension.
-`python3 cli/dimension.py check <project> --network base` runs items 1, 2 and
+`dimension check <project> --network base` runs items 1, 2 and
 5, finds any `unsafe` code, and confirms the project compiles. It also lists
 every label the compiler finds, each place a raw number gets its meaning: read
 each one. Items 3, 4, 6 and 7 need your judgment.

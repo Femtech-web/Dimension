@@ -14,3 +14,7 @@ contracts/reference/cache/
 
 # Local keys (the testnet deployer); never committed.
 .secrets/
+
+# Left by installing the command line from a clone (pip install ./cli).
+cli/build/
+*.egg-info/

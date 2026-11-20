@@ -8,10 +8,10 @@
   },
   "platform": "mac_arm64",
   "summary": {
-    "cases": 21,
-    "ok": 21,
+    "cases": 23,
+    "ok": 23,
     "by_kind": {
-      "compile_fail": 21
+      "compile_fail": 23
     }
   },
   "cases": [
@@ -125,6 +125,41 @@
       }
     },
     {
+      "id": "compile_fail/custom_flow_through_the_seal",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Implementing the seal from outside to add a flow, which Fe 26.6 allows for a private trait (argotorg/fe#2036): the seal requires the private Key",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "2-0003",
+        "message": "`Key` is not visible",
+        "diagnostics_sha256": "4f213ba6cb135c2ad1fbf74ee83a5c9350085179f9c6f43ded0b6fa9c62c2c5a",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::{Ceil, Flow}",
+            "-pub struct Sideways {}",
+            "-// Fe 26.6 lets this name the private seal (argotorg/fe#2036), but not its key.",
+            "-impl dimension::flow::Sealed for Sideways {",
+            "-    fn key(_ k: dimension::flow::Key) {}",
+            "+use dimension::{Flow, In, Out}",
+            "+",
+            "+// The fix: say which way the value moves; In and Out carry the rounding.",
+            "+pub fn both_flows<F: Flow>() -> bool {",
+            "+    true",
+            "-impl Flow for Sideways {",
+            "-    type Admission = Ceil",
+            "-    type Obligation = Ceil",
+            "-    type Opposite = Sideways",
+            "-}"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
       "id": "compile_fail/custom_rounding_direction",
       "kind": "compile_fail",
       "layer": "compile-time",
@@ -149,6 +184,41 @@
             "+// The fix: use the two directions Dimension defines.",
             "+pub fn halves(_ x: u256) -> (u256, u256) {",
             "+    (Floor::mul_div(x, 1, 2), Ceil::mul_div(x, 1, 2))"
+          ],
+          "passed": 1,
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "compile_fail/custom_rounding_through_the_seal",
+      "kind": "compile_fail",
+      "layer": "compile-time",
+      "mechanism": "Implementing the seal from outside to add a rounding direction, which Fe 26.6 allows for a private trait (argotorg/fe#2036): the seal requires the private Key",
+      "ok": true,
+      "problems": [],
+      "observed": {
+        "error_code": "2-0003",
+        "message": "`Key` is not visible",
+        "diagnostics_sha256": "66ae80c0bb5835d43c325403e3cd18ea2bfc25336c0e70e13743819814f25f40",
+        "twin": {
+          "mode": "test",
+          "fix": [
+            "-use dimension::Rounding",
+            "-pub struct Nearest {}",
+            "-// Fe 26.6 lets this name the private seal (argotorg/fe#2036), but not its key.",
+            "-impl dimension::rounding::Sealed for Nearest {",
+            "-    fn key(_ k: dimension::rounding::Key) {}",
+            "+use dimension::{Ceil, Floor, Rounding}",
+            "+",
+            "+// The fix: use the two directions Dimension defines.",
+            "+pub fn halves(_ x: u256) -> (u256, u256) {",
+            "+    (Floor::mul_div(x, 1, 2), Ceil::mul_div(x, 1, 2))",
+            "-impl Rounding for Nearest {",
+            "-    fn mul_div(_ a: u256, _ b: u256, _ d: u256) -> u256 {",
+            "-        (a * b + d / 2) / d",
+            "-    }",
+            "-}"
           ],
           "passed": 1,
           "ok": true
