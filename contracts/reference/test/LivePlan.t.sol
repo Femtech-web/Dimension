@@ -32,8 +32,9 @@ contract LivePlan is Test {
     }
 
     /// The batch against one pool: whether it succeeds, the value per BPT before
-    /// and after, and where it stops, exit by exit: the failing exit and its
-    /// revert data, or the end, and the pool's state there.
+    /// and after, and where it stops, exit by exit: the value per BPT after each
+    /// exit that runs, the failing exit and its revert data, or the end, and the
+    /// pool's state there.
     function _run(string memory name, IPool pool, LiveRecorder recorder, uint256[] memory amounts)
         internal
         returns (string memory)
@@ -49,13 +50,18 @@ contract LivePlan is Test {
         snap = vm.snapshotState();
         uint256 stoppedAt = amounts.length;
         bytes memory reason;
+        uint256[] memory rates = new uint256[](amounts.length);
         for (uint256 i = 0; i < amounts.length; i++) {
-            try pool.exitGivenOut(RATED, amounts[i]) {}
-            catch (bytes memory revertData) {
+            try pool.exitGivenOut(RATED, amounts[i]) {
+                rates[i] = pool.getRate();
+            } catch (bytes memory revertData) {
                 (stoppedAt, reason) = (i, revertData);
                 break;
             }
         }
+        uint256[] memory steps = new uint256[](stoppedAt);
+        for (uint256 i = 0; i < stoppedAt; i++) steps[i] = rates[i];
+        vm.serializeUint(name, "rates", steps);
         (uint256[2] memory balances,, uint256 supply,) = pool.getState();
         uint256[] memory state = new uint256[](3);
         (state[0], state[1], state[2]) = (balances[0], balances[1], supply);

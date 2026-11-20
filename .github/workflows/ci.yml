@@ -55,6 +55,38 @@ jobs:
           name: results-forks-linux_amd64
           path: docs/results/
 
+  wasm:
+    # The Balancer kernels in WebAssembly, as the site runs them: Fe built with
+    # its WebAssembly backend at the pinned commit, every step of the batch
+    # checked against the EVM, and the served module rebuilt byte for byte.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.4.4
+      # Fe's wasm feature needs Rust 1.96 or later.
+      - run: rustup update stable && rustup default stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            .tools/fe-src
+          key: fe-wasm-${{ runner.os }}-${{ hashFiles('scripts/toolchain/fe.lock') }}
+      - run: make wasm
+      - run: git diff --exit-code web/public/kernels.wasm web/public/kernels.manifest.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-wasm-linux_amd64
+          path: docs/results/wasm/
+
   compat:
     # Fe 26.7.0, the other release Dimension supports: every ingot, every unit
     # suite on its backends, and every compile-fail case.

@@ -7,9 +7,9 @@ HARNESS := PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=scripts $(PYTHON) -m harness.
 CASES := $(HARNESS)cases
 FE := .tools/fe-$(shell sed -n 's/^version=//p' scripts/toolchain/fe.lock)/fe
 # The feasibility probes are kept exactly as recorded, so they are not formatted.
-FORMATTED := ingots tests/core tests/oracle tests/explorer tests/vault tests/unsafe_root tests/labels tests/feeds tests/zero_cost tests/compile_fail tests/compiler_findings examples
+FORMATTED := ingots wasm tests/core tests/oracle tests/explorer tests/vault tests/unsafe_root tests/labels tests/feeds tests/zero_cost tests/compile_fail tests/compiler_findings examples
 
-.PHONY: help toolchain reference-deps fmt fmt-check test unit compile-fail probes differential explore evm vault consumer apidoc fidelity replay moonwell feeds live live-rehearse live-deploy compat unsafe-policy mutants web show demo update ci
+.PHONY: help toolchain reference-deps fmt fmt-check test unit compile-fail probes differential explore evm vault consumer apidoc fidelity replay moonwell feeds live live-rehearse live-deploy fe-wasm wasm compat unsafe-policy mutants web show demo update ci
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -69,6 +69,12 @@ live-rehearse: toolchain reference-deps ## Run the whole Base Sepolia deployment
 
 live-deploy: toolchain reference-deps ## Deploy to Base Sepolia from .secrets/base-sepolia.json and record it in deployments/ (once; RESUME=1 finishes a stopped run)
 	@$(HARNESS)live deploy $(if $(RESUME),--resume)
+
+fe-wasm: ## Build the Fe compiler with its WebAssembly backend at the pinned commit, into .tools/ (needs Rust 1.96+ and Node.js)
+	@scripts/toolchain/build-fe-wasm.sh > /dev/null
+
+wasm: toolchain reference-deps fe-wasm ## The Balancer kernels in WebAssembly for the browser, every step checked against the EVM (needs Node.js)
+	@$(HARNESS)wasm
 
 compat: ## Every ingot, suite and compile-fail case on Fe 26.7.0, the other supported release (downloads it, checksum verified)
 	@$(HARNESS)compat

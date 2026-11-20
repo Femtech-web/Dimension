@@ -14,9 +14,10 @@ import probes from "@/data/results/probes.json";
 import replay from "@/data/results/replay.json";
 import unit from "@/data/results/unit.json";
 import vault from "@/data/results/vault.json";
+import wasm from "@/data/results/wasm.json";
 import meta from "@/data/meta.json";
 
-export { compat, compileFail, consumer, differential, evm, exploration, feeds, fidelity, live, meta, moonwell, mutants, probes, replay, unit, vault };
+export { compat, compileFail, consumer, differential, evm, exploration, feeds, fidelity, live, meta, moonwell, mutants, probes, replay, unit, vault, wasm };
 
 export type Claim = { question: string; holds: boolean; evidence: string };
 
@@ -42,6 +43,7 @@ export function allClaims(): { suite: string; title: string; command: string; cl
     { suite: "feeds", title: "Each declared feed against Chainlink's directory", command: "make feeds", claims: feeds.claims },
     { suite: "vault", title: "The ERC-4626 vault against OpenZeppelin", command: "make vault", claims: vault.claims },
     { suite: "live", title: "The deployment on Base Sepolia, read back from the chain", command: "make live", claims: live.claims },
+    { suite: "wasm", title: "The Balancer kernels in WebAssembly, against the EVM", command: "make wasm", claims: wasm.claims },
     { suite: "consumer", title: "Dimension as someone else's dependency", command: "make consumer", claims: consumer.claims },
     { suite: "compat", title: "The same library and tests on Fe 26.7.0", command: "make compat", claims: compat.claims },
     { suite: "mutants", title: "Planted bugs, each caught by the check meant for it", command: "make mutants", claims: mutants.claims },

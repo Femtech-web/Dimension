@@ -200,7 +200,8 @@ transactions from one account.
 [`LiveRecorder`](contracts/reference/src/LiveRecorder.sol) ran each attempt and
 logged its outcome in an event, with the exact revert data.
 [The site](https://dimension-sandy.vercel.app/live) reads the contracts from
-your browser.
+your browser, and runs the same batch there through the same kernels,
+compiled by Fe to WebAssembly.
 
 | On chain | Outcome | Transaction |
 |---|---|---|
@@ -322,7 +323,7 @@ The rest of Dimension leans on Fe throughout:
 | Effects | A feed read needs `uses (call: mut Call, ctx: Ctx)`. Failure is an effect too: one kernel reverts with Balancer's `BAL#` codes on the EVM and records failures in a native search |
 | `const fn`, `#[error]` | Feed registries are typed constants; boundary failures are typed reverts |
 | The `allow_unsafe` gate | Test constructors exist, and deployable code cannot reach them (`make unsafe-policy`) |
-| One source, two backends | The same kernels run as EVM contracts and as a native search, pinned to identical integers |
+| One source, three targets | The same kernels run as EVM contracts, as a native search, and as WebAssembly in the browser, pinned to identical integers |
 
 ## Checked and attacked
 
@@ -344,6 +345,7 @@ The rest of Dimension leans on Fe throughout:
 | The vault against the exact rational result | 32,768 states × 4 previews, both backends | exact floor or ceil as EIP-4626 requires | `make unit` |
 | Planted bugs in the safety-critical code | 21 mutants across 7 layers | every one caught, for the reason expected of it | `make mutants FORKS=1` |
 | The deployment on Base Sepolia, read back from the chain | 9 contracts, 21 transactions | every transaction succeeded; code identical to this repository's build; every outcome as planned, to the wei | `make live` |
+| The Balancer kernels compiled to WebAssembly, against the EVM | 154 values per BPT across the batch on 3 kernels; 4 unit suites | every value equal to the wei, the same `BAL#004`; 24 tests pass; the module rebuilds byte for byte | `make wasm` |
 | Every ingot, test suite and compile-fail case on Fe 26.7.0 | 6 ingots, 11 suite runs, 21 cases | all pass, unchanged | `make compat` |
 | A fresh project from `dimension new`, taking Dimension by git | the quickstart, a misuse, four broken copies | builds and passes its tests; the misuse is rejected; `dimension check` passes it and fails each copy: `allow_unsafe`, a forged price, the same forgery between `"/*"` and `"*/"` strings, a feed it cannot read | `make consumer` |
 
@@ -531,6 +533,7 @@ and say so.
 | `make feeds` | Each declared feed against Chainlink's directory and Base; wrong declarations must be rejected |
 | `make live` | Reads the Base Sepolia deployment back from the chain (`BASE_SEPOLIA_RPC_URL` overrides the public RPC) |
 | `make live-rehearse` | The whole deployment again, on a local anvil fork, with no key |
+| `make wasm` | The Balancer kernels compiled to WebAssembly for the site, every step checked against the EVM (builds Fe with its WebAssembly backend; needs Rust 1.96+ and Node.js) |
 | `make compat` | Every ingot, test suite and compile-fail case on Fe 26.7.0, the other supported release |
 | `make vault` | The ERC-4626 vault against OpenZeppelin's ERC4626 |
 | `make mutants` | Plants realistic bugs one at a time; each must be caught by the check meant for it |
@@ -540,7 +543,8 @@ and say so.
 | `make help` | Every target |
 
 CI runs `make ci`, `make mutants` and `make compat` on Linux and, in a
-separate job, the fork comparisons with all 21 mutants, and `make live`. From
+separate job, the fork comparisons with all 21 mutants, and `make live`; `make wasm`
+runs in its own job. From
 `main` it publishes the Docker image, once the image passes `make ci` itself.
 Native executables exist for `linux_amd64` and `mac_arm64` in Fe 26.6.0;
 elsewhere the native search is skipped.
@@ -557,6 +561,7 @@ elsewhere the native search is skipped.
 | [`ingots/moonwell`](ingots/moonwell) | Moonwell's cbETH market: feed registry, composite pricing, oracle contracts |
 | [`ingots/vault`](ingots/vault) | An ERC-4626 vault's accounting, written with Dimension |
 | [`ingots/live`](ingots/live) | The cbETH oracle on Base Sepolia's Chainlink feeds, as deployed |
+| [`wasm`](wasm) | The Balancer kernels' WebAssembly face, which the site runs, and its Node.js check |
 | [`contracts/reference`](contracts/reference) | Foundry: Balancer's Solidity, the differential test, the EVM attack, the fork tests, the attack replay, and the Base Sepolia deployment script |
 | [`deployments`](deployments) | The Base Sepolia deployment: each contract and transaction |
 | [`fixtures/balancer-v2-exploit`](fixtures/balancer-v2-exploit) | The attacker's swaps on the pool, read from the three transactions' events |

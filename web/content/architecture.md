@@ -261,6 +261,15 @@ pools, the vault and the declarations; `LiveRecorder` logs each outcome; and
 `scripts/harness/live.py` reads it all back. See
 [the README](../README.md#live-on-base-sepolia).
 
+## In the browser: `wasm/`
+
+Fe's WebAssembly backend compiles one standalone file, so `make wasm` bundles
+[`wasm/kernels.fe`](../wasm/kernels.fe) with `dimension` and `balancer_v2`,
+each ingot a module and each source file a module inside it, leaving out the
+EVM-only files. The exports take and return integers of at most 64 bits: a
+kernel, a number of exits, a value per BPT. `wasm/check.mjs` runs the module in
+Node.js for the harness; the site runs the same module on its Live page.
+
 ## The vault: `ingots/vault`
 
 An ERC-4626 vault's accounting, as an example of Dimension in a protocol

@@ -82,6 +82,7 @@ make fidelity   # Ethereum mainnet fork, block 23,717,396
 make moonwell   # Base forks from block 42,194,662 to 42,538,949
 make feeds      # each declared feed against Chainlink's directory and Base
 make live       # the deployment on Base Sepolia, read back from the chain
+make wasm       # the same kernels in WebAssembly, every step against the EVM (Rust 1.96+, Node.js)
 ```
 
 - **`replay`** forks Ethereum at each of the attacker's three transactions. It
@@ -106,6 +107,11 @@ make live       # the deployment on Base Sepolia, read back from the chain
   outcome `LiveRecorder` logged against forge's run of the same batch, and the
   oracle, the declarations and the vault at the latest block. `make
   live-rehearse` deploys it all again on a local fork, with no key.
+- **`wasm`** builds Fe with its WebAssembly backend at the pinned commit and
+  compiles the Balancer kernels into the module the site's Live page runs. Every
+  value per BPT across the batch, on each kernel, must equal forge's run of
+  the deployed contracts, and the module must rebuild byte for byte. The unit
+  suites also run on that backend.
 
 All use public RPCs. Set `MAINNET_RPC_URL`, `BASE_RPC_URL` or
 `BASE_SEPOLIA_RPC_URL` if one is rate-limited.
@@ -154,6 +160,7 @@ result observed.
 | A team's own project, created and checked | `cli/dimension.py`, run by `scripts/harness/consumer.py` | `docs/results/consumer/` |
 | The same on Fe 26.7.0 | `scripts/harness/compat.py`, `scripts/toolchain/fe-compat.lock` | `docs/results/compat/` |
 | The contracts on a public chain | `contracts/reference/script/Live.s.sol`, `deployments/base-sepolia.json`, `scripts/harness/live.py` | `docs/results/live/` |
+| The kernels in WebAssembly equal the EVM | `wasm/kernels.fe`, `wasm/check.mjs`, `scripts/harness/wasm.py` | `docs/results/wasm/` |
 
 The site in [`web/`](web) shows all of these, with the replay and the Moonwell
 prices charted. `make web` rebuilds it from whatever reports your runs saved.

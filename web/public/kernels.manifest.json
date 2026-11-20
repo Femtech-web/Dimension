@@ -1,0 +1,63 @@
+{
+  "manifest_version": 1,
+  "module": {
+    "file": "kernels.wasm",
+    "sha256": "3f12cdf8f7952badc86a5933e2dbfb0e7ea278e99e4cfffba9a83877da3cb05c",
+    "size": 110023,
+    "initial_memory_pages": 17
+  },
+  "contract_version": 1,
+  "optimization": "2",
+  "compiler": "fe 26.6.0 (5b3f96af2)",
+  "imports": [],
+  "exports": [
+    {
+      "name": "exits",
+      "kind": "function",
+      "params": [],
+      "result": {
+        "type": "u32",
+        "wasm": ["i32"]
+      }
+    },
+    {
+      "name": "failure",
+      "kind": "function",
+      "params": [
+        {
+          "name": "kernel",
+          "type": "u32",
+          "wasm": ["i32"]
+        }
+      ],
+      "result": {
+        "type": "u32",
+        "wasm": ["i32"]
+      }
+    },
+    {
+      "name": "memory",
+      "kind": "memory"
+    },
+    {
+      "name": "value_after",
+      "kind": "function",
+      "params": [
+        {
+          "name": "kernel",
+          "type": "u32",
+          "wasm": ["i32"]
+        },
+        {
+          "name": "n",
+          "type": "u32",
+          "wasm": ["i32"]
+        }
+      ],
+      "result": {
+        "type": "u64",
+        "wasm": ["i64"]
+      }
+    }
+  ]
+}

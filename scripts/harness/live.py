@@ -487,6 +487,8 @@ def check(path: Path, rpc: str, prepared: bool = False, write: bool = True) -> i
     for a in attacks:
         a["reason"] = show_error(decode_error(bytes.fromhex(a["reason"][2:]))) if a["reason"] != "0x" else None
         del a["batch"]
+        # As decimal text: JavaScript reads JSON numbers as doubles, which round values per BPT.
+        a["rate_before"], a["rate_after"] = str(a["rate_before"]), str(a["rate_after"])
 
     calls = {}
     for e in events["Call"]:

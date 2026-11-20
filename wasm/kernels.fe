@@ -1,0 +1,120 @@
+//! The Balancer kernels in the browser: the batch the live demonstration ran
+//! on Base Sepolia, through the faithful, typed and guarded kernels, from the
+//! deployed pools' state. `make wasm` bundles this file with `dimension`,
+//! `balancer_v2` and the batch LivePlan planned (`ingot::plan`), which Fe's
+//! WebAssembly backend needs as one file, and checks every step against the EVM.
+
+use ingot::balancer_v2::pool::Pool
+use ingot::balancer_v2::pool::faithful
+use ingot::balancer_v2::pool::faithful::upscaled
+use ingot::balancer_v2::pool::typed
+use ingot::balancer_v2::stable::check::{Check, Failure}
+use ingot::balancer_v2::stable::stable_math as sm
+use ingot::dimension::{Asset, Out, given, scaling_factor}
+use ingot::dimension::value::testing::assume_rate
+use ingot::plan::{COUNT, EXITS, SUPPLY}
+
+pub struct RATED {}
+
+impl Asset for RATED {
+    const DECIMALS: u256 = 18
+}
+
+// As contracts/reference/test/LivePlan.t.sol and script/Live.s.sol set them.
+const ONE: u256 = 1_000_000_000_000_000_000
+const RATE: u256 = 1_210_000_000_000_000_000
+const AMP: u256 = 200_000
+const BALANCE: u256 = 1000
+
+/// The first check that failed, as Balancer numbers it (`BAL#004` is 4).
+struct Outcome { failed: bool, code: u32 }
+
+impl Check for Outcome {
+    fn fail(mut self, _ failure: Failure) {
+        if !self.failed {
+            self.failed = true
+            self.code = match failure {
+                Failure::AddOverflow => 0,
+                Failure::SubOverflow => 1,
+                Failure::MulOverflow => 3,
+                Failure::ZeroDivision => 4,
+                Failure::DivInternal => 5,
+                Failure::InvariantDidNotConverge => 321,
+                Failure::BalanceDidNotConverge => 322,
+                Failure::ShareValueDecreased => 1000,
+            }
+        }
+    }
+}
+
+fn start() -> Pool<2> {
+    Pool {
+        balances: [BALANCE, BALANCE],
+        factors: [ONE, RATE],
+        supply: SUPPLY,
+        amp: AMP,
+        fee: 0,
+        stored_invariant: SUPPLY,
+        protocol_swap_fee: 0,
+    }
+}
+
+// The exit each pool contract makes: the rated token is at index 1, and the
+// typed kernels take its rate as a checked scaling factor. The browser has no
+// rate provider, so the rate is the fixed one the deployed mock returns.
+fn exit(_ p: mut Pool<2>, kernel: u32, amount: u256) uses (check: mut Check) {
+    if kernel == 0 {
+        let _ = faithful::exit_given_out(mut p, j: 1, amount_out: amount)
+    } else {
+        let r = scaling_factor<RATED>().with_rate(unsafe { assume_rate<RATED>(RATE) })
+        let _ = typed::exit_given_out(
+            mut p,
+            j: 1,
+            amount_out: given<RATED, Out>(amount),
+            factor: r,
+            guard: kernel == 2,
+        )
+    }
+}
+
+/// The number of exits in the batch.
+pub fn exits() -> u32 {
+    COUNT.downcast().unwrap()
+}
+
+/// The value per BPT, WAD-scaled as `getRate()` returns it, after the first `n`
+/// exits on `kernel` (0 faithful, 1 typed, 2 guarded); 0 when one of them fails.
+pub fn value_after(kernel: u32, n: u32) -> u64 {
+    let count: usize = n as usize
+    if count > COUNT { return 0 }
+    var p = start()
+    var outcome = Outcome { failed: false, code: 0 }
+    var i: usize = 0
+    let value = with (Check = mut outcome) {
+        while i < count {
+            exit(mut p, kernel, amount: EXITS[i])
+            i += 1
+        }
+        sm::calculate_invariant(p.amp, upscaled(p.balances, p.factors)) * ONE / p.supply
+    }
+    if outcome.failed { return 0 }
+    value.downcast().unwrap()
+}
+
+/// The check that the first failing exit on `kernel` fails, as Balancer
+/// numbers it, or 4294967295 when every exit runs.
+pub fn failure(kernel: u32) -> u32 {
+    var p = start()
+    var outcome = Outcome { failed: false, code: 0 }
+    var i: usize = 0
+    with (Check = mut outcome) {
+        while i < COUNT {
+            exit(mut p, kernel, amount: EXITS[i])
+            if outcome.failed {
+                return outcome.code
+            }
+            i += 1
+        }
+    }
+    4294967295
+}

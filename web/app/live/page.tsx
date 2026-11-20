@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BrowserKernels } from "@/components/BrowserKernels";
 import { Claims, Status } from "@/components/Claims";
 import { Code } from "@/components/Code";
 import { LiveReads, type LiveAddresses } from "@/components/LiveReads";
@@ -27,8 +28,8 @@ type Attack = {
   tx: string;
   exits: number;
   succeeded: boolean;
-  rate_before: number;
-  rate_after: number;
+  rate_before: string;
+  rate_after: string;
   reason: string | null;
 };
 
@@ -37,6 +38,10 @@ export default function Live() {
   const address = (name: string) => `${live.explorer}/address/${contracts[name].address}`;
   const tx = (hash: string) => `${live.explorer}/tx/${hash}`;
   const attacks = live.attacks as Attack[];
+  // The value per BPT the chain recorded after each kernel's longest batch that ran.
+  const ended = (pool: string) =>
+    attacks.filter((a) => a.pool === pool && a.succeeded).sort((a, b) => b.exits - a.exits)[0].rate_after;
+  const chainEnds = { faithful: ended("FaithfulPool"), typed: ended("TypedPool"), guarded: ended("GuardedPool") };
   const addresses: LiveAddresses = {
     oracle: contracts.CbethUsdOracle.address,
     misdeclared: contracts.DeclaredCbethEthAsUsd.address,
@@ -88,7 +93,7 @@ export default function Live() {
                   <td className="n">{a.exits}</td>
                   <td>
                     {a.succeeded ? (
-                      <Status holds={a.rate_after >= a.rate_before} yes="ran, value rose" no="ran, value fell" />
+                      <Status holds={BigInt(a.rate_after) >= BigInt(a.rate_before)} yes="ran, value rose" no="ran, value fell" />
                     ) : (
                       <span className="status good">
                         <i aria-hidden="true">✓</i>
@@ -114,6 +119,14 @@ export default function Live() {
           batch raises the value behind each share.{" "}
           <Link href="/balancer">Why the rounding decides it →</Link>
         </p>
+      </Section>
+
+      <Section eyebrow="Run it in your browser" title="The same batch, through the same Fe kernels, in WebAssembly.">
+        <p className="ink2" style={{ marginTop: -8, marginBottom: 22, maxWidth: 760 }}>
+          The kernels the pool contracts run, compiled by Fe to WebAssembly from the same source and run here, in this
+          page. Move along the batch to see each kernel&apos;s value per BPT after every exit.
+        </p>
+        <BrowserKernels chain={chainEnds} />
       </Section>
 
       <Section eyebrow="What the chain recorded" title="Every claim, read back from the chain.">

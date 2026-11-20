@@ -15,7 +15,8 @@
     "probes",
     "replay",
     "unit",
-    "vault"
+    "vault",
+    "wasm"
   ],
   "release": {
     "version": "0.3.0",
