@@ -496,7 +496,7 @@ read is added.
   cannot safely be shortened: started from the invariant before the
   operation, Newton's integer iteration settles on a different value at dust
   balances, and in the search that let 13 losing operations through. The
-  typed contract costs about 800 to 1,000 gas more per operation (+3% to +6%), for
+  typed contract costs 887 to 1,019 gas more per operation (+3.5% to +6.4%), for
   its checked rate read.
 - **Rounding up refuses some dust:** 1 wei out of a 2-wei balance, which
   Balancer paid out for free.

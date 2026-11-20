@@ -8,15 +8,15 @@
   "platform": "mac_arm64",
   "directory": {
     "url": "https://reference-data-directory.vercel.app/feeds-ethereum-mainnet-base-1.json",
-    "sha256": "b0e1124ea56b41e8ef29a20b145b6b198a8724e191f64c7db9660ce8ce8494e6",
-    "entries": 196
+    "sha256": "5134266982484f6090db4088bea278ac1da97f4ad4b0fe5e7aa0c5aca81b009d",
+    "entries": 197
   },
   "chain": {
-    "rpc": "https://mainnet.base.org",
-    "block": 59619354,
-    "timestamp": 1795114246
+    "rpc_host": "mainnet.base.org",
+    "block": 60035414,
+    "timestamp": 1795197458
   },
-  "checked_at": "2026-11-19T18:50:50+00:00",
+  "checked_at": "2026-11-20T17:57:42+00:00",
   "registry": [
     {
       "name": "CBETH_ETH",
@@ -64,17 +64,17 @@
         {
           "check": "on-chain answer",
           "ok": true,
-          "detail": "1144111860553661500 (1.14411 ETH per CBETH)"
+          "detail": "1144088357253878000 (1.14409 ETH per CBETH)"
         },
         {
           "check": "on-chain freshness",
           "ok": true,
-          "detail": "15,268 s old, max_age 90,000 s"
+          "detail": "12,061 s old, max_age 90,000 s"
         },
         {
           "check": "on-chain band",
           "ok": true,
-          "detail": "1.14411 within 1 to 1.5"
+          "detail": "1.14409 within 1 to 1.5"
         }
       ],
       "suggestion": null
@@ -125,17 +125,17 @@
         {
           "check": "on-chain answer",
           "ok": true,
-          "detail": "178118400000 (1,781.18 USD per ETH)"
+          "detail": "162555228096 (1,625.55 USD per ETH)"
         },
         {
           "check": "on-chain freshness",
           "ok": true,
-          "detail": "364 s old, max_age 1,800 s"
+          "detail": "218 s old, max_age 1,800 s"
         },
         {
           "check": "on-chain band",
           "ok": true,
-          "detail": "1,781.18 within 100 to 100,000"
+          "detail": "1,625.55 within 100 to 100,000"
         }
       ],
       "suggestion": null
@@ -188,17 +188,17 @@
         {
           "check": "on-chain answer",
           "ok": true,
-          "detail": "1144111860553661500 (1.14411 USD per CBETH)"
+          "detail": "1144088357253878000 (1.14409 USD per CBETH)"
         },
         {
           "check": "on-chain freshness",
           "ok": true,
-          "detail": "15,273 s old, max_age 90,000 s"
+          "detail": "12,066 s old, max_age 90,000 s"
         },
         {
           "check": "on-chain band",
           "ok": false,
-          "detail": "1.14411 within 1,000 to 20,000"
+          "detail": "1.14409 within 1,000 to 20,000"
         }
       ],
       "suggestion": "Chainlink lists CBETH/USD at 0xd7818272B9e248357d13057AAb0B417aF31E817d (8 decimals, heartbeat 1,200 s)"
@@ -249,17 +249,17 @@
         {
           "check": "on-chain answer",
           "ok": true,
-          "detail": "203630846308 (2,036.31 USD per ETH)"
+          "detail": "185867854861 (1,858.68 USD per ETH)"
         },
         {
           "check": "on-chain freshness",
           "ok": true,
-          "detail": "165 s old, max_age 1,800 s"
+          "detail": "261 s old, max_age 1,800 s"
         },
         {
           "check": "on-chain band",
           "ok": true,
-          "detail": "2,036.31 within 100 to 100,000"
+          "detail": "1,858.68 within 100 to 100,000"
         }
       ],
       "suggestion": "Chainlink lists ETH/USD at 0x50015f8b17fb2C290Dde41fDc246ed0dcEE93a8b (8 decimals, heartbeat 1,200 s), 0x5731Ae06077c79A3B292498940211E0aE7130bd3 (18 decimals, heartbeat 1,200 s), 0xa4250cE1aA15Ff4cb5E5a8655293b65694e436Ed (8 decimals, heartbeat 1,200 s)"
@@ -279,7 +279,7 @@
     {
       "question": "Is a wrong feed rejected even when it compiles and passes every check Dimension makes on chain?",
       "holds": true,
-      "evidence": "the cbETH/USD feed declared as ETH/USD compiles, and on chain its decimals, answer, freshness and band all pass: 2,036.31 USD per ETH, while ETH/USD reads 1,781.18 USD per ETH. feed-check: declared ETH/USD, listed CBETH/USD"
+      "evidence": "the cbETH/USD feed declared as ETH/USD compiles, and on chain its decimals, answer, freshness and band all pass: 1,858.68 USD per ETH, while ETH/USD reads 1,625.55 USD per ETH. feed-check: declared ETH/USD, listed CBETH/USD"
     }
   ]
 }

@@ -290,7 +290,7 @@ it. `-O2` is the cheapest, by 16 gas over `-O1`; `-Os` costs 6.8% more gas than
 
 The type machinery itself compiles away: typed and raw code produce
 byte-identical bytecode at `-O1`, `-O2` and `-Os` in the probes. The typed
-contract's extra cost, a nearly constant 800 to 1,000 gas or so, is real work the
+contract's extra cost, a nearly constant 887 to 1,019 gas, is real work the
 faithful one skips: reading its rate through the banded boundary and checking
 its factors on every operation.
 

@@ -123,7 +123,7 @@ down and paid it for free.
 Gas is measured on a pool with the osETH/wETH pool's balances and parameters
 before the exploit, including its 50% protocol swap fee, for 10 tokens or 10
 BPT per operation (`make evm`). The typed contract's overhead is nearly
-constant, about 800 to 1,000 gas per operation, including operations the types do
+constant, 887 to 1,019 gas per operation, including operations the types do
 not change, such as `swapGivenIn`. It is the rate read through the banded
 boundary and the factor checks, which the faithful contract does not do. The
 guard's cost on swaps is one invariant solve. Started from the invariant before
