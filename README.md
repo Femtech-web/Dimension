@@ -524,7 +524,7 @@ six operations, while every level computes the same results to the wei.
 ## Declaration
 
 - **Pre-existing work:** none. The repository was started on 2026-11-18,
-  inside the build window, after idea research on 2026-11-17.
+  after idea research from around 2026-11-10, both inside the build window.
 - **Third-party code:**
   - Balancer V2's sources (GPL-3.0-or-later, commit `e91a2b6`) are vendored as
     the differential reference and translated into `ingots/balancer_v2`. Both
