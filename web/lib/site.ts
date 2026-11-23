@@ -6,6 +6,8 @@ export const RELEASE = meta.release;
 /** The commit this build was made from, and whether it had uncommitted changes (next.config.ts). */
 export const BUILD = { commit: process.env.NEXT_PUBLIC_COMMIT ?? "", dirty: process.env.NEXT_PUBLIC_COMMIT_DIRTY === "1" };
 export const BLOB = `${REPO}/blob/main`;
+/** The two-minute film. */
+export const FILM = "https://youtu.be/5hi8S0iORws";
 
 export const NAV: { href: string; label: string; file?: boolean }[] = [
   { href: "/balancer", label: "Balancer" },

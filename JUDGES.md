@@ -2,7 +2,8 @@
 
 A ten-minute path from a clean clone to every claim in the README, plus ways
 to try to break it. Nothing here needs to be taken on faith: each step runs
-the code and prints what it checked.
+the code and prints what it checked. For the story first,
+[the film](https://youtu.be/5hi8S0iORws) takes two minutes.
 
 ## The fastest way: one command, with only Docker
 

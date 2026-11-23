@@ -4,12 +4,14 @@
 
 **Fe types that know which way value moves.**
 
-[For judges](JUDGES.md) · [Documentation](docs/README.md) · [The library](ingots/dimension) · [Results](docs/results) · [The site](web)
+[Watch the film (2 min)](https://youtu.be/5hi8S0iORws) · [For judges](JUDGES.md) · [Documentation](docs/README.md) · [The library](ingots/dimension) · [Results](docs/results) · [The site](web)
 
 [![CI](https://github.com/Femtech-web/Dimension/actions/workflows/ci.yml/badge.svg)](https://github.com/Femtech-web/Dimension/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/Femtech-web/Dimension?label=release&color=2a78d6)](https://github.com/Femtech-web/Dimension/releases/latest)
 [![Fe](https://img.shields.io/badge/Fe-26.6.0%20%7C%2026.7.0-orange)](https://github.com/argotorg/fe/releases)
 [![License](https://img.shields.io/badge/license-Apache--2.0%20%7C%20GPL--3.0-blue)](#license)
+
+<a href="https://youtu.be/5hi8S0iORws"><img src="https://img.youtube.com/vi/5hi8S0iORws/maxresdefault.jpg" alt="The Dimension film: two minutes, from Balancer's comment to the batch on Base Sepolia" width="720"></a>
 
 </div>
 

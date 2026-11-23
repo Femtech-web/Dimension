@@ -6,7 +6,7 @@ import { Stat } from "@/components/Stat";
 import { n, wad } from "@/lib/format";
 import { headline } from "@/lib/numbers";
 import { moonwell, replay } from "@/lib/results";
-import { REPO } from "@/lib/site";
+import { FILM, REPO } from "@/lib/site";
 import styles from "./home.module.css";
 
 const FLOW = `pub trait Flow: Sealed {
@@ -61,6 +61,9 @@ export default function Home() {
               <Link href="/verify" className="button">
                 Verify every claim
               </Link>
+              <a href={FILM} className="button ghost">
+                ▶ Watch the film (2 min)
+              </a>
               <Link href="/docs/guide" className="button ghost">
                 Use the library
               </Link>

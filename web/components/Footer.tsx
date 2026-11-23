@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { differential } from "@/lib/results";
-import { BUILD, RELEASE, REPO } from "@/lib/site";
+import { BUILD, FILM, RELEASE, REPO } from "@/lib/site";
 import styles from "./Footer.module.css";
 
 const COLUMNS: { title: string; links: [string, string][] }[] = [
@@ -27,6 +27,7 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
     title: "Project",
     links: [
       ["Source", REPO],
+      ["The film (2 min)", FILM],
       [`Release v${RELEASE.version}`, `${REPO}/releases/tag/v${RELEASE.version}`],
       ["Fe issue #2043", "https://github.com/argotorg/fe/issues/2043"],
       ["Security policy", `${REPO}/blob/main/SECURITY.md`],
