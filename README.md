@@ -186,7 +186,7 @@ make toolchain   # Fe 26.6.0, downloaded and checksum-verified
 make demo        # both incidents: the mistake, the compiler's verdict, the fix, the evidence
 ```
 
-Then `make ci` runs every offline check in about two minutes, and `make replay`,
+Then `make ci` runs every offline check in about two and a half minutes, and `make replay`,
 `make fidelity` and `make moonwell` run the fork comparisons. [JUDGES.md](JUDGES.md) is a
 ten-minute tour with ways to try to break it, and the site in [`web/`](web)
 (`make web`) shows every saved result: the replay and the Moonwell prices
@@ -197,8 +197,9 @@ charted, every claim, every planted bug.
 The three pools, the cbETH oracle and the vault run on Base Sepolia (chain
 84532), compiled by Fe 26.6.0 from this repository and deployed in 21
 transactions from one account.
-[`LiveRecorder`](contracts/reference/src/LiveRecorder.sol) ran each attempt and
-logged its outcome in an event, with the exact revert data.
+[`LiveRecorder`](contracts/reference/src/LiveRecorder.sol), a Solidity
+contract, called the Fe pools through an ordinary interface: it ran each
+attempt and logged its outcome in an event, with the exact revert data.
 [The site](https://dimension-sandy.vercel.app/live) reads the contracts from
 your browser, and runs the same batch there through the same kernels,
 compiled by Fe to WebAssembly.
@@ -323,7 +324,7 @@ The rest of Dimension leans on Fe throughout:
 | Effects | A feed read needs `uses (call: mut Call, ctx: Ctx)`. Failure is an effect too: one kernel reverts with Balancer's `BAL#` codes on the EVM and records failures in a native search |
 | `const fn`, `#[error]` | Feed registries are typed constants; boundary failures are typed reverts |
 | The `allow_unsafe` gate | Test constructors exist, and deployable code cannot reach them (`make unsafe-policy`) |
-| One source, three targets | The same kernels run as EVM contracts, as a native search, and as WebAssembly in the browser, pinned to identical integers |
+| One source, three targets | The same kernels run as EVM contracts that Solidity calls, natively as a search and as a static library C links, and as WebAssembly in the browser, pinned to identical integers ([from other languages](docs/interop.md)) |
 
 ## Checked and attacked
 
@@ -346,6 +347,7 @@ The rest of Dimension leans on Fe throughout:
 | Planted bugs in the safety-critical code | 22 mutants across 7 layers | every one caught, for the reason expected of it | `make mutants FORKS=1` |
 | The deployment on Base Sepolia, read back from the chain | 9 contracts, 21 transactions | every transaction succeeded; code identical to this repository's build; every outcome as planned, to the wei | `make live` |
 | The Balancer kernels compiled to WebAssembly, against the EVM | 154 values per BPT across the batch on 3 kernels; 4 unit suites | every value equal to the wei, the same `BAL#004`; 24 tests pass; the module rebuilds byte for byte | `make wasm` |
+| The same kernels as a native static library, called from C | 154 values per BPT across the batch on 3 kernels | every value equal to the wei, the same `BAL#004` | `make native` |
 | Every ingot, test suite and compile-fail case on Fe 26.7.0 | 6 ingots, 11 suite runs, 23 cases | all pass, unchanged | `make compat` |
 | A fresh project from `dimension new`, taking Dimension by git | the quickstart, a misuse, four broken copies | builds and passes its tests; the misuse is rejected; `dimension check` passes it and fails each copy: `allow_unsafe`, a forged price, the same forgery between `"/*"` and `"*/"` strings, a feed it cannot read | `make consumer` |
 
@@ -416,6 +418,12 @@ tests, and follow [docs/guide.md](docs/guide.md):
 - every concept, with code from the tests;
 - the method used to port Balancer;
 - a checklist before production.
+
+Code in other languages can use what Dimension's code computes, with the same
+integers: Solidity calls the deployed contracts, JavaScript runs the same Fe
+as WebAssembly, and C links it as a native library. The types stay inside Fe;
+where outside numbers enter, such as a feed's answer or a rate, Dimension
+checks at run time what a type cannot know: [docs/interop.md](docs/interop.md).
 
 The command line, [`dimension`](cli/dimension.py), starts a project and
 checks it before deploying. It needs Python 3.11 and git, and nothing else;
@@ -529,7 +537,7 @@ and say so.
 
 | Command | What it does |
 |---|---|
-| `make ci` | Formatting, unsafe policy, unit, compile-fail, probes, differential, search, EVM, vault, consumer: what CI runs |
+| `make ci` | Formatting, unsafe policy, unit, compile-fail, probes, differential, search, EVM, vault, consumer, native library: what CI runs |
 | `make demo` | Both incidents, live |
 | `make fidelity` | The Balancer port against the deployed pool (mainnet fork; `MAINNET_RPC_URL` overrides the public RPC) |
 | `make replay` | The attacker's three transactions, step by step, through the three kernels (mainnet forks) |
@@ -538,6 +546,7 @@ and say so.
 | `make live` | Reads the Base Sepolia deployment back from the chain (`BASE_SEPOLIA_RPC_URL` overrides the public RPC) |
 | `make live-rehearse` | The whole deployment again, on a local anvil fork, with no key |
 | `make wasm` | The Balancer kernels compiled to WebAssembly for the site, every step checked against the EVM (builds Fe with its WebAssembly backend; needs Rust 1.96+ and Node.js) |
+| `make native` | The same kernels as a native static library, called from C, every step checked against the EVM (needs a C compiler) |
 | `make compat` | Every ingot, test suite and compile-fail case on Fe 26.7.0, the other supported release |
 | `make vault` | The ERC-4626 vault against OpenZeppelin's ERC4626 |
 | `make mutants` | Plants realistic bugs one at a time; each must be caught by the check meant for it |
@@ -550,8 +559,8 @@ CI runs `make ci`, `make mutants` and `make compat` on Linux and, in a
 separate job, the fork comparisons with all 22 mutants, and `make live`; `make wasm`
 runs in its own job. From
 `main` it publishes the Docker image, once the image passes `make ci` itself.
-Native executables exist for `linux_amd64` and `mac_arm64` in Fe 26.6.0;
-elsewhere the native search is skipped.
+Fe 26.6.0 builds native code for `linux_amd64` and `mac_arm64`; elsewhere the
+native search and the native library are skipped.
 
 ## Repository layout
 
@@ -565,7 +574,7 @@ elsewhere the native search is skipped.
 | [`ingots/moonwell`](ingots/moonwell) | Moonwell's cbETH market: feed registry, composite pricing, oracle contracts |
 | [`ingots/vault`](ingots/vault) | An ERC-4626 vault's accounting, written with Dimension |
 | [`ingots/live`](ingots/live) | The cbETH oracle on Base Sepolia's Chainlink feeds, as deployed |
-| [`wasm`](wasm) | The Balancer kernels' WebAssembly face, which the site runs, and its Node.js check |
+| [`interop`](interop) | The Balancer kernels' exports, called from JavaScript as WebAssembly, which the site runs, and from C as a native library ([docs/interop.md](docs/interop.md)) |
 | [`contracts/reference`](contracts/reference) | Foundry: Balancer's Solidity, the differential test, the EVM attack, the fork tests, the attack replay, and the Base Sepolia deployment script |
 | [`deployments`](deployments) | The Base Sepolia deployment: each contract and transaction |
 | [`fixtures/balancer-v2-exploit`](fixtures/balancer-v2-exploit) | The attacker's swaps on the pool, read from the three transactions' events |

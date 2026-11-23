@@ -20,7 +20,7 @@ const ROLES: Record<string, [string, string]> = {
   DeclaredCbethEthAsUsd: ["MIP-X43's mistake: cbETH/ETH declared as cbETH/USD, with its real decimals", "ingots/moonwell/src/contracts.fe"],
   DeclaredCbethUsd: ["Chainlink's cbETH/USD, declared correctly", "ingots/moonwell/src/contracts.fe"],
   TypedVault: ["The ERC-4626 vault's four previews", "ingots/vault/src/contracts.fe"],
-  LiveRecorder: ["Runs each attempt and logs its outcome with the exact revert data", "contracts/reference/src/LiveRecorder.sol"],
+  LiveRecorder: ["Solidity: calls the Fe contracts through ordinary interfaces and logs each outcome with the exact revert data", "contracts/reference/src/LiveRecorder.sol"],
 };
 
 type Attack = {
@@ -118,6 +118,11 @@ export default function Live() {
           leaving the pool must be, that is everything the pool holds, and StableMath reverts. Without that exit, the
           batch raises the value behind each share.{" "}
           <Link href="/balancer">Why the rounding decides it →</Link>
+        </p>
+        <p className="ink2" style={{ marginTop: 12 }}>
+          Each batch ran through LiveRecorder, a Solidity contract that calls the Fe pools through an ordinary
+          interface; the typed pools&apos; <code>BAL#004</code> reached it as an ordinary revert.{" "}
+          <Link href="/docs/interop">Using Dimension from Solidity, JavaScript and C →</Link>
         </p>
       </Section>
 

@@ -7,7 +7,7 @@ the code and prints what it checked.
 ## The fastest way: one command, with only Docker
 
 The image installs everything on Ubuntu 24.04, as CI does, and runs every
-offline check (`make ci`) with no network, in about two minutes:
+offline check (`make ci`) with no network, in about two and a half minutes:
 
 ```sh
 docker run --rm ghcr.io/femtech-web/dimension              # the published image
@@ -54,7 +54,7 @@ For each incident this shows:
 
 `make show` with no argument runs all 23 compile-fail cases the same way.
 
-## 3. Run everything offline (about 2 minutes)
+## 3. Run everything offline (about 2.5 minutes)
 
 ```sh
 make ci
@@ -73,6 +73,7 @@ This is what CI runs on Linux. Each suite prints its claims as `holds` or
 | `holds  Deployed on an EVM, does the faithful pool let a repeated-exit attacker take value from LPs?` | The same attack against the deployed Fe contracts |
 | `gas typed ... gas guarded ...` | What the safety costs per operation |
 | `holds  Above -O0, is Dimension's typing free, gas for gas...` | Typed code on the library itself, against the same code by hand: identical bytes or identical gas |
+| `holds  Built as a native static library and called from C...` | The same kernels, linked from C: all 154 values of the batch equal to the EVM's |
 
 ## 4. Against the real chains (about 2 minutes each, needs network)
 
@@ -160,7 +161,8 @@ result observed.
 | A team's own project, created and checked | `cli/dimension.py`, run by `scripts/harness/consumer.py` | `docs/results/consumer/` |
 | The same on Fe 26.7.0 | `scripts/harness/compat.py`, `scripts/toolchain/fe-compat.lock` | `docs/results/compat/` |
 | The contracts on a public chain | `contracts/reference/script/Live.s.sol`, `deployments/base-sepolia.json`, `scripts/harness/live.py` | `docs/results/live/` |
-| The kernels in WebAssembly equal the EVM | `wasm/kernels.fe`, `wasm/check.mjs`, `scripts/harness/wasm.py` | `docs/results/wasm/` |
+| The kernels in WebAssembly equal the EVM | `interop/kernels.fe`, `interop/check.mjs`, `scripts/harness/wasm.py` | `docs/results/wasm/` |
+| The kernels as a native library, called from C, equal the EVM | `interop/kernels.fe`, `interop/check.c`, `scripts/harness/native.py` | `docs/results/native/` |
 
 The site in [`web/`](web) shows all of these, with the replay and the Moonwell
 prices charted. `make web` rebuilds it from whatever reports your runs saved.

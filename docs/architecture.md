@@ -15,18 +15,21 @@ ingots/
   balancer_explorer/         native search over the Balancer kernels (GPL-3.0-or-later)
   moonwell/                  Moonwell's cbETH market priced through Dimension (Apache-2.0)
   vault/                     an ERC-4626 vault's accounting, written with Dimension (Apache-2.0)
+  live/                      the cbETH oracle on Base Sepolia's Chainlink feeds, as deployed (Apache-2.0)
+interop/                     the Balancer kernels' exports, called from JavaScript (WebAssembly) and C (native)
 examples/quickstart/         the project a team starts from (what `dimension new` writes)
 cli/                         the command line: `new`, `check`, `feeds` (standard-library Python)
 tests/
   core/  oracle/  explorer/  vault/  unit tests; core, explorer and vault run on the EVM and natively
   unsafe_root/               the one forgery the compiler allows, which `dimension check` fails
-  compile_fail/              21 rejected constructions, each with a corrected twin
+  compile_fail/              23 rejected constructions, each with a corrected twin
   zero_cost/                 typed code next to the same code by hand, measured by `make evm`
   labels/                    label calls written in many forms, for `make consumer`
   feeds/                     wrong feed declarations that compile, for `make feeds`
   compiler_findings/         the reproducer filed as argotorg/fe#2043
   probes/                    20 language-feasibility probes on an early prototype, kept as recorded
 contracts/reference/         Foundry: Balancer's Solidity, OpenZeppelin's ERC4626, every EVM or fork comparison
+deployments/                 the Base Sepolia deployment: each contract and transaction
 fixtures/balancer-v2-exploit the attacker's swaps on the pool, read from the three transactions' events
 third_party/balancer-v2/     the pinned upstream sources the port is compared with
 web/                         the site: renders the reports and the docs (Next.js)
@@ -266,14 +269,20 @@ pools, the vault and the declarations; `LiveRecorder` logs each outcome; and
 `scripts/harness/live.py` reads it all back. See
 [the README](../README.md#live-on-base-sepolia).
 
-## In the browser: `wasm/`
+## Outside the EVM: `interop/`
 
 Fe's WebAssembly backend compiles one standalone file, so `make wasm` bundles
-[`wasm/kernels.fe`](../wasm/kernels.fe) with `dimension` and `balancer_v2`,
+[`interop/kernels.fe`](../interop/kernels.fe) with `dimension` and `balancer_v2`,
 each ingot a module and each source file a module inside it, leaving out the
 EVM-only files. The exports take and return integers of at most 64 bits: a
-kernel, a number of exits, a value per BPT. `wasm/check.mjs` runs the module in
-Node.js for the harness; the site runs the same module on its Live page.
+kernel, a number of exits, a value per BPT. `interop/check.mjs` runs the module
+in Node.js for the harness; the site runs the same module on its Live page.
+
+`make native` builds the same bundle with the native backend into a static
+library, marking the same three functions `#[unsafe(export)]`, and links
+`interop/check.c` against it. Both harnesses compare every value with forge's
+run of the deployed contracts. What crosses each boundary, Solidity's
+included, is in [interop.md](interop.md).
 
 ## The vault: `ingots/vault`
 

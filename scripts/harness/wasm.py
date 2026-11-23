@@ -3,7 +3,7 @@
 Usage: python3 -m harness.wasm
 
 Builds the Fe compiler with its WebAssembly backend at the pinned commit
-(scripts/toolchain/build-fe-wasm.sh). Bundles wasm/kernels.fe with Dimension,
+(scripts/toolchain/build-fe-wasm.sh). Bundles interop/kernels.fe with Dimension,
 the Balancer kernels and the batch LivePlan plans into one file, which that
 backend requires, and compiles it to web/public/kernels.wasm, twice, to show
 the build reproduces. Runs the module in Node.js and requires the value per
@@ -25,8 +25,8 @@ from pathlib import Path
 from harness.live import PLAN, prepare
 from harness.toolchain import ROOT, resolve, sha256_file
 
-EXPORTS = ROOT / "wasm" / "kernels.fe"
-CHECK = ROOT / "wasm" / "check.mjs"
+EXPORTS = ROOT / "interop" / "kernels.fe"
+CHECK = ROOT / "interop" / "check.mjs"
 PUBLIC = ROOT / "web" / "public"
 INGOTS = ["dimension", "balancer_v2"]
 EVM_ONLY = '#![cfg(target = "evm")]'
@@ -77,6 +77,23 @@ def bundle(plan: dict) -> str:
         src = ROOT / "ingots" / ingot / "src"
         parts.append(f"pub mod {ingot} {{\n{source(src / 'lib.fe', ingot)}\n{modules(src, ingot)}}}\n")
     return "\n".join(parts)
+
+
+def compare(plan: dict, kernels: dict) -> tuple[int, list[str]]:
+    """The values per BPT compared with forge's run of the deployed contracts,
+    and the kernels, or their failing checks, that differ from it."""
+    steps, mismatches = 0, []
+    for kernel, pool in POOLS.items():
+        evm = [str(plan[pool]["start"])] + [str(v) for v in plan[pool]["rates"]]
+        steps += len(evm)
+        if kernels[kernel]["values"] != evm:
+            mismatches.append(kernel)
+        # The EVM reverts the failing exit with Error("BAL#xyz"); the kernels report xyz.
+        reason = bytes.fromhex(plan[pool]["reason"][2:])
+        evm_code = int(reason[68 : 68 + int.from_bytes(reason[36:68], "big")].decode()[4:]) if reason else None
+        if kernels[kernel]["failure"] != evm_code:
+            mismatches.append(f"{kernel} failure")
+    return steps, mismatches
 
 
 def build(fe_wasm: str, text: str, out: Path) -> Path:
@@ -137,18 +154,7 @@ def main() -> int:
         return 1
     wasm = json.loads(ran.stdout)
 
-    steps, mismatches = 0, []
-    for kernel, pool in POOLS.items():
-        evm = [str(plan[pool]["start"])] + [str(v) for v in plan[pool]["rates"]]
-        got = wasm["kernels"][kernel]["values"]
-        steps += len(evm)
-        if got != evm:
-            mismatches.append(kernel)
-        # The EVM reverts the failing exit with Error("BAL#xyz"); the module reports xyz.
-        reason = bytes.fromhex(plan[pool]["reason"][2:])
-        evm_code = int(reason[68 : 68 + int.from_bytes(reason[36:68], "big")].decode()[4:]) if reason else None
-        if wasm["kernels"][kernel]["failure"] != evm_code:
-            mismatches.append(f"{kernel} failure")
+    steps, mismatches = compare(plan, wasm["kernels"])
     faithful, typed = wasm["kernels"]["faithful"], wasm["kernels"]["typed"]
     tests = suites(fe_wasm)
     ran_tests = sum(s["passed"] for s in tests.values())

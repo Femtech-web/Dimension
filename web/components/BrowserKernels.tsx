@@ -243,7 +243,8 @@ export function BrowserKernels({ chain }: { chain: Record<Kernel, string> }) {
       </ul>
       <p className="muted" style={{ fontSize: 14 }}>
         Computed here in {ms.toFixed(0)} ms by Fe compiled to WebAssembly, from the same source as the deployed
-        contracts. <code>make wasm</code> checks every step against the EVM.
+        contracts. <code>make wasm</code> checks every step against the EVM, and <code>make native</code> does the same
+        for these kernels built as a native library and called from C.
       </p>
       <details className={styles.details}>
         <summary>The same values as a table</summary>

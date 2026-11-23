@@ -297,7 +297,7 @@ docker build -t dimension . && docker run --rm dimension   # or build it from a 
           <Code title="a clean clone" lang="shell">
             {`make toolchain   # Fe 26.6.0, downloaded and checksum-verified
 make demo        # both incidents: the mistake, the verdict, the fix
-make ci          # every offline check, about two minutes
+make ci          # every offline check, about two and a half minutes
 make replay      # the attacker's 360 steps, on mainnet forks
 make mutants     # plant bugs; each must be caught`}
           </Code>

@@ -33,6 +33,7 @@ const DOCS = {
   library: "ingots/dimension/README.md",
   judges: "JUDGES.md",
   guide: "docs/guide.md",
+  interop: "docs/interop.md",
   balancer: "docs/balancer.md",
   moonwell: "docs/moonwell.md",
   vault: "docs/vault.md",

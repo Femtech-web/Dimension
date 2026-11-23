@@ -7,9 +7,9 @@ HARNESS := PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=scripts $(PYTHON) -m harness.
 CASES := $(HARNESS)cases
 FE := .tools/fe-$(shell sed -n 's/^version=//p' scripts/toolchain/fe.lock)/fe
 # The feasibility probes are kept exactly as recorded, so they are not formatted.
-FORMATTED := ingots wasm tests/core tests/oracle tests/explorer tests/vault tests/unsafe_root tests/labels tests/feeds tests/zero_cost tests/compile_fail tests/compiler_findings examples
+FORMATTED := ingots interop tests/core tests/oracle tests/explorer tests/vault tests/unsafe_root tests/labels tests/feeds tests/zero_cost tests/compile_fail tests/compiler_findings examples
 
-.PHONY: help toolchain reference-deps fmt fmt-check test unit compile-fail probes differential explore evm vault consumer apidoc fidelity replay moonwell feeds live live-rehearse live-deploy fe-wasm wasm compat unsafe-policy mutants web show demo update ci
+.PHONY: help toolchain reference-deps fmt fmt-check test unit compile-fail probes differential explore evm vault consumer apidoc fidelity replay moonwell feeds live live-rehearse live-deploy fe-wasm wasm native compat unsafe-policy mutants web show demo update ci
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -76,6 +76,9 @@ fe-wasm: ## Build the Fe compiler with its WebAssembly backend at the pinned com
 wasm: toolchain reference-deps fe-wasm ## The Balancer kernels in WebAssembly for the browser, every step checked against the EVM (needs Node.js)
 	@$(HARNESS)wasm
 
+native: toolchain reference-deps ## The Balancer kernels as a native library called from C, every step checked against the EVM (needs forge and a C compiler)
+	@$(HARNESS)native
+
 compat: ## Every ingot, suite and compile-fail case on Fe 26.7.0, the other supported release (downloads it, checksum verified)
 	@$(HARNESS)compat
 
@@ -110,4 +113,4 @@ unsafe-policy: ## Fail if a protocol ingot could forge a trusted value
 	@if grep -rnE '\bunsafe\b' $(PROTOCOL:%=ingots/%/src) | grep -v ingots/dimension/src/value/testing.fe | grep -vE ':[0-9]+:\s*//'; then \
 		echo "unsafe code outside dimension::value::testing"; exit 1; fi
 
-ci: fmt-check unsafe-policy test differential explore evm vault consumer ## Everything CI runs
+ci: fmt-check unsafe-policy test differential explore evm vault consumer native ## Everything CI runs

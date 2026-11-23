@@ -11,6 +11,7 @@ export const DOCS = [
   { slug: "moonwell", source: "docs/moonwell.md", title: "Moonwell MIP-X43", blurb: "The on-chain record, block by block, and each layer that stops the mistake." },
   { slug: "vault", source: "docs/vault.md", title: "An ERC-4626 vault", blurb: "Four roundings derived from meaning, equal to OpenZeppelin's." },
   { slug: "guide", source: "docs/guide.md", title: "Using Dimension", blurb: "Getting started in five steps, each concept with tested code, and a checklist before production." },
+  { slug: "interop", source: "docs/interop.md", title: "From other languages", blurb: "Solidity calls the contracts, JavaScript runs WebAssembly, C links a native library: the same integers, and what crosses each boundary." },
   { slug: "architecture", source: "docs/architecture.md", title: "Architecture", blurb: "The ingots, the type model, the boundaries and the verification design." },
   { slug: "guarantees", source: "docs/guarantees.md", title: "Guarantees", blurb: "What each layer guarantees, what it does not, residuals and costs." },
   { slug: "comparison", source: "docs/comparison.md", title: "Comparison", blurb: "Prior work, and exactly what Dimension adds to it." },

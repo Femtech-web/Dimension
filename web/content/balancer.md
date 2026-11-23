@@ -329,14 +329,16 @@ run of the same batch.
 The same batch also runs in the browser, on the site's Live page. `make wasm`
 builds Fe with its WebAssembly backend at the pinned commit and compiles the
 three kernels, bundled with Dimension into one file as that backend requires,
-from [`wasm/kernels.fe`](../wasm/kernels.fe). It exports the value per BPT
+from [`interop/kernels.fe`](../interop/kernels.fe). It exports the value per BPT
 after any number of exits on each kernel, and the check the first failing
 exit fails. Each of the 154 values, the start and after every exit that runs,
 equals forge's run of the deployed contracts to the wei, and the typed kernels
 fail exit 51 with `BAL#004` there too. The module has no rate provider to read:
 like the native search, it takes the rate, 1.21, through Dimension's test
 constructor `assume_rate`. Two builds are byte-identical, on macOS and on
-Linux, and CI rebuilds the module the site serves.
+Linux, and CI rebuilds the module the site serves. `make native` builds the
+same kernels into a static library and calls them from C, with the same 154
+values ([interop.md](interop.md)).
 
 ## Limits
 

@@ -2,7 +2,7 @@
 // value per BPT after each exit of the batch on each kernel, and the check
 // each kernel fails, for scripts/harness/wasm.py to compare with the EVM.
 //
-//   node wasm/check.mjs web/public/kernels.wasm
+//   node interop/check.mjs web/public/kernels.wasm
 import fs from "node:fs";
 
 const { instance } = await WebAssembly.instantiate(fs.readFileSync(process.argv[2]), {});

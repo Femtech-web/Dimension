@@ -18,3 +18,6 @@ contracts/reference/cache/
 # Left by installing the command line from a clone (pip install ./cli).
 cli/build/
 *.egg-info/
+
+# Launch film and marketing material, kept out of the repository.
+marketing/

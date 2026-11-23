@@ -1,8 +1,10 @@
-//! The Balancer kernels in the browser: the batch the live demonstration ran
+//! The Balancer kernels outside the EVM: the batch the live demonstration ran
 //! on Base Sepolia, through the faithful, typed and guarded kernels, from the
-//! deployed pools' state. `make wasm` bundles this file with `dimension`,
-//! `balancer_v2` and the batch LivePlan planned (`ingot::plan`), which Fe's
-//! WebAssembly backend needs as one file, and checks every step against the EVM.
+//! deployed pools' state. `make wasm` and `make native` bundle this file with
+//! `dimension`, `balancer_v2` and the batch LivePlan planned (`ingot::plan`)
+//! into one file, which Fe's WebAssembly backend needs, and check every step
+//! against the EVM. A WebAssembly module exports the `pub fn`s below; for the
+//! native library, `make native` marks the same three `#[unsafe(export)]`.
 
 use ingot::balancer_v2::pool::Pool
 use ingot::balancer_v2::pool::faithful

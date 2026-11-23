@@ -7,6 +7,7 @@
 | [moonwell.md](moonwell.md) | Moonwell MIP-X43 on Base forks: the on-chain record and each layer that stops the mistake |
 | [../ingots/dimension](../ingots/dimension) | The library: install, quickstart, modules, safety model, versioning |
 | [guide.md](guide.md) | Using Dimension in your own protocol: getting started, each concept, a production checklist |
+| [interop.md](interop.md) | Using what Dimension computes from Solidity, JavaScript and C, and what crosses each boundary |
 | [../examples/quickstart](../examples/quickstart) | A deposit desk contract and its tests, to start from |
 | [../cli](../cli) | The command line: `new` to start a project, `check` before deploying, `feeds` on its own |
 | [../CHANGELOG.md](../CHANGELOG.md), [../SECURITY.md](../SECURITY.md) | Releases and their commits; how to report a vulnerability |
